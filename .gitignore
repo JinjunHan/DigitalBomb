@@ -1,0 +1,56 @@
+# Node.js dependencies and test output
+node_modules/
+coverage/
+.nyc_output/
+*.tsbuildinfo
+
+# Cocos Creator generated caches and machine-local preferences
+/library/
+/temp/
+/local/
+/profiles/
+
+# Generated builds and release bundles
+/build/
+/release/
+/dist/
+
+# Server runtime data and logs
+/data/
+logs/
+*.log
+*.pid
+*.pid.lock
+*.sqlite
+*.sqlite3
+*.sqlite-*
+*.sqlite3-*
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+
+# Environment secrets and private credentials (keep safe templates)
+.env
+.env.*
+!.env.example
+!.env.sample
+!.env.template
+*.key
+*.pem
+*.p12
+*.pfx
+
+# WeChat Developer Tools machine-local configuration
+project.private.config.json
+
+# OS and editor temporary files
+.DS_Store
+._*
+Thumbs.db
+Desktop.ini
+*.swp
+*.swo
+*~
+
+# Keep assets/**/*.meta, settings/, build-templates/ and package-lock.json tracked.
