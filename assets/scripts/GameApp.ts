@@ -1,4 +1,5 @@
 import { _decorator, Component, Node, UITransform, Label, Graphics, Color, Layers, view, ResolutionPolicy, resources, SpriteFrame, Sprite, Texture2D, profiler, tween, Tween, UIOpacity, Vec3, EditBox, input, Input, EventKeyboard, KeyCode, game, Game, BlockInputEvents, ScrollView, Mask, Vec2 } from 'cc';
+import { SceneBackdrop } from './SceneBackdrop';
 import { InputEditSession } from './shared/input-edit-session';
 import { profileTransition } from './shared/profile-transition';
 import { GameAudio } from './GameAudio';
@@ -12,7 +13,7 @@ const reasons: Record<string, string> = { same_round: '同轮破解，旗鼓相�
 @ccclass('GameApp')
 export class GameApp extends Component {
   private audio!: GameAudio;
-  private net = new Connection(); private root!: Node; private bg: SpriteFrame | null = null;
+  private net = new Connection(); private root!: Node; private scenery!: SceneBackdrop;
   private effects!: Node; private seenGuesses = 0; private submitting = false;
   private lobbyArt = new Map<string, SpriteFrame>();
   private profileArt = new Map<string, SpriteFrame>();
@@ -45,17 +46,18 @@ export class GameApp extends Component {
     this.layoutScale = (this.screenHeight - this.layoutTop - bottomSafeInset() - 24) / 1274;
     this.root?.getComponent(UITransform)?.setContentSize(750, this.screenHeight);
     this.effects?.getComponent(UITransform)?.setContentSize(750, this.screenHeight);
+    this.scenery?.resize(this.screenHeight);
     this.clearEffects(); this.render();
   };
   onLoad() {
     view.setDesignResolutionSize(750, 1334, ResolutionPolicy.FIXED_WIDTH);
+    this.scenery = new SceneBackdrop(this.node);
     this.root = new Node('Interface'); this.node.addChild(this.root); this.root.layer = Layers.Enum.UI_2D; this.root.addComponent(UITransform).setContentSize(750, 1334);
     this.effects = new Node('FeedbackLayer'); this.effects.layer = Layers.Enum.UI_2D; this.node.addChild(this.effects); this.effects.addComponent(UITransform).setContentSize(750, 1334);
     this.audio = new GameAudio(this.node);
     this.net.onState = () => this.stateChanged(); this.net.onStatus = () => this.render(); this.net.onError = s => this.toast(s);
-    resources.load('art/table/texture', Texture2D, (err, texture) => { if (!err) { const sf = new SpriteFrame(); sf.texture = texture; this.bg = sf; this.render(); } });
     resources.load('art/opponent/texture', Texture2D, (err, texture) => { if (!err) { const sf = new SpriteFrame(); sf.texture = texture; this.opponentArt = sf; this.render(); } });
-    for (const name of ['background', 'title', 'machine', 'match-full', 'friend-full', 'help-full', 'settings-full', 'sound-full', 'avatar-frame', 'nickname-frame']) {
+    for (const name of ['title', 'machine', 'match-full', 'friend-full', 'help-full', 'settings-full', 'sound-full', 'avatar-frame', 'nickname-frame']) {
       resources.load('art/lobby/' + name + '/texture', Texture2D, (err, texture) => {
         if (err || !this.isValid) return;
         const sf = new SpriteFrame(); sf.texture = texture; this.lobbyArt.set(name, sf); this.render();
@@ -72,7 +74,7 @@ export class GameApp extends Component {
     view.on('canvas-resize', this.resizeLayout, this);
     this.resizeLayout(); this.connect(); this.schedule(this.updateTimer, 0.2);
   }
-  onDestroy() { view.off('canvas-resize', this.resizeLayout, this); this.audio.dispose(); if (this.profilePanel) Tween.stopAllByTarget(this.profilePanel); this.clearEffects(); this.net.stop(); input.off(Input.EventType.KEY_DOWN, this.onKey, this); game.off(Game.EVENT_SHOW, this.onShow, this); game.off(Game.EVENT_HIDE, this.onHide, this); }
+  onDestroy() { this.scenery?.destroy(); view.off('canvas-resize', this.resizeLayout, this); this.audio.dispose(); if (this.profilePanel) Tween.stopAllByTarget(this.profilePanel); this.clearEffects(); this.net.stop(); input.off(Input.EventType.KEY_DOWN, this.onKey, this); game.off(Game.EVENT_SHOW, this.onShow, this); game.off(Game.EVENT_HIDE, this.onHide, this); }
   private onHide() { this.audio.background(true); }
   private onShow() { this.audio.background(false); if (this.net.online) this.net.command('sync').catch(() => {}); }
   private async connect() { try { await this.net.start(); } catch (e) { this.toast((e as Error).message); } }
@@ -233,12 +235,10 @@ export class GameApp extends Component {
     this.profilePanel = undefined; this.profileBack = undefined; this.transitionLobby = undefined;
     for (const child of [...this.root.children]) { child.removeFromParent(); child.destroy(); }
     this.timerLabel = undefined; this.toastLabel = undefined;
-    const backdrop = this.n('TableBackdrop', 375, 667, 750, this.screenHeight); backdrop.setPosition(0, 0);
     const state = this.net.state;
-    const isLobby = !!state && !state.room && state.queuedAt === null && this.page !== 'join';
-    const background = isLobby ? this.lobbyArt.get('background') ?? this.bg : this.bg;
-    if (background) { const sp = backdrop.addComponent(Sprite); sp.spriteFrame = background; sp.sizeMode = Sprite.SizeMode.CUSTOM; backdrop.getComponent(UITransform)!.setContentSize(750, this.screenHeight); }
-    else { const g = backdrop.addComponent(Graphics); g.fillColor = new Color(C.dark); g.rect(-375, -this.screenHeight / 2, 750, this.screenHeight); g.fill(); }
+    const sceneView = state?.room ? (state.room.phase === 'waiting' ? 'friend' : 'game')
+      : state?.queuedAt != null ? 'matching' : this.page === 'join' ? 'friend' : 'lobby';
+    this.scenery.setView(sceneView, read('motion', '1') === '1');
     const s = this.net.state;
     if (!s) this.loading();
     else if (s.room) this.room(s.room);
@@ -615,6 +615,7 @@ export class GameApp extends Component {
     }
   }
   update(dt: number) {
+    this.scenery?.update(dt);
     if (!this.profileMotion || !this.profilePanel?.isValid) return;
     // Show the initial pose before advancing. Cap a stalled frame instead of skipping to the end.
     if (++this.profileMotionFrames <= 2) return;
