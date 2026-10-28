@@ -5,6 +5,7 @@ import { ModalLayer } from './ModalLayer';
 import type { ModalKind } from './shared/modal-motion';
 import { MODAL_RECTS } from './shared/modal-art';
 import { confirmationValid, type ConfirmationContext, type ConfirmationKind } from './shared/modal-state';
+import { BATTLE_RECTS } from './shared/battle-art';
 import { matchingHourglass } from './shared/matching-hourglass';
 import { SceneBackdrop } from './SceneBackdrop';
 import { InputEditSession } from './shared/input-edit-session';
@@ -35,6 +36,8 @@ export class GameApp extends Component {
   private friendArtReady = false;
   private joinArt = new Map<string, SpriteFrame>();
   private joinArtReady = false;
+  private battleArt = new Map<string, SpriteFrame>();
+  private battleArtReady = false;
   private matchingArt = new Map<string, SpriteFrame>();
   private matchingArtReady = false;
   private hourglass?: Sprite;
@@ -117,6 +120,14 @@ export class GameApp extends Component {
         if (err || !this.isValid) return;
         const frame = new SpriteFrame(); frame.texture = texture; this.joinArt.set(name, frame);
         if (joinNames.every(key => this.joinArt.has(key))) { this.joinArtReady = true; this.render(); }
+      });
+    }
+    const battleNames = Object.keys(BATTLE_RECTS);
+    for (const name of battleNames) {
+      resources.load('art/battle/' + name + '/texture', Texture2D, (err, texture) => {
+        if (err || !this.isValid) return;
+        const frame = new SpriteFrame(); frame.texture = texture; this.battleArt.set(name, frame);
+        if (battleNames.every(key => this.battleArt.has(key))) { this.battleArtReady = true; this.render(); }
       });
     }
     const matchingNames = ['opponent', 'heading', 'base', 'hourglass-sheet', 'portrait-rim', 'nameplate', 'cancel'];
@@ -574,6 +585,7 @@ export class GameApp extends Component {
   private room(r: RoomView) {
     if (r.phase === 'waiting') { this.waiting(r); return; }
     if (r.phase === 'finished' || r.phase === 'cancelled') { this.result(r); return; }
+    if (this.battleArtReady) { this.battleArtwork(r); return; }
     const opponent = r.players.find(p => p.id !== this.net.state!.me.id)!;
     this.header(r.phase === 'preparing' ? '设置底牌' : `第 ${r.round} 轮 / 20`, () => {
       if (r.phase === 'preparing') this.ask('leave', () => this.act('leave'));
@@ -648,6 +660,91 @@ export class GameApp extends Component {
     label(me.name, 471, 1278, 26, C.cream, 174, 38);
     art('seated', 471.5, 1318, 163, 36);
     art('close', 470.5, 1439.5, 447, 111, close);
+  }
+  /** Both battle screens use the reference coordinate system and one safe-area transform. */
+  private battleArtwork(r: RoomView) {
+    const prep = r.phase === 'preparing', me = this.net.state!.me;
+    const opponent = r.players.find(p => p.id !== me.id)!;
+    const scale = Math.min(750 / 941, (this.screenHeight - this.layoutTop - bottomSafeInset() - 16) / 1590);
+    const group = this.n('BattleRoom', 375, 667, 941, 1672);
+    group.setPosition(0, this.screenHeight / 2 - this.layoutTop + 20 * scale); group.setScale(scale, scale, 1);
+    const place = (node: Node, x: number, y: number) => { node.setPosition(x - 470.5, -y); return node; };
+    const touch = (node: Node, action: () => void, enabled = true) => {
+      if (!enabled) { node.addComponent(UIOpacity).opacity = 135; return; }
+      node.on(Node.EventType.TOUCH_START, () => { if (read('motion', '1') === '1') node.setScale(.98, .98, 1); });
+      node.on(Node.EventType.TOUCH_CANCEL, () => node.setScale(1, 1, 1));
+      node.on(Node.EventType.TOUCH_END, () => { node.setScale(1, 1, 1); this.audio.unlock(); action(); });
+    };
+    const art = (name: string, rect = BATTLE_RECTS[name], frame = this.battleArt.get(name)!) => {
+      const [l,t,r,b] = rect;
+      const node = place(this.n('Battle-' + name,375,667,r-l,b-t,group),(l+r)/2,(t+b)/2);
+      const sprite = node.addComponent(Sprite); sprite.spriteFrame = frame; sprite.sizeMode = Sprite.SizeMode.CUSTOM;
+      node.getComponent(UITransform)!.setContentSize(r-l,b-t); return node;
+    };
+    const label = (value: string, x: number, y: number, size: number, w: number, color = C.ink, h = size * 1.5) => {
+      const l = this.text(value,375,667,size,color,w,h,group); place(l.node,x,y); l.enableWrapText = false; return l;
+    };
+    art('opponent');
+    art('nameplate'); label(opponent.name + (opponent.online ? '' : ' · 离线'),472,153,23,134,C.cream,30);
+    art('card-backs');
+    const nav = art('round'); label(prep ? '设置底牌  ‹' : `第 ${r.round} 轮 / 20  ‹`,145,61,30,223,C.cream);
+    touch(nav, () => { if (prep) this.ask('leave',()=>this.act('leave')); else { this.overlay='gameMenu';this.render(); } });
+    const editable = !this.busy && this.net.online && (prep ? !r.ownSecret : r.current === me.id && this.net.now() >= r.startAt);
+    if (prep) {
+      art('status'); label(opponent.ready ? '对手已准备' : '对手正在设置',470,323,23,170,C.cream);
+      art('heading'); art('timer'); this.timerLabel=label('',503,496,40,92,'#FFD978');
+      const rules=art('rules'); touch(rules,()=>{this.overlay='rules';this.render();});
+      const value=r.ownSecret ?? this.draft;
+      for(let i=0;i<4;i++) {
+        const x=248+i*149, y=752+(i===0||i===3?25:0);
+        const card=art('card',[x-92,y-130,x+92,y+130]);card.angle=[14,5,-5,-14][i];
+        const digit=label(value[i] ?? '·',x,y,112,155);digit.node.angle=card.angle;
+        if(editable) { touch(card,()=>{this.selected=i;this.render();});touch(digit.node,()=>{this.selected=i;this.render();}); }
+        if(editable && (this.selected===i || this.selected<0 && value.length===i)) label('◆',x,y-102,22,40,C.orange);
+      }
+      art('hands');art('hand-right');
+      const lock=art('lock');touch(lock,()=>this.lockSecret(),editable&&this.draft.length===4);
+      art('status',[230,1546,711,1603]);
+      label(r.ownSecret ? '底牌已锁定，等待对手' : 'ⓘ 锁定后本局不可修改',470,1572,29,650,C.gold);
+    } else {
+      art('records');
+      const records=art('all-records');touch(records,()=>{this.recordsOpponent=false;this.overlay='guessRecords';this.render();});
+      const rows=r.history.filter(h=>h.playerId===me.id).slice(-3);
+      if(!rows.length) label('暂无记录，输入四位数字开始猜测',470,532,27,620);
+      rows.forEach((h,i)=>{
+        const y=443+i*94;
+        art('record-row',[149,y-46,805,y+44]);
+        label(`第${Math.floor(h.turn/2)+1}轮`,231,y,30,145);
+        if(h.digits) for(let j=0;j<4;j++) label(h.digits[j],349+j*88,y,43,67);
+        else label('本次超时',481,y,30,350);
+        label(h.hits===null?'—':`${h.hits}/4`,727,y,35,110,'#FFD978');
+      });
+      art('guess');
+      for(let i=0;i<4;i++) {
+        const digit=label(this.draft[i] ?? '·',298+i*116,840,70,95,C.ink,100);
+        touch(digit.node,()=>{this.selected=i;this.render();},editable);
+      }
+      for(let i=0;i<4;i++) {
+        const x=306+i*105,y=1030+(i===0||i===3?15:0);
+        const card=art('card',[x-66,y-94,x+66,y+94]);card.angle=[16,6,-6,-16][i];
+        const digit=label(this.hideSecret?'?':r.ownSecret?.[i] ?? '·',x,y,73,100);digit.node.angle=card.angle;
+        touch(card,()=>{this.hideSecret=!this.hideSecret;this.render();});touch(digit.node,()=>{this.hideSecret=!this.hideSecret;this.render();});
+      }
+      const portrait=this.profileArt.get('avatar-'+me.avatar);
+      if(portrait) art('portrait',[28,1000,198,1170],portrait);
+      art('nameplate',[18,1154,213,1192]);
+      label(me.name,115,1173,24,181,C.cream);
+      const secretStatus=art('status',[315,1106,626,1151]);
+      touch(secretStatus,()=>{this.hideSecret=!this.hideSecret;this.render();});
+      label(this.hideSecret?'底牌已隐藏 · 点击查看':'我的底牌 · 已锁定',470,1128,23,280,C.cream);
+      art('turn');this.timerLabel=label('',470,1190,28,330,C.cream,48);
+    }
+    const prefix=prep?'prep-':'play-';
+    for(const key of ['1','2','3','4','5','6','7','8','9','delete','0','action']) {
+      const node=art(prefix+key);
+      touch(node,()=>{if(key==='action') {if(prep)this.digit('随机','secret');else this.submitGuess();}
+        else this.digit(key==='delete'?'删除':key,prep?'secret':'guess');}, editable && (key!=='action'||prep||this.draft.length===4));
+    }
   }
   private preparation(r: RoomView) {
     this.text(r.players.find(p => p.id !== this.net.state!.me.id)?.ready ? '对手已准备' : '对手正在设置', 375, 365, 22, C.gold);
@@ -1048,7 +1145,7 @@ export class GameApp extends Component {
       else if (r) {
         const remaining = Math.max(0, Math.ceil((r.deadline - now) / 1000));
         if (r.phase === 'waiting') this.timerLabel.string = `${this.friendArtReady ? '' : '房间有效期  '}${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, '0')}`;
-        else if (r.phase === 'preparing') this.timerLabel.string = `准备倒计时 ${remaining}s`;
+        else if (r.phase === 'preparing') this.timerLabel.string = `${this.battleArtReady ? '' : '准备倒计时 '}${remaining}s`;
         else if (now < r.startAt) this.timerLabel.string = `即将开局 ${Math.ceil((r.startAt - now) / 1000)}s`;
         else this.timerLabel.string = `${r.phase === 'reply' ? '最后一次补猜 · ' : ''}${r.current === s.me.id ? '轮到你了' : '对手正在猜测'}  ${remaining}s`;
         if (['playing', 'reply'].includes(r.phase) && remaining <= 5 && r.current === s.me.id && this.warnedTurn !== r.turn) { this.warnedTurn = r.turn; vibrate(); this.audio.play('warning'); }

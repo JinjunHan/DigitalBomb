@@ -1,0 +1,1011 @@
+{
+  "coordinates": "left,top,right,bottom; 941x1672 source pixels",
+  "drawOrder": [
+    "existing persistent scene",
+    "opponent",
+    "panels",
+    "cards",
+    "hands",
+    "dynamic labels",
+    "buttons"
+  ],
+  "dynamic": "All nicknames, readiness, round, timer, secret, draft and history come from session state. Fixed button lettering retained. Repairs copy same-source clean texture, not lossless crops.",
+  "assets": {
+    "opponent": {
+      "source": "04-preparation.png",
+      "rect": [
+        330,
+        0,
+        610,
+        180
+      ],
+      "radius": 0,
+      "repairs": [],
+      "polygon": [
+        [
+          332,
+          177
+        ],
+        [
+          351,
+          148
+        ],
+        [
+          365,
+          127
+        ],
+        [
+          390,
+          116
+        ],
+        [
+          410,
+          108
+        ],
+        [
+          406,
+          92
+        ],
+        [
+          407,
+          80
+        ],
+        [
+          397,
+          81
+        ],
+        [
+          408,
+          60
+        ],
+        [
+          408,
+          39
+        ],
+        [
+          427,
+          23
+        ],
+        [
+          437,
+          9
+        ],
+        [
+          462,
+          5
+        ],
+        [
+          478,
+          9
+        ],
+        [
+          492,
+          17
+        ],
+        [
+          511,
+          24
+        ],
+        [
+          519,
+          42
+        ],
+        [
+          530,
+          54
+        ],
+        [
+          517,
+          54
+        ],
+        [
+          524,
+          71
+        ],
+        [
+          518,
+          87
+        ],
+        [
+          510,
+          93
+        ],
+        [
+          509,
+          105
+        ],
+        [
+          525,
+          112
+        ],
+        [
+          547,
+          116
+        ],
+        [
+          577,
+          136
+        ],
+        [
+          598,
+          171
+        ],
+        [
+          610,
+          180
+        ]
+      ]
+    },
+    "heading": {
+      "source": "04-preparation.png",
+      "rect": [
+        179,
+        362,
+        762,
+        496
+      ],
+      "radius": 30,
+      "repairs": [],
+      "polygon": null
+    },
+    "rules": {
+      "source": "04-preparation.png",
+      "rect": [
+        291,
+        530,
+        651,
+        582
+      ],
+      "radius": 25,
+      "repairs": [],
+      "polygon": null
+    },
+    "lock": {
+      "source": "04-preparation.png",
+      "rect": [
+        105,
+        1373,
+        834,
+        1536
+      ],
+      "radius": 35,
+      "repairs": [],
+      "polygon": null
+    },
+    "card-backs": {
+      "source": "04-preparation.png",
+      "rect": [
+        316,
+        175,
+        624,
+        303
+      ],
+      "radius": 12,
+      "repairs": [],
+      "polygon": null
+    },
+    "nameplate": {
+      "source": "04-preparation.png",
+      "rect": [
+        398,
+        134,
+        546,
+        173
+      ],
+      "radius": 18,
+      "repairs": [
+        [
+          [
+            423,
+            141,
+            520,
+            164
+          ],
+          [
+            410,
+            143,
+            421,
+            162
+          ]
+        ]
+      ],
+      "polygon": null
+    },
+    "status": {
+      "source": "04-preparation.png",
+      "rect": [
+        375,
+        302,
+        566,
+        345
+      ],
+      "radius": 20,
+      "repairs": [
+        [
+          [
+            410,
+            310,
+            538,
+            334
+          ],
+          [
+            390,
+            312,
+            405,
+            330
+          ]
+        ]
+      ],
+      "polygon": null
+    },
+    "timer": {
+      "source": "04-preparation.png",
+      "rect": [
+        363,
+        463,
+        579,
+        528
+      ],
+      "radius": 26,
+      "repairs": [
+        [
+          [
+            463,
+            476,
+            542,
+            514
+          ],
+          [
+            449,
+            479,
+            462,
+            511
+          ]
+        ]
+      ],
+      "polygon": null
+    },
+    "round": {
+      "source": "05-gameplay-v2.png",
+      "rect": [
+        16,
+        23,
+        274,
+        100
+      ],
+      "radius": 20,
+      "repairs": [
+        [
+          [
+            43,
+            40,
+            248,
+            81
+          ],
+          [
+            80,
+            34,
+            102,
+            39
+          ]
+        ]
+      ],
+      "polygon": null
+    },
+    "records": {
+      "source": "05-gameplay-v2.png",
+      "rect": [
+        94,
+        309,
+        849,
+        716
+      ],
+      "radius": 28,
+      "repairs": [
+        [
+          [
+            151,
+            400,
+            802,
+            673
+          ],
+          [
+            160,
+            459,
+            175,
+            471
+          ]
+        ]
+      ],
+      "polygon": null
+    },
+    "record-row": {
+      "source": "05-gameplay-v2.png",
+      "rect": [
+        149,
+        397,
+        805,
+        487
+      ],
+      "radius": 14,
+      "repairs": [
+        [
+          [
+            185,
+            417,
+            282,
+            467
+          ],
+          [
+            166,
+            420,
+            180,
+            466
+          ]
+        ],
+        [
+          [
+            325,
+            420,
+            375,
+            467
+          ],
+          [
+            326,
+            412,
+            375,
+            419
+          ]
+        ],
+        [
+          [
+            410,
+            420,
+            463,
+            467
+          ],
+          [
+            411,
+            412,
+            463,
+            419
+          ]
+        ],
+        [
+          [
+            501,
+            420,
+            551,
+            467
+          ],
+          [
+            501,
+            412,
+            551,
+            419
+          ]
+        ],
+        [
+          [
+            587,
+            420,
+            638,
+            467
+          ],
+          [
+            587,
+            412,
+            638,
+            419
+          ]
+        ],
+        [
+          [
+            699,
+            428,
+            761,
+            460
+          ],
+          [
+            700,
+            423,
+            759,
+            428
+          ]
+        ]
+      ],
+      "polygon": null
+    },
+    "all-records": {
+      "source": "05-gameplay-v2.png",
+      "rect": [
+        642,
+        338,
+        819,
+        385
+      ],
+      "radius": 12,
+      "repairs": [],
+      "polygon": null
+    },
+    "guess": {
+      "source": "05-gameplay-v2.png",
+      "rect": [
+        180,
+        722,
+        758,
+        936
+      ],
+      "radius": 28,
+      "repairs": [
+        [
+          [
+            252,
+            798,
+            341,
+            881
+          ],
+          [
+            260,
+            852,
+            273,
+            875
+          ]
+        ],
+        [
+          [
+            369,
+            798,
+            459,
+            881
+          ],
+          [
+            260,
+            852,
+            273,
+            875
+          ]
+        ],
+        [
+          [
+            485,
+            798,
+            575,
+            881
+          ],
+          [
+            260,
+            852,
+            273,
+            875
+          ]
+        ],
+        [
+          [
+            602,
+            798,
+            689,
+            881
+          ],
+          [
+            260,
+            852,
+            273,
+            875
+          ]
+        ]
+      ],
+      "polygon": null
+    },
+    "turn": {
+      "source": "05-gameplay-v2.png",
+      "rect": [
+        270,
+        1151,
+        670,
+        1234
+      ],
+      "radius": 25,
+      "repairs": [
+        [
+          [
+            306,
+            1172,
+            635,
+            1211
+          ],
+          [
+            311,
+            1201,
+            321,
+            1210
+          ]
+        ]
+      ],
+      "polygon": null
+    },
+    "card": {
+      "source": "04-preparation.png",
+      "rect": [
+        323,
+        630,
+        480,
+        837
+      ],
+      "radius": 12,
+      "repairs": [
+        [
+          [
+            345,
+            670,
+            466,
+            800
+          ],
+          [
+            342,
+            641,
+            464,
+            664
+          ]
+        ]
+      ],
+      "polygon": null,
+      "quad": [
+        300,
+        609,
+        321,
+        866,
+        503,
+        849,
+        488,
+        594
+      ]
+    },
+    "hands": {
+      "source": "04-preparation.png",
+      "rect": [
+        0,
+        736,
+        941,
+        1165
+      ],
+      "radius": 0,
+      "repairs": [],
+      "polygon": [
+        [
+          0,
+          858
+        ],
+        [
+          72,
+          780
+        ],
+        [
+          148,
+          745
+        ],
+        [
+          161,
+          773
+        ],
+        [
+          196,
+          810
+        ],
+        [
+          247,
+          797
+        ],
+        [
+          274,
+          800
+        ],
+        [
+          302,
+          818
+        ],
+        [
+          288,
+          845
+        ],
+        [
+          247,
+          879
+        ],
+        [
+          207,
+          908
+        ],
+        [
+          139,
+          931
+        ],
+        [
+          157,
+          967
+        ],
+        [
+          127,
+          1037
+        ],
+        [
+          82,
+          1127
+        ],
+        [
+          0,
+          1165
+        ]
+      ]
+    },
+    "hand-right": {
+      "source": "04-preparation.png",
+      "rect": [
+        637,
+        737,
+        941,
+        1076
+      ],
+      "radius": 0,
+      "repairs": [],
+      "polygon": [
+        [
+          637,
+          823
+        ],
+        [
+          648,
+          806
+        ],
+        [
+          667,
+          801
+        ],
+        [
+          692,
+          812
+        ],
+        [
+          735,
+          838
+        ],
+        [
+          757,
+          784
+        ],
+        [
+          768,
+          747
+        ],
+        [
+          805,
+          744
+        ],
+        [
+          864,
+          776
+        ],
+        [
+          898,
+          816
+        ],
+        [
+          941,
+          870
+        ],
+        [
+          941,
+          1076
+        ],
+        [
+          858,
+          1035
+        ],
+        [
+          811,
+          951
+        ],
+        [
+          765,
+          914
+        ],
+        [
+          700,
+          888
+        ],
+        [
+          659,
+          852
+        ]
+      ]
+    },
+    "prep-1": {
+      "source": "04-preparation.png",
+      "rect": [
+        183,
+        972,
+        371,
+        1052
+      ],
+      "radius": 18,
+      "repairs": [],
+      "polygon": null
+    },
+    "prep-2": {
+      "source": "04-preparation.png",
+      "rect": [
+        379,
+        972,
+        567,
+        1052
+      ],
+      "radius": 18,
+      "repairs": [],
+      "polygon": null
+    },
+    "prep-3": {
+      "source": "04-preparation.png",
+      "rect": [
+        571,
+        972,
+        759,
+        1052
+      ],
+      "radius": 18,
+      "repairs": [],
+      "polygon": null
+    },
+    "prep-4": {
+      "source": "04-preparation.png",
+      "rect": [
+        168,
+        1056,
+        370,
+        1140
+      ],
+      "radius": 18,
+      "repairs": [],
+      "polygon": null
+    },
+    "prep-5": {
+      "source": "04-preparation.png",
+      "rect": [
+        376,
+        1056,
+        570,
+        1140
+      ],
+      "radius": 18,
+      "repairs": [],
+      "polygon": null
+    },
+    "prep-6": {
+      "source": "04-preparation.png",
+      "rect": [
+        573,
+        1056,
+        777,
+        1140
+      ],
+      "radius": 18,
+      "repairs": [],
+      "polygon": null
+    },
+    "prep-7": {
+      "source": "04-preparation.png",
+      "rect": [
+        155,
+        1144,
+        365,
+        1231
+      ],
+      "radius": 18,
+      "repairs": [],
+      "polygon": null
+    },
+    "prep-8": {
+      "source": "04-preparation.png",
+      "rect": [
+        370,
+        1144,
+        577,
+        1231
+      ],
+      "radius": 18,
+      "repairs": [],
+      "polygon": null
+    },
+    "prep-9": {
+      "source": "04-preparation.png",
+      "rect": [
+        578,
+        1144,
+        791,
+        1231
+      ],
+      "radius": 18,
+      "repairs": [],
+      "polygon": null
+    },
+    "prep-delete": {
+      "source": "04-preparation.png",
+      "rect": [
+        133,
+        1236,
+        361,
+        1339
+      ],
+      "radius": 18,
+      "repairs": [],
+      "polygon": null
+    },
+    "prep-0": {
+      "source": "04-preparation.png",
+      "rect": [
+        366,
+        1236,
+        578,
+        1339
+      ],
+      "radius": 18,
+      "repairs": [],
+      "polygon": null
+    },
+    "prep-action": {
+      "source": "04-preparation.png",
+      "rect": [
+        583,
+        1236,
+        808,
+        1339
+      ],
+      "radius": 18,
+      "repairs": [],
+      "polygon": null
+    },
+    "play-1": {
+      "source": "05-gameplay-v2.png",
+      "rect": [
+        87,
+        1238,
+        337,
+        1312
+      ],
+      "radius": 18,
+      "repairs": [],
+      "polygon": null
+    },
+    "play-2": {
+      "source": "05-gameplay-v2.png",
+      "rect": [
+        348,
+        1238,
+        593,
+        1312
+      ],
+      "radius": 18,
+      "repairs": [],
+      "polygon": null
+    },
+    "play-3": {
+      "source": "05-gameplay-v2.png",
+      "rect": [
+        604,
+        1238,
+        855,
+        1312
+      ],
+      "radius": 18,
+      "repairs": [],
+      "polygon": null
+    },
+    "play-4": {
+      "source": "05-gameplay-v2.png",
+      "rect": [
+        75,
+        1314,
+        334,
+        1394
+      ],
+      "radius": 18,
+      "repairs": [],
+      "polygon": null
+    },
+    "play-5": {
+      "source": "05-gameplay-v2.png",
+      "rect": [
+        344,
+        1314,
+        598,
+        1394
+      ],
+      "radius": 18,
+      "repairs": [],
+      "polygon": null
+    },
+    "play-6": {
+      "source": "05-gameplay-v2.png",
+      "rect": [
+        607,
+        1314,
+        866,
+        1394
+      ],
+      "radius": 18,
+      "repairs": [],
+      "polygon": null
+    },
+    "play-7": {
+      "source": "05-gameplay-v2.png",
+      "rect": [
+        62,
+        1396,
+        330,
+        1478
+      ],
+      "radius": 18,
+      "repairs": [],
+      "polygon": null
+    },
+    "play-8": {
+      "source": "05-gameplay-v2.png",
+      "rect": [
+        339,
+        1396,
+        601,
+        1478
+      ],
+      "radius": 18,
+      "repairs": [],
+      "polygon": null
+    },
+    "play-9": {
+      "source": "05-gameplay-v2.png",
+      "rect": [
+        612,
+        1396,
+        879,
+        1478
+      ],
+      "radius": 18,
+      "repairs": [],
+      "polygon": null
+    },
+    "play-delete": {
+      "source": "05-gameplay-v2.png",
+      "rect": [
+        47,
+        1484,
+        324,
+        1588
+      ],
+      "radius": 18,
+      "repairs": [],
+      "polygon": null
+    },
+    "play-0": {
+      "source": "05-gameplay-v2.png",
+      "rect": [
+        336,
+        1484,
+        605,
+        1588
+      ],
+      "radius": 18,
+      "repairs": [],
+      "polygon": null
+    },
+    "play-action": {
+      "source": "05-gameplay-v2.png",
+      "rect": [
+        615,
+        1484,
+        899,
+        1588
+      ],
+      "radius": 18,
+      "repairs": [],
+      "polygon": null
+    }
+  }
+}
