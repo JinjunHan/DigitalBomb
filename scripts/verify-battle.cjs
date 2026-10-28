@@ -40,6 +40,15 @@ const assert=require('node:assert/strict');
  }
  await page.screenshot({path:'docs/verification/battle-avatar-fallback.png'});
  await page.evaluate(()=>fixture('playing',true));await page.screenshot({path:'docs/verification/battle-empty.png'});
+ await page.setViewportSize({width:390,height:844});
+ await page.evaluate(()=>{fixture('preparing');app.draft='123';app.selected=3;app.net.state.room.deadline=app.net.now()+33000;app.render();});await page.waitForTimeout(700);
+ assert.equal(await page.evaluate(()=>app.root.getChildByName('BattleRoom').children.some(n=>n.components.some(c=>c.string==='—'))),false);
+ await page.screenshot({path:'docs/verification/battle-three-fixes.png'});
+ for(const seconds of [45,9,0]) {
+  await page.evaluate(seconds=>{app.net.state.room.deadline=app.net.now()+seconds*1000;app.updateTimer();},seconds);
+  assert.equal(await page.evaluate(()=>app.timerLabel.string),String(seconds));
+  if(seconds===9)await page.screenshot({path:'docs/verification/battle-timer-single-digit.png'});
+ }
  await page.setViewportSize({width:390,height:600});await page.evaluate(()=>fixture('preparing'));await page.waitForTimeout(200);await page.screenshot({path:'docs/verification/battle-short.png'});
  await page.evaluate(()=>{localStorage.setItem('db-motion','1');fixture('playing');});await page.waitForTimeout(1100);
  await page.evaluate(()=>{app.net.state={...base,room:null,queuedAt:Date.now()-12000};app.render();});

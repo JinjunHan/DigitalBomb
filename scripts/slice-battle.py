@@ -2,6 +2,7 @@
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFilter
 import json
+import sys
 ROOT=Path(__file__).resolve().parents[1]
 OUT=ROOT/'assets/resources/art/battle'; OUT.mkdir(parents=True,exist_ok=True)
 DOC=ROOT/'docs/design/battle'; DOC.mkdir(parents=True,exist_ok=True)
@@ -27,15 +28,17 @@ add('turn',g,[270,1151,670,1234],25,[[[306,1172,635,1211],[311,1201,321,1210]]])
 add('card',p,[323,630,480,837],12,[[[345,670,466,800],[342,641,464,664]]])
 # Hand silhouettes retain the source wrists/fingers, with all card interiors excluded.
 add('hands',p,[0,736,941,1165],0,polygon=[[0,858],[72,780],[148,745],[161,773],[196,810],[247,797],[274,800],[302,818],[288,845],[247,879],[207,908],[139,931],[157,967],[127,1037],[82,1127],[0,1165]])
-add('hand-right',p,[637,737,941,1076],0,polygon=[[637,823],[648,806],[667,801],[692,812],[735,838],[757,784],[768,747],[805,744],[864,776],[898,816],[941,870],[941,1076],[858,1035],[811,951],[765,914],[700,888],[659,852]])
+add('hand-right',p,[637,737,941,1076],0,polygon=[[645,820],[647,811],[654,803],[663,800],[674,801],[694,810],[716,822],[739,834],[761,842],[766,842],[773,812],[780,780],[789,742],[806,747],[829,755],[853,763],[868,771],[879,784],[891,808],[906,837],[916,854],[941,857],[941,1076],[858,1035],[811,951],[786,929],[775,909],[757,894],[737,882],[715,874],[691,863],[671,850],[657,837],[649,828]])
+add('right-thumb',p,[640,797,819,935],0,polygon=[[645,820],[647,811],[654,803],[663,800],[674,801],[694,810],[716,822],[739,834],[761,842],[786,847],[816,851],[817,932],[786,929],[775,909],[757,894],[737,882],[715,874],[691,863],[671,850],[657,837],[649,828]])
 for prefix,src,rects in [('prep',p,[[183,972,371,1052],[379,972,567,1052],[571,972,759,1052],[168,1056,370,1140],[376,1056,570,1140],[573,1056,777,1140],[155,1144,365,1231],[370,1144,577,1231],[578,1144,791,1231],[133,1236,361,1339],[366,1236,578,1339],[583,1236,808,1339]]),('play',g,[[87,1238,337,1312],[348,1238,593,1312],[604,1238,855,1312],[75,1314,334,1394],[344,1314,598,1394],[607,1314,866,1394],[62,1396,330,1478],[339,1396,601,1478],[612,1396,879,1478],[47,1484,324,1588],[336,1484,605,1588],[615,1484,899,1588]])]:
  for name,rect in zip(['1','2','3','4','5','6','7','8','9','delete','0','action'],rects):add(prefix+'-'+name,src,rect,18)
 add('play-hand-left',g,[184,991,340,1192],0,polygon=[[188,1038],[213,1014],[230,998],[243,1010],[253,1057],[281,1057],[306,1054],[326,1062],[336,1075],[330,1091],[306,1109],[269,1126],[237,1147],[225,1190],[185,1190],[198,1152],[211,1120],[199,1088]])
 add('play-hand-right',g,[610,1004,941,1194],0,polygon=[[610,1076],[620,1062],[637,1058],[660,1067],[685,1074],[704,1008],[725,1007],[760,1022],[793,1046],[820,1072],[853,1090],[893,1108],[941,1130],[941,1194],[788,1194],[764,1164],[722,1144],[681,1127],[646,1109],[621,1094]])
 spec['card']['quad']=[300,609,321,866,503,849,488,594]
-manifest={'coordinates':'left,top,right,bottom; 941x1672 source pixels','drawOrder':['existing persistent scene','opponent','panels','cards','hands','dynamic labels','buttons'],'dynamic':'All nicknames, readiness, round, timer, secret, draft and history come from session state. Fixed button lettering retained. Repairs copy same-source clean texture, not lossless crops.','assets':spec}
+manifest={'coordinates':'left,top,right,bottom; 941x1672 source pixels','drawOrder':['existing persistent scene','opponent','panels','right palm','cards','left hand and right thumb','dynamic labels','buttons'],'dynamic':'All nicknames, readiness, round, timer, secret, draft and history come from session state. Fixed button lettering retained. Repairs copy same-source clean texture, not lossless crops.','assets':spec}
 (DOC/'slices.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+'\n')
 for name,s in spec.items():
+ if len(sys.argv)>1 and name not in sys.argv[1:]:continue
  src=Image.open(ROOT/'docs/design'/s['source']).convert('RGBA');l,t,r,b=s['rect'];im=src.crop((l,t,r,b))
  for target,sample in s['repairs']:
   x,y,z,w=target;tile=src.crop(sample);patch=Image.new('RGBA',(z-x,w-y))
@@ -65,6 +68,7 @@ for name,s in spec.items():
  elif s['polygon']:d.polygon([((x-l)*4,(y-t)*4) for x,y in s['polygon']],fill=255)
  else:d.rounded_rectangle((2,2,mask.width-3,mask.height-3),s['radius']*4,fill=255)
  im.putalpha(mask.resize(im.size,Image.Resampling.LANCZOS));im.save(OUT/(name+'.png'),optimize=True)
+if len(sys.argv)>1:sys.exit(0)
 card=Image.open(OUT/'card.png').convert('RGBA')
 ring=card.getchannel('A');inner=Image.new('L',card.size);ImageDraw.Draw(inner).rounded_rectangle((7,7,card.width-8,card.height-8),radius=10,fill=255)
 from PIL import ImageChops

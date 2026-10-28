@@ -102,6 +102,12 @@ export const BATTLE_RECTS: Record<string, readonly number[]> = {
     941,
     1076
   ],
+  "right-thumb": [
+    640,
+    797,
+    819,
+    935
+  ],
   "prep-1": [
     183,
     972,

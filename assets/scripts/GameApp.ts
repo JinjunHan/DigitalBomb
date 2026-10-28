@@ -709,19 +709,25 @@ export class GameApp extends Component {
     const editable = !this.busy && this.net.online && (prep ? !r.ownSecret : r.current === me.id && this.net.now() >= r.startAt);
     if (prep) {
       art('status'); label(opponent.ready ? '对手已准备' : '对手正在设置',470,323,23,170,C.cream);
-      art('heading'); art('timer'); this.timerLabel=label('',503,496,40,92,'#FFD978');
+      art('heading'); art('timer');
+      this.timerLabel=label('',497,489,42,70,'#FFD978',54);
+      if(this.friendDigitFont) this.timerLabel.font=this.friendDigitFont;
+      this.timerLabel.lineHeight=46;
+      label('s',540,493,29,20,'#FFD978',38);
       const rules=art('rules'); touch(rules,()=>{this.overlay='rules';this.render();});
       const value=r.ownSecret ?? this.draft;
+      // Palm behind the cards; only the isolated thumb crosses their front edge.
+      art('hand-right');
       for(let i=0;i<4;i++) {
         const active=editable && (this.selected===i || this.selected<0 && value.length===i);
         const x=248+i*149, y=752+(i===0||i===3?25:0)-(active?14:0);
         const card=art('card-paper',[x-96,y-132,x+96,y+132]);card.angle=[14,5,-5,-14][i];
         if(active) { const edge=art('card-selected',[x-100,y-137,x+100,y+137]);edge.angle=card.angle; }
-        const digit=number(value[i] ?? '—',x,y,132,155,172);digit.node.angle=card.angle;
+        const digit=number(value[i] ?? '',x,y,132,155,172);digit.node.angle=card.angle;
         if(editable) { touch(card,()=>{this.selected=i;this.render();});touch(digit.node,()=>{this.selected=i;this.render();}); }
 
       }
-      art('hands');art('hand-right');
+      art('hands');art('right-thumb');
       const lock=art('lock');touch(lock,()=>this.lockSecret(),editable&&this.draft.length===4);
       art('status',[230,1546,711,1603]);
       label(r.ownSecret ? '底牌已锁定，等待对手' : 'ⓘ 锁定后本局不可修改',470,1572,29,650,C.gold);
@@ -740,13 +746,13 @@ export class GameApp extends Component {
       });
       art('guess');
       for(let i=0;i<4;i++) {
-        const digit=number(this.draft[i] ?? '—',298+i*116,840,77,95,106);
+        const digit=number(this.draft[i] ?? '',298+i*116,840,77,95,106);
         touch(digit.node,()=>{this.selected=i;this.render();},editable);
       }
       for(let i=0;i<4;i++) {
         const x=306+i*105,y=1030+(i===0||i===3?15:0);
         const card=art('card-paper',[x-69,y-95,x+69,y+95]);card.angle=[16,6,-6,-16][i];
-        const digit=number(this.hideSecret?'?':r.ownSecret?.[i] ?? '—',x,y,83,100,115);digit.node.angle=card.angle;
+        const digit=number(this.hideSecret?'?':r.ownSecret?.[i] ?? '',x,y,83,100,115);digit.node.angle=card.angle;
         touch(card,()=>{this.hideSecret=!this.hideSecret;this.render();});touch(digit.node,()=>{this.hideSecret=!this.hideSecret;this.render();});
       }
       art('play-hand-left'); art('play-hand-right');
@@ -1174,7 +1180,7 @@ export class GameApp extends Component {
       else if (r) {
         const remaining = Math.max(0, Math.ceil((r.deadline - now) / 1000));
         if (r.phase === 'waiting') this.timerLabel.string = `${this.friendArtReady ? '' : '房间有效期  '}${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, '0')}`;
-        else if (r.phase === 'preparing') this.timerLabel.string = `${this.battleArtReady ? '' : '准备倒计时 '}${remaining}s`;
+        else if (r.phase === 'preparing') this.timerLabel.string = this.battleArtReady ? String(remaining) : `准备倒计时 ${remaining}s`;
         else if (now < r.startAt) this.timerLabel.string = `即将开局 ${Math.ceil((r.startAt - now) / 1000)}s`;
         else this.timerLabel.string = `${r.phase === 'reply' ? '最后一次补猜 · ' : ''}${r.current === s.me.id ? '轮到你了' : '对手正在猜测'}  ${remaining}s`;
         if (['playing', 'reply'].includes(r.phase) && remaining <= 5 && r.current === s.me.id && this.warnedTurn !== r.turn) { this.warnedTurn = r.turn; vibrate(); this.audio.play('warning'); }
