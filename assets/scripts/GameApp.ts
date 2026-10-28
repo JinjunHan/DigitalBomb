@@ -19,6 +19,8 @@ export class GameApp extends Component {
   private profileArt = new Map<string, SpriteFrame>();
   private friendArt = new Map<string, SpriteFrame>();
   private friendArtReady = false;
+  private joinArt = new Map<string, SpriteFrame>();
+  private joinArtReady = false;
   private friendDigitFont?: Font;
   private profilePanel?: Node;
   private profileBack?: Node;
@@ -82,6 +84,14 @@ export class GameApp extends Component {
         if (err || !this.isValid) return;
         const frame = new SpriteFrame(); frame.texture = texture; this.friendArt.set(name, frame);
         if (friendNames.every(key => this.friendArt.has(key))) { this.friendArtReady = true; this.render(); }
+      });
+    }
+    const joinNames = ['back', 'heading', 'paper', 'join', 'create', 'keyboard', ...Array.from({ length: 10 }, (_, i) => 'key-' + i), 'key-clear', 'key-delete'];
+    for (const name of joinNames) {
+      resources.load('art/join/' + name + '/texture', Texture2D, (err, texture) => {
+        if (err || !this.isValid) return;
+        const frame = new SpriteFrame(); frame.texture = texture; this.joinArt.set(name, frame);
+        if (joinNames.every(key => this.joinArt.has(key))) { this.joinArtReady = true; this.render(); }
       });
     }
     profiler.hideStats();
@@ -332,10 +342,49 @@ export class GameApp extends Component {
     this.button('取消匹配', 375, 1140, 520, 90, () => this.act('cancelQueue'), false, !this.busy);
   }
   private join() {
+    if (this.joinArtReady) { this.joinArtwork(); return; }
     this.header('好友对战', () => { this.page = 'lobby'; this.render(); });
     this.text('输入房间口令', 375, 340, 38); this.text('四位口令，加入好友的牌桌', 375, 402, 23, C.gold);
     this.cards(this.code, 520, 100); this.button('加入房间', 375, 680, 560, 85, () => this.act('join', { code: this.code }), true, this.code.length === 4 && !this.busy);
     this.button('自己创建房间', 375, 782, 560, 70, () => this.act('create'), false, !this.busy); this.keypad(925, 'join');
+  }
+  private joinArtwork() {
+    // Fit the complete 941px source composition, including the keyboard, inside safe bounds.
+    const scale = Math.min(750 / 941, (this.screenHeight - this.layoutTop - bottomSafeInset() - 16) / (1632 - 46));
+    const group = this.n('JoinRoom', 375, 667, 941, 1672);
+    group.setPosition(0, this.screenHeight / 2 - this.layoutTop + 46 * scale); group.setScale(scale, scale, 1);
+    const art = (name: string, rect: readonly number[], action?: () => void, enabled = true) => {
+      const [left, top, right, bottom] = rect, w = right - left, h = bottom - top;
+      const node = this.n('Join-' + name, 375, 667, w, h, group);
+      node.setPosition((left + right) / 2 - 470.5, -(top + bottom) / 2);
+      const sprite = node.addComponent(Sprite); sprite.spriteFrame = this.joinArt.get(name)!;
+      sprite.sizeMode = Sprite.SizeMode.CUSTOM; node.getComponent(UITransform)!.setContentSize(w, h);
+      if (!enabled) { sprite.grayscale = true; node.addComponent(UIOpacity).opacity = 165; }
+      if (action && enabled) {
+        node.on(Node.EventType.TOUCH_START, () => { if (read('motion', '1') === '1') node.setScale(.97, .97, 1); });
+        node.on(Node.EventType.TOUCH_CANCEL, () => node.setScale(1, 1, 1));
+        node.on(Node.EventType.TOUCH_END, () => { node.setScale(1, 1, 1); this.audio.unlock(); if (!name.startsWith('key-')) this.audio.play('tap'); action(); });
+      }
+    };
+    art('back', [26, 46, 227, 122], () => { this.page = 'lobby'; this.render(); }, !this.busy);
+    art('heading', [249, 65, 696, 256]); art('paper', [120, 292, 823, 998]);
+    for (let i = 0; i < 4; i++) {
+      const digit = this.text(this.code[i] ?? '', 375, 667, 105, C.ink, 110, 140, group);
+      digit.node.setPosition([266, 402, 540, 677][i] - 470.5, -557);
+      digit.font = this.friendDigitFont ?? null; digit.fontFamily = 'serif'; digit.isBold = !this.friendDigitFont;
+      digit.lineHeight = 112; digit.enableWrapText = false;
+    }
+    art('join', [221, 716, 723, 842], () => this.act('join', { code: this.code }), this.code.length === 4 && !this.busy && this.net.online);
+    art('create', [244, 849, 699, 949], () => this.act('create'), !this.busy && this.net.online);
+    art('keyboard', [0, 1047, 941, 1632]);
+    const keys: [string, number[]][] = [
+      ['1', [103,1100,341,1200]], ['2', [353,1100,591,1200]], ['3', [604,1100,842,1200]],
+      ['4', [90,1205,337,1309]], ['5', [350,1205,594,1309]], ['6', [607,1205,854,1309]],
+      ['7', [77,1315,332,1422]], ['8', [347,1315,598,1422]], ['9', [611,1315,867,1422]],
+      ['clear', [58,1430,327,1559]], ['0', [340,1430,601,1559]], ['delete', [613,1430,883,1559]],
+    ];
+    for (const [key, rect] of keys) art('key-' + key, rect,
+      () => this.digit(key === 'clear' ? '清空' : key === 'delete' ? '删除' : key, 'join'), !this.busy && this.net.online);
   }
   private keypad(top: number, context: 'join' | 'secret' | 'guess', enabled = true) {
     const labels = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '删除', '0', context === 'secret' ? '随机' : '清空'];
