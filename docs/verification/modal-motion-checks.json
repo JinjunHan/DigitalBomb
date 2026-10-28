@@ -1,0 +1,1184 @@
+{
+  "checks": [
+    "settings: entrance, settled redraw, guarded exit and cleanup passed",
+    "rules: entrance, settled redraw, guarded exit and cleanup passed",
+    "menu: entrance, settled redraw, guarded exit and cleanup passed",
+    "live: entrance, settled redraw, guarded exit and cleanup passed",
+    "result: entrance, settled redraw, guarded exit and cleanup passed",
+    "lock: entrance, settled redraw, guarded exit and cleanup passed",
+    "repeat: entrance, settled redraw, guarded exit and cleanup passed",
+    "leave: entrance, settled redraw, guarded exit and cleanup passed",
+    "close: entrance, settled redraw, guarded exit and cleanup passed",
+    "resign: entrance, settled redraw, guarded exit and cleanup passed",
+    "reconnect: entrance, settled redraw, guarded exit and cleanup passed",
+    "mid-entry redraw and reverse retain time/pose",
+    "rapid replacement bounded to two surfaces; motion-off opens/closes immediately",
+    "keyboard is blocked during exit"
+  ],
+  "recordings": {
+    "settings-in": [
+      {
+        "at": 18798.200000047684,
+        "enter": 0,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 18947.100000023842,
+        "enter": 0.14980000007152558,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 19040.399999976158,
+        "enter": 0.24970000004768372,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 19140.5,
+        "enter": 0.3498000000715256,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 19240,
+        "enter": 0.38,
+        "guard": false,
+        "children": 1
+      },
+      {
+        "at": 19345.300000071526,
+        "enter": 0.38,
+        "guard": false,
+        "children": 1
+      },
+      {
+        "at": 19448.899999976158,
+        "enter": 0.38,
+        "guard": false,
+        "children": 1
+      },
+      {
+        "at": 19546,
+        "enter": 0.38,
+        "guard": false,
+        "children": 1
+      },
+      {
+        "at": 19636.700000047684,
+        "enter": 0.38,
+        "guard": false,
+        "children": 1
+      }
+    ],
+    "settings-out": [
+      {
+        "at": 19735.300000071526,
+        "exit": 0,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 19874.100000023842,
+        "exit": 0.14959999990463257,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 19974.899999976158,
+        "exit": 0.2491999999284744,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 20052.5,
+        "guard": true,
+        "children": 0
+      },
+      {
+        "at": 20119.899999976158,
+        "guard": true,
+        "children": 0
+      },
+      {
+        "at": 20187.800000071526,
+        "guard": true,
+        "children": 0
+      },
+      {
+        "at": 20256.700000047684,
+        "guard": true,
+        "children": 0
+      },
+      {
+        "at": 20337,
+        "guard": true,
+        "children": 0
+      },
+      {
+        "at": 20406.300000071526,
+        "guard": true,
+        "children": 0
+      }
+    ],
+    "rules-in": [
+      {
+        "at": 20500.600000023842,
+        "enter": 0.019299999952316283,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 20617.700000047684,
+        "enter": 0.13279999995231628,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 20707.100000023842,
+        "enter": 0.23239999997615818,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 20807.899999976158,
+        "enter": 0.3326999999284745,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 20908,
+        "enter": 0.4326999999284746,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 21006.300000071526,
+        "enter": 0.48,
+        "guard": false,
+        "children": 1
+      },
+      {
+        "at": 21108.600000023842,
+        "enter": 0.48,
+        "guard": false,
+        "children": 1
+      },
+      {
+        "at": 21208.800000071526,
+        "enter": 0.48,
+        "guard": false,
+        "children": 1
+      },
+      {
+        "at": 21311,
+        "enter": 0.48,
+        "guard": false,
+        "children": 1
+      }
+    ],
+    "rules-out": [
+      {
+        "at": 21420.300000071526,
+        "exit": 0,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 21552.700000047684,
+        "exit": 0.1335,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 21642.700000047684,
+        "exit": 0.23339999997615815,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 21741.300000071526,
+        "guard": true,
+        "children": 0
+      },
+      {
+        "at": 21819.800000071526,
+        "guard": true,
+        "children": 0
+      },
+      {
+        "at": 21889.700000047684,
+        "guard": true,
+        "children": 0
+      },
+      {
+        "at": 21970.600000023842,
+        "guard": true,
+        "children": 0
+      },
+      {
+        "at": 22035.800000071526,
+        "guard": true,
+        "children": 0
+      },
+      {
+        "at": 22103.300000071526,
+        "guard": true,
+        "children": 0
+      }
+    ],
+    "menu-in": [
+      {
+        "at": 22182.200000047684,
+        "enter": 0.016899999976158143,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 22296.899999976158,
+        "enter": 0.13310000002384184,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 22385.5,
+        "enter": 0.21660000002384186,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 22467.700000047684,
+        "enter": 0.24,
+        "guard": false,
+        "children": 1
+      },
+      {
+        "at": 22554.200000047684,
+        "enter": 0.24,
+        "guard": false,
+        "children": 1
+      },
+      {
+        "at": 22634.399999976158,
+        "enter": 0.24,
+        "guard": false,
+        "children": 1
+      },
+      {
+        "at": 22717.300000071526,
+        "enter": 0.24,
+        "guard": false,
+        "children": 1
+      },
+      {
+        "at": 22801.100000023842,
+        "enter": 0.24,
+        "guard": false,
+        "children": 1
+      },
+      {
+        "at": 22885.700000047684,
+        "enter": 0.24,
+        "guard": false,
+        "children": 1
+      }
+    ],
+    "menu-out": [
+      {
+        "at": 22985.100000023842,
+        "exit": 0.019899999976158142,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 23107.899999976158,
+        "exit": 0.15089999997615813,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 23196.899999976158,
+        "guard": true,
+        "children": 0
+      },
+      {
+        "at": 23270.800000071526,
+        "guard": true,
+        "children": 0
+      },
+      {
+        "at": 23335.899999976158,
+        "guard": true,
+        "children": 0
+      },
+      {
+        "at": 23404.100000023842,
+        "guard": true,
+        "children": 0
+      },
+      {
+        "at": 23470.800000071526,
+        "guard": true,
+        "children": 0
+      },
+      {
+        "at": 23537.100000023842,
+        "guard": true,
+        "children": 0
+      },
+      {
+        "at": 23604.300000071526,
+        "guard": true,
+        "children": 0
+      }
+    ],
+    "live-in": [
+      {
+        "at": 23686.899999976158,
+        "enter": 0.020899999976158143,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 23840.100000023842,
+        "enter": 0.16719999992847445,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 23943.200000047684,
+        "enter": 0.28419999992847444,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 24041.100000023842,
+        "enter": 0.36,
+        "guard": false,
+        "children": 1
+      },
+      {
+        "at": 24142.300000071526,
+        "enter": 0.36,
+        "guard": false,
+        "children": 1
+      },
+      {
+        "at": 24244.300000071526,
+        "enter": 0.36,
+        "guard": false,
+        "children": 1
+      },
+      {
+        "at": 24341.800000071526,
+        "enter": 0.36,
+        "guard": false,
+        "children": 1
+      },
+      {
+        "at": 24440.700000047684,
+        "enter": 0.36,
+        "guard": false,
+        "children": 1
+      },
+      {
+        "at": 24539.899999976158,
+        "enter": 0.36,
+        "guard": false,
+        "children": 1
+      }
+    ],
+    "live-out": [
+      {
+        "at": 24652.399999976158,
+        "exit": 0,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 24824.200000047684,
+        "exit": 0.16269999992847442,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 24930.700000047684,
+        "guard": true,
+        "children": 0
+      },
+      {
+        "at": 25005.399999976158,
+        "guard": true,
+        "children": 0
+      },
+      {
+        "at": 25088.399999976158,
+        "guard": true,
+        "children": 0
+      },
+      {
+        "at": 25173.600000023842,
+        "guard": true,
+        "children": 0
+      },
+      {
+        "at": 25257.200000047684,
+        "guard": true,
+        "children": 0
+      },
+      {
+        "at": 25340.800000071526,
+        "guard": true,
+        "children": 0
+      },
+      {
+        "at": 25420.899999976158,
+        "guard": true,
+        "children": 0
+      }
+    ],
+    "result-in": [
+      {
+        "at": 25495.700000047684,
+        "enter": 0.01660000002384186,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 25614.200000047684,
+        "enter": 0.13310000002384184,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 25708.600000023842,
+        "enter": 0.23349999999999999,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 25809.600000023842,
+        "enter": 0.33260000002384194,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 25909.5,
+        "enter": 0.4333000000715257,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 26007.700000047684,
+        "enter": 0.44,
+        "guard": false,
+        "children": 1
+      },
+      {
+        "at": 26109,
+        "enter": 0.44,
+        "guard": false,
+        "children": 1
+      },
+      {
+        "at": 26207.600000023842,
+        "enter": 0.44,
+        "guard": false,
+        "children": 1
+      },
+      {
+        "at": 26307.5,
+        "enter": 0.44,
+        "guard": false,
+        "children": 1
+      }
+    ],
+    "result-out": [
+      {
+        "at": 26412.399999976158,
+        "exit": 0,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 26541.5,
+        "exit": 0.13299999999999998,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 26645.100000023842,
+        "exit": 0.23290000009536743,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 26743.399999976158,
+        "guard": true,
+        "children": 0
+      },
+      {
+        "at": 26827.200000047684,
+        "guard": true,
+        "children": 0
+      },
+      {
+        "at": 26911.300000071526,
+        "guard": true,
+        "children": 0
+      },
+      {
+        "at": 26993.100000023842,
+        "guard": true,
+        "children": 0
+      },
+      {
+        "at": 27080.5,
+        "guard": true,
+        "children": 0
+      },
+      {
+        "at": 27162,
+        "guard": true,
+        "children": 0
+      }
+    ],
+    "lock-in": [
+      {
+        "at": 27248.5,
+        "enter": 0,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 27360.800000071526,
+        "enter": 0.11740000009536743,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 27458.200000047684,
+        "enter": 0.21730000007152556,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 27554.200000047684,
+        "enter": 0.3004000000953675,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 27637.5,
+        "enter": 0.32,
+        "guard": false,
+        "children": 1
+      },
+      {
+        "at": 27727.399999976158,
+        "enter": 0.32,
+        "guard": false,
+        "children": 1
+      },
+      {
+        "at": 27822.800000071526,
+        "enter": 0.32,
+        "guard": false,
+        "children": 1
+      },
+      {
+        "at": 27923.5,
+        "enter": 0.32,
+        "guard": false,
+        "children": 1
+      },
+      {
+        "at": 28024.200000047684,
+        "enter": 0.32,
+        "guard": false,
+        "children": 1
+      }
+    ],
+    "lock-out": [
+      {
+        "at": 28130.800000071526,
+        "exit": 0,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 28231.600000023842,
+        "exit": 0.0985,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 28324.200000047684,
+        "exit": 0.1985,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 28407.100000023842,
+        "guard": true,
+        "children": 0
+      },
+      {
+        "at": 28492.5,
+        "guard": true,
+        "children": 0
+      },
+      {
+        "at": 28574.5,
+        "guard": true,
+        "children": 0
+      },
+      {
+        "at": 28657.600000023842,
+        "guard": true,
+        "children": 0
+      },
+      {
+        "at": 28741.800000071526,
+        "guard": true,
+        "children": 0
+      },
+      {
+        "at": 28827.5,
+        "guard": true,
+        "children": 0
+      }
+    ],
+    "repeat-in": [
+      {
+        "at": 28914.399999976158,
+        "enter": 0,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 29050.899999976158,
+        "enter": 0.1335,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 29133.700000047684,
+        "enter": 0.2165999999046326,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 29216.5,
+        "enter": 0.30000000000000004,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 29301.200000047684,
+        "enter": 0.36,
+        "guard": false,
+        "children": 1
+      },
+      {
+        "at": 29383.899999976158,
+        "enter": 0.36,
+        "guard": false,
+        "children": 1
+      },
+      {
+        "at": 29468.5,
+        "enter": 0.36,
+        "guard": false,
+        "children": 1
+      },
+      {
+        "at": 29552.700000047684,
+        "enter": 0.36,
+        "guard": false,
+        "children": 1
+      },
+      {
+        "at": 29635,
+        "enter": 0.36,
+        "guard": false,
+        "children": 1
+      }
+    ],
+    "repeat-out": [
+      {
+        "at": 29735.300000071526,
+        "exit": 0,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 29897.200000047684,
+        "exit": 0.16660000002384187,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 29985.200000047684,
+        "guard": true,
+        "children": 0
+      },
+      {
+        "at": 30051.800000071526,
+        "guard": true,
+        "children": 0
+      },
+      {
+        "at": 30119.600000023842,
+        "guard": true,
+        "children": 0
+      },
+      {
+        "at": 30185.899999976158,
+        "guard": true,
+        "children": 0
+      },
+      {
+        "at": 30251.899999976158,
+        "guard": true,
+        "children": 0
+      },
+      {
+        "at": 30318.200000047684,
+        "guard": true,
+        "children": 0
+      },
+      {
+        "at": 30387.200000047684,
+        "guard": true,
+        "children": 0
+      }
+    ],
+    "leave-in": [
+      {
+        "at": 30455.200000047684,
+        "enter": 0,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 30577.300000071526,
+        "enter": 0.13369999992847445,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 30675.5,
+        "enter": 0.2336000000238419,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 30771.600000023842,
+        "enter": 0.3166999999284745,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 30872,
+        "enter": 0.36,
+        "guard": false,
+        "children": 1
+      },
+      {
+        "at": 30973.700000047684,
+        "enter": 0.36,
+        "guard": false,
+        "children": 1
+      },
+      {
+        "at": 31074,
+        "enter": 0.36,
+        "guard": false,
+        "children": 1
+      },
+      {
+        "at": 31172.300000071526,
+        "enter": 0.36,
+        "guard": false,
+        "children": 1
+      },
+      {
+        "at": 31272.800000071526,
+        "enter": 0.36,
+        "guard": false,
+        "children": 1
+      }
+    ],
+    "leave-out": [
+      {
+        "at": 31379.5,
+        "exit": 0,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 31491.899999976158,
+        "exit": 0.11620000004768372,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 31598.899999976158,
+        "exit": 0.2171000000238419,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 31688.800000071526,
+        "guard": true,
+        "children": 0
+      },
+      {
+        "at": 31773.100000023842,
+        "guard": true,
+        "children": 0
+      },
+      {
+        "at": 31856.100000023842,
+        "guard": true,
+        "children": 0
+      },
+      {
+        "at": 31940,
+        "guard": true,
+        "children": 0
+      },
+      {
+        "at": 32023.800000071526,
+        "guard": true,
+        "children": 0
+      },
+      {
+        "at": 32112.300000071526,
+        "guard": true,
+        "children": 0
+      }
+    ],
+    "close-in": [
+      {
+        "at": 32192.600000023842,
+        "enter": 0,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 32301.100000023842,
+        "enter": 0.10039999997615814,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 32393.200000047684,
+        "enter": 0.20089999997615812,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 32494.600000023842,
+        "enter": 0.3007000000476837,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 32592,
+        "enter": 0.4,
+        "guard": false,
+        "children": 1
+      },
+      {
+        "at": 32696.100000023842,
+        "enter": 0.4,
+        "guard": false,
+        "children": 1
+      },
+      {
+        "at": 32792.800000071526,
+        "enter": 0.4,
+        "guard": false,
+        "children": 1
+      },
+      {
+        "at": 32891.60000002384,
+        "enter": 0.4,
+        "guard": false,
+        "children": 1
+      },
+      {
+        "at": 32993.200000047684,
+        "enter": 0.4,
+        "guard": false,
+        "children": 1
+      }
+    ],
+    "close-out": [
+      {
+        "at": 33167.60000002384,
+        "exit": 0,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 33261.5,
+        "exit": 0.09999999999999999,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 33359.300000071526,
+        "exit": 0.1995,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 33470.800000071526,
+        "guard": true,
+        "children": 0
+      },
+      {
+        "at": 33564.89999997616,
+        "guard": true,
+        "children": 0
+      },
+      {
+        "at": 33651.5,
+        "guard": true,
+        "children": 0
+      },
+      {
+        "at": 33731.60000002384,
+        "guard": true,
+        "children": 0
+      },
+      {
+        "at": 33815.200000047684,
+        "guard": true,
+        "children": 0
+      },
+      {
+        "at": 33899.39999997616,
+        "guard": true,
+        "children": 0
+      }
+    ],
+    "resign-in": [
+      {
+        "at": 33986.800000071526,
+        "enter": 0,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 34141.89999997616,
+        "enter": 0.1665,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 34234.10000002384,
+        "enter": 0.24979999995231628,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 34315.39999997616,
+        "enter": 0.3,
+        "guard": false,
+        "children": 1
+      },
+      {
+        "at": 34403.700000047684,
+        "enter": 0.3,
+        "guard": false,
+        "children": 1
+      },
+      {
+        "at": 34482.800000071526,
+        "enter": 0.3,
+        "guard": false,
+        "children": 1
+      },
+      {
+        "at": 34566.300000071526,
+        "enter": 0.3,
+        "guard": false,
+        "children": 1
+      },
+      {
+        "at": 34649.800000071526,
+        "enter": 0.3,
+        "guard": false,
+        "children": 1
+      },
+      {
+        "at": 34733,
+        "enter": 0.3,
+        "guard": false,
+        "children": 1
+      }
+    ],
+    "resign-out": [
+      {
+        "at": 34845.200000047684,
+        "exit": 0,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 34994.200000047684,
+        "exit": 0.1632999999523163,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 35089.200000047684,
+        "guard": true,
+        "children": 0
+      },
+      {
+        "at": 35171,
+        "guard": true,
+        "children": 0
+      },
+      {
+        "at": 35252.700000047684,
+        "guard": true,
+        "children": 0
+      },
+      {
+        "at": 35318.800000071526,
+        "guard": true,
+        "children": 0
+      },
+      {
+        "at": 35387.60000002384,
+        "guard": true,
+        "children": 0
+      },
+      {
+        "at": 35451.300000071526,
+        "guard": true,
+        "children": 0
+      },
+      {
+        "at": 35518.39999997616,
+        "guard": true,
+        "children": 0
+      }
+    ],
+    "reconnect-in": [
+      {
+        "at": 35602.10000002384,
+        "enter": 0.020399999976158142,
+        "exit": 0.020399999976158142,
+        "guard": true,
+        "children": 2
+      },
+      {
+        "at": 35721.60000002384,
+        "enter": 0.13349999999999998,
+        "exit": 0.13349999999999998,
+        "guard": true,
+        "children": 2
+      },
+      {
+        "at": 35819,
+        "enter": 0.22,
+        "guard": false,
+        "children": 1
+      },
+      {
+        "at": 35899.10000002384,
+        "enter": 0.22,
+        "guard": false,
+        "children": 1
+      },
+      {
+        "at": 35983.5,
+        "enter": 0.22,
+        "guard": false,
+        "children": 1
+      },
+      {
+        "at": 36066.200000047684,
+        "enter": 0.22,
+        "guard": false,
+        "children": 1
+      },
+      {
+        "at": 36149.10000002384,
+        "enter": 0.22,
+        "guard": false,
+        "children": 1
+      },
+      {
+        "at": 36233.10000002384,
+        "enter": 0.22,
+        "guard": false,
+        "children": 1
+      },
+      {
+        "at": 36316.5,
+        "enter": 0.22,
+        "guard": false,
+        "children": 1
+      }
+    ],
+    "reconnect-out": [
+      {
+        "at": 36418.5,
+        "exit": 0,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 36576,
+        "exit": 0.16589999997615815,
+        "guard": true,
+        "children": 1
+      },
+      {
+        "at": 36662.700000047684,
+        "guard": true,
+        "children": 0
+      },
+      {
+        "at": 36740.39999997616,
+        "guard": true,
+        "children": 0
+      },
+      {
+        "at": 36822.300000071526,
+        "guard": true,
+        "children": 0
+      },
+      {
+        "at": 36904.200000047684,
+        "guard": true,
+        "children": 0
+      },
+      {
+        "at": 36990.5,
+        "guard": true,
+        "children": 0
+      },
+      {
+        "at": 37075.39999997616,
+        "guard": true,
+        "children": 0
+      },
+      {
+        "at": 37154.800000071526,
+        "guard": true,
+        "children": 0
+      }
+    ]
+  },
+  "previews": "modal-motion/<kind>.gif and <kind>.jpg; frames captured from the running Web build"
+}

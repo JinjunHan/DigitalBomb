@@ -1,4 +1,6 @@
 import { _decorator, Component, Node, UITransform, Label, Graphics, Color, Layers, view, ResolutionPolicy, resources, SpriteFrame, Sprite, Texture2D, profiler, tween, Tween, UIOpacity, Vec3, EditBox, input, Input, EventKeyboard, KeyCode, game, Game, BlockInputEvents, ScrollView, Mask, Vec2, Font, Rect } from 'cc';
+import { ModalLayer } from './ModalLayer';
+import type { ModalKind } from './shared/modal-motion';
 import { MODAL_RECTS } from './shared/modal-art';
 import { confirmationValid, type ConfirmationContext, type ConfirmationKind } from './shared/modal-state';
 import { matchingHourglass } from './shared/matching-hourglass';
@@ -18,6 +20,7 @@ export class GameApp extends Component {
   private audio!: GameAudio;
   private net = new Connection(); private root!: Node; private scenery!: SceneBackdrop;
   private effects!: Node; private seenGuesses = 0; private submitting = false;
+  private modals!: ModalLayer;
   private modalArt = new Map<string, SpriteFrame>();
   private modalArtReady = false;
   private modalArtFailed = false;
@@ -67,6 +70,7 @@ export class GameApp extends Component {
     this.root?.getComponent(UITransform)?.setContentSize(750, this.screenHeight);
     this.effects?.getComponent(UITransform)?.setContentSize(750, this.screenHeight);
     this.scenery?.resize(this.screenHeight);
+    this.modals?.resize(this.screenHeight);
     this.clearEffects(); this.render();
   };
   onLoad() {
@@ -74,6 +78,7 @@ export class GameApp extends Component {
     this.scenery = new SceneBackdrop(this.node);
     this.root = new Node('Interface'); this.node.addChild(this.root); this.root.layer = Layers.Enum.UI_2D; this.root.addComponent(UITransform).setContentSize(750, 1334);
     this.effects = new Node('FeedbackLayer'); this.effects.layer = Layers.Enum.UI_2D; this.node.addChild(this.effects); this.effects.addComponent(UITransform).setContentSize(750, 1334);
+    this.modals = new ModalLayer(this.node);
     this.audio = new GameAudio(this.node);
     this.net.onState = () => this.stateChanged(); this.net.onStatus = () => this.render(); this.net.onError = s => this.toast(s);
     resources.load('art/opponent/texture', Texture2D, (err, texture) => { if (!err) { const sf = new SpriteFrame(); sf.texture = texture; this.opponentArt = sf; this.render(); } });
@@ -138,7 +143,7 @@ export class GameApp extends Component {
     view.on('canvas-resize', this.resizeLayout, this);
     this.resizeLayout(); this.connect(); this.schedule(this.updateTimer, 0.2);
   }
-  onDestroy() { this.stopJoinMotion(); this.scenery?.destroy(); view.off('canvas-resize', this.resizeLayout, this); this.audio.dispose(); if (this.profilePanel) Tween.stopAllByTarget(this.profilePanel); this.clearEffects(); this.net.stop(); input.off(Input.EventType.KEY_DOWN, this.onKey, this); game.off(Game.EVENT_SHOW, this.onShow, this); game.off(Game.EVENT_HIDE, this.onHide, this); }
+  onDestroy() { this.modals?.destroy(); this.stopJoinMotion(); this.scenery?.destroy(); view.off('canvas-resize', this.resizeLayout, this); this.audio.dispose(); if (this.profilePanel) Tween.stopAllByTarget(this.profilePanel); this.clearEffects(); this.net.stop(); input.off(Input.EventType.KEY_DOWN, this.onKey, this); game.off(Game.EVENT_SHOW, this.onShow, this); game.off(Game.EVENT_HIDE, this.onHide, this); }
   private onHide() { this.audio.background(true); }
   private onShow() { this.audio.background(false); if (this.net.online) this.net.command('sync').catch(() => {}); }
   private async connect() { try { await this.net.start(); } catch (e) { this.toast((e as Error).message); } }
@@ -318,8 +323,9 @@ export class GameApp extends Component {
     else if (this.page === 'join') this.join();
     else if (this.page === 'profile') this.profile();
     else this.lobby();
-    if (s && !this.net.online) this.artModal('reconnect');
-    else if (this.overlay) this.modal();
+    const modalKey = s && !this.net.online ? 'reconnect' : this.modalKey();
+    this.modals.begin(this.modalArtReady ? modalKey : undefined, read('motion', '1') === '1');
+    if (modalKey) this.artModal(modalKey);
     if (this.notice && Date.now() < this.noticeUntil) {
       this.box(375, 1278, 700, 62, C.dark); this.toastLabel = this.text(this.notice, 375, 1278, 22, C.cream, 670, 58);
     }
@@ -545,7 +551,7 @@ export class GameApp extends Component {
   }
   private onKey(e: EventKeyboard) {
     this.audio.unlock();
-    if (this.overlay || this.page === 'profile' && !this.net.state?.room || !this.net.online || this.busy) return;
+    if (this.modals.node.active || this.overlay || this.page === 'profile' && !this.net.state?.room || !this.net.online || this.busy) return;
     const r = this.net.state?.room;
     const context = !r && this.page === 'join' ? 'join' : r?.phase === 'preparing' && !r.ownSecret ? 'secret' : r && ['playing', 'reply'].includes(r.phase) && r.current === this.net.state?.me.id ? 'guess' : null;
     if (!context) return;
@@ -883,6 +889,7 @@ export class GameApp extends Component {
   update(dt: number) {
     this.scenery?.update(dt);
     this.applyMatchingMotion();
+    this.modals?.update(dt, read('motion', '1') === '1');
     if (!this.profileMotion || !this.profilePanel?.isValid) return;
     // Show the initial pose before advancing. Cap a stalled frame instead of skipping to the end.
     if (++this.profileMotionFrames <= 2) return;
@@ -915,18 +922,15 @@ export class GameApp extends Component {
     this.render();
     try { await this.connect(); } finally { this.reconnecting = false; this.render(); }
   }
-  private modal() {
-    const key = this.overlay === 'confirm' ? this.confirmation?.kind
-      : ({ settings: 'settings', rules: 'rules', gameMenu: 'menu', guessRecords: 'live', resultRecords: 'result' } as Record<string, string>)[this.overlay];
-    if (key) this.artModal(key);
+  private modalKey(): ModalKind | undefined {
+    return this.overlay === 'confirm' ? this.confirmation?.kind
+      : ({ settings: 'settings', rules: 'rules', gameMenu: 'menu', guessRecords: 'live', resultRecords: 'result' } as Record<string, ModalKind>)[this.overlay];
   }
   /** All artwork, text and hit targets share one source-space transform. */
-  private artModal(key: string) {
-    const blocker = this.n('ModalBlocker', 375, 667, 750, this.screenHeight); blocker.setPosition(0, 0);
-    blocker.addComponent(BlockInputEvents);
-    const shade = blocker.addComponent(Graphics); shade.fillColor = new Color(5, 17, 16, 170);
-    shade.rect(-375, -this.screenHeight / 2, 750, this.screenHeight); shade.fill();
+  private artModal(key: ModalKind) {
     if (!this.modalArtReady) {
+      const blocker = this.n('ModalBlocker', 375, 667, 750, this.screenHeight); blocker.setPosition(0, 0); blocker.addComponent(BlockInputEvents);
+      const shade = blocker.addComponent(Graphics); shade.fillColor = new Color(5, 17, 16, 170); shade.rect(-375, -this.screenHeight / 2, 750, this.screenHeight); shade.fill();
       this.text(this.modalArtFailed ? '弹窗素材加载失败，请返回重试' : '正在加载弹窗素材…', 375, 620, 28);
       this.button(key === 'reconnect' ? '重新连接' : '返回', 375, 800, 360, 80, key === 'reconnect' ? () => this.retryConnection() : this.closeModal);
       return;
@@ -935,7 +939,7 @@ export class GameApp extends Component {
     const top = Math.min(bounds[1], MODAL_RECTS[key + '-back']?.[1] ?? bounds[1]);
     const available = this.screenHeight - this.layoutTop - bottomSafeInset() - 32;
     const scale = Math.min(750 / 941, available / (bounds[3] - top + 50));
-    const group = this.n('Modal-' + key, 375, 667, 941, 1672);
+    const group = this.n('Modal-' + key, 375, 667, 941, 1672, this.modals.node);
     group.setScale(scale, scale, 1);
     group.setPosition(0, this.screenHeight / 2 - this.layoutTop - (available - (bounds[3] - top) * scale) / 2 + top * scale);
     const place = (n: Node, x: number, y: number) => { n.setPosition(x - 470.5, -y); return n; };
@@ -947,7 +951,7 @@ export class GameApp extends Component {
       if (action) {
         n.on(Node.EventType.TOUCH_START, () => { if (read('motion', '1') === '1') n.setScale(.98, .98, 1); });
         n.on(Node.EventType.TOUCH_CANCEL, () => n.setScale(1, 1, 1));
-        n.on(Node.EventType.TOUCH_END, () => { n.setScale(1, 1, 1); this.audio.unlock(); this.audio.play('tap'); action(); });
+        n.on(Node.EventType.TOUCH_END, () => { n.setScale(1, 1, 1); if (!this.modals.interactive) return; this.audio.unlock(); this.audio.play('tap'); action(); });
       }
       return n;
     };
@@ -1021,6 +1025,7 @@ export class GameApp extends Component {
       }
       if (live) art('live-latest', () => scroll.scrollToBottom(.2));
     }
+    this.modals.attach(group, scale);
   }
   private updateTimer = () => {
     const s = this.net.state, r = s?.room, now = this.net.now();

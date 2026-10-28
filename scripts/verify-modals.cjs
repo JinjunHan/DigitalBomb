@@ -46,16 +46,17 @@ const { resolve } = require('node:path');
     });
     const output = resolve('docs/verification'); mkdirSync(output, { recursive: true });
     const shot = name => page.screenshot({ path: resolve(output, `modals-${name}.png`) });
-    const fixture = kind => page.evaluate(kind => window.fixture(kind), kind);
+    const fixture = async kind => { await page.evaluate(kind => window.fixture(kind), kind); await page.waitForFunction(() => app.modals.interactive); };
     const click = async (name, index = 0) => {
       const point = await page.evaluate(({ name, index }) => {
         const matches = [];
-        function visit(n) { if (n.name === name) matches.push(n); n.children.forEach(visit); } visit(app.root);
+        function visit(n) { if (n.name === name) matches.push(n); n.children.forEach(visit); } visit(app.modals.node);
         const n = matches[index]; if (!n) throw Error('Missing control ' + name);
         const r = n.components.find(c => c.getBoundingBoxToWorld).getBoundingBoxToWorld();
         return { x: (r.x + r.width / 2) * innerWidth / 750, y: innerHeight - (r.y + r.height / 2) * innerHeight / app.screenHeight };
       }, { name, index });
       await page.mouse.click(point.x, point.y); await page.waitForTimeout(80);
+      await page.waitForFunction(() => !app.modals.node.active || app.modals.interactive);
     };
     for (const kind of ['settings', 'rules', 'menu', 'live', 'result', 'lock', 'repeat', 'leave', 'close', 'resign']) { await fixture(kind); await shot(kind); }
     for (const kind of ['lock', 'repeat', 'leave', 'close', 'resign']) {
@@ -82,7 +83,7 @@ const { resolve } = require('node:path');
     await fixture('live');
     // Real pointer drag; ScrollView retains the resulting offset on redraw.
     const point = await page.evaluate(() => {
-      const n = app.root.getChildByName('Modal-live').getChildByName('ModalRecordsViewport');
+      const n = app.modals.node.getChildByName('Modal-live').getChildByName('ModalRecordsViewport');
       return { x: n.worldPosition.x * innerWidth / 750, y: innerHeight - n.worldPosition.y * innerHeight / app.screenHeight };
     });
     await page.mouse.move(point.x, point.y - 70); await page.mouse.down(); await page.mouse.move(point.x, point.y + 90, { steps: 12 }); await page.mouse.up();
@@ -98,12 +99,13 @@ const { resolve } = require('node:path');
     await click('ModalArt-live-done'); assert.equal(await page.evaluate(() => app.overlay), '');
     await fixture('repeat'); await page.evaluate(() => { app.net.state.room.turn++; app.stateChanged(); });
     assert.equal(await page.evaluate(() => app.overlay), ''); checks.push('stale turn dismissed');
+    if (process.argv.includes('--motion')) await require('./verify-modal-motion.cjs')(page, output);
     await page.setViewportSize({ width: 375, height: 667 }); await fixture('live'); await shot('short-records');
     await page.evaluate(() => { app.net.state.room.history = []; app.render(); }); await shot('short-empty');
     await fixture('settings'); await shot('short-settings');
     await fixture('rules'); await shot('short-rules');
     await page.setViewportSize({ width: 390, height: 844 }); await fixture('menu');
-    await page.evaluate(() => { app.net.online = false; app.render(); }); await shot('reconnect');
+    await page.evaluate(() => { app.net.online = false; app.render(); }); await page.waitForFunction(() => app.modals.interactive); await shot('reconnect');
     await click('ModalArt-reconnect-retry'); await page.waitForFunction(() => app.net.online);
     assert.equal(await page.evaluate(() => app.reconnecting), false); checks.push('local server reauthenticated after retry');
     assert.deepEqual(errors, []);
