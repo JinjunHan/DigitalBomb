@@ -1,4 +1,4 @@
-import { _decorator, Component, Node, UITransform, Label, Graphics, Color, Layers, view, ResolutionPolicy, resources, SpriteFrame, Sprite, Texture2D, profiler, tween, Tween, UIOpacity, Vec3, EditBox, input, Input, EventKeyboard, KeyCode, game, Game, BlockInputEvents, ScrollView, Mask, Vec2 } from 'cc';
+import { _decorator, Component, Node, UITransform, Label, Graphics, Color, Layers, view, ResolutionPolicy, resources, SpriteFrame, Sprite, Texture2D, profiler, tween, Tween, UIOpacity, Vec3, EditBox, input, Input, EventKeyboard, KeyCode, game, Game, BlockInputEvents, ScrollView, Mask, Vec2, Font } from 'cc';
 import { SceneBackdrop } from './SceneBackdrop';
 import { InputEditSession } from './shared/input-edit-session';
 import { profileTransition } from './shared/profile-transition';
@@ -19,6 +19,7 @@ export class GameApp extends Component {
   private profileArt = new Map<string, SpriteFrame>();
   private friendArt = new Map<string, SpriteFrame>();
   private friendArtReady = false;
+  private friendDigitFont?: Font;
   private profilePanel?: Node;
   private profileBack?: Node;
   private profileBackRest = new Vec3();
@@ -71,6 +72,10 @@ export class GameApp extends Component {
         const sf = new SpriteFrame(); sf.texture = texture; this.profileArt.set(name, sf); this.render();
       });
     }
+    resources.load('fonts/friend-digits/FriendDigits', Font, (err, font) => {
+      if (err || !this.isValid) return;
+      this.friendDigitFont = font; this.render();
+    });
     const friendNames = ['back', 'heading', 'waiting', 'count', 'paper', 'copy', 'nameplate', 'seated', 'close'];
     for (const name of friendNames) {
       resources.load('art/friend/' + name + '/texture', Texture2D, (err, texture) => {
@@ -382,7 +387,11 @@ export class GameApp extends Component {
     const group = this.n('FriendRoom', 375, 667, 941, 1672);
     group.setPosition(0, this.screenHeight / 2 - this.layoutTop + 32 * scale);
     group.setScale(scale, scale, 1);
-    const place = (node: Node, x: number, y: number) => { node.setPosition(x - 470.5, -y); return node; };
+    // Keep navigation fixed; use tall-screen space below the body, like the reference.
+    const bodyBottom = this.layoutTop + (1495 - 32) * scale;
+    const targetBottom = this.screenHeight - bottomSafeInset() - Math.min(120, this.screenHeight * .09);
+    const bodyShift = Math.max(0, targetBottom - bodyBottom) / scale;
+    const place = (node: Node, x: number, y: number) => { node.setPosition(x - 470.5, -y - (y > 128 ? bodyShift : 0)); return node; };
     const art = (name: string, x: number, y: number, w: number, h: number, action?: () => void) => {
       const node = place(this.n('Friend-' + name, 375, 667, w, h, group), x, y);
       const sprite = node.addComponent(Sprite); sprite.spriteFrame = this.friendArt.get(name)!;
@@ -407,7 +416,13 @@ export class GameApp extends Component {
     art('count', 471.5, 488, 187, 76);
     label(`${r.players.length}/2`, 492, 487, 37, C.cream, 78, 50);
     art('paper', 478.5, 814.5, 807, 561);
-    for (let i = 0; i < 4; i++) label(r.code?.[i] ?? '—', 253 + i * 145, 724, 105, '#191007', 108, 132);
+    for (let i = 0; i < 4; i++) {
+      const digit = label(r.code?.[i] ?? '—', [254, 398, 545, 687][i], 720, 105, '#191007', 112, 140);
+      // Embedded lining figures share a baseline; system Georgia uses old-style descenders.
+      digit.font = this.friendDigitFont ?? null;
+      digit.fontFamily = 'serif'; digit.isBold = !this.friendDigitFont;
+      digit.lineHeight = 112; digit.enableWrapText = false;
+    }
     art('copy', 470.5, 872.5, 397, 105, () => { if (r.code) { copy(r.code); this.toast('房间口令：' + r.code); } });
     this.timerLabel = label('', 569, 1024, 27, C.ink, 88, 40);
     const me = this.net.state!.me;

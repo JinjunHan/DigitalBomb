@@ -30,3 +30,11 @@ Web 实测（本地 Node 服务，非正式服务器）：
 - 深浅底切图检查见本目录 contact-sheet.jpg、light-sheet.jpg。
 
 `npm test`：24/24；`npm run typecheck`、`npm run typecheck:client` 通过。Web 辅助构建及 `npm run build:wechat` 成功；微信主包 1911.7 KB、resources 分包 18588.5 KB，包体检查通过。导出目录 `build/wechatgame/`。尚未进行微信开发者工具/真机安全区、剪贴板核验或正式发布。本页面沿用已批准共用场景与资料头像框，并非整张设计图背景逐像素复刻。
+
+## 数字与长屏位置修正
+
+口令不再依赖系统 Georgia 的旧式数字。新增 `assets/resources/fonts/friend-digits/FriendDigits.ttf`：Google Fonts Libre Baskerville 的 700 字重、lining/tabular 数字子集，仅保留 0–9 与破折号，并重命名为 FriendDigits。SIL OFL 授权在同目录 OFL.txt；这是可再分发字体的子集，不是从原稿猜出字体名称。原字体来源：https://github.com/google/fonts/tree/main/ofl/librebaskerville 。复现脚本：`scripts/build-friend-digits.py`，使用 fonttools 实例化静态字重，将 lnum/tnum 映射固定到 cmap，避免微信运行时 OpenType 特性差异。
+
+四个卡槽分别以设计稿中心 x=254/398/545/687 定位，统一字号、行高和基线，不逐字补偿坐标。返回与标题保持原位；下方控件作为同一整体使用长屏剩余空间下移，关闭按钮底部保留安全区及约 9%（上限 120 设计单位）的构图留白。短屏空间不足时不额外下移，保持所有控件等比缩放。
+
+修正验证：客户端类型检查、Web 构建和微信导出成功，主包 1912.1 KB、resources 分包 18596.1 KB。Web 390×844 长屏及 375×600 短屏已检查，短屏关闭按钮与取消确认可用；截图为 `docs/verification/friend-room-adjusted-tall.png`、`friend-room-adjusted-short.png`，0–9 字形基线检查为 `friend-digits-all.png`。本轮未运行微信开发者工具/真机，需重新编译本地导出确认微信字体加载和实际安全区效果。
