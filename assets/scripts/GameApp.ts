@@ -1,4 +1,6 @@
 import { _decorator, Component, Node, UITransform, Label, Graphics, Color, Layers, view, ResolutionPolicy, resources, SpriteFrame, Sprite, Texture2D, profiler, tween, Tween, UIOpacity, Vec3, EditBox, input, Input, EventKeyboard, KeyCode, game, Game, BlockInputEvents, ScrollView, Mask, Vec2, Font, Rect } from 'cc';
+import { FriendReturnLayer } from './FriendReturnLayer';
+import { shouldReturnToJoin } from './shared/friend-return';
 import { ModalLayer } from './ModalLayer';
 import type { ModalKind } from './shared/modal-motion';
 import { MODAL_RECTS } from './shared/modal-art';
@@ -21,6 +23,7 @@ export class GameApp extends Component {
   private net = new Connection(); private root!: Node; private scenery!: SceneBackdrop;
   private effects!: Node; private seenGuesses = 0; private submitting = false;
   private modals!: ModalLayer;
+  private friendReturn!: FriendReturnLayer;
   private modalArt = new Map<string, SpriteFrame>();
   private modalArtReady = false;
   private modalArtFailed = false;
@@ -71,6 +74,7 @@ export class GameApp extends Component {
     this.effects?.getComponent(UITransform)?.setContentSize(750, this.screenHeight);
     this.scenery?.resize(this.screenHeight);
     this.modals?.resize(this.screenHeight);
+    this.friendReturn?.resize(this.screenHeight);
     this.clearEffects(); this.render();
   };
   onLoad() {
@@ -78,6 +82,7 @@ export class GameApp extends Component {
     this.scenery = new SceneBackdrop(this.node);
     this.root = new Node('Interface'); this.node.addChild(this.root); this.root.layer = Layers.Enum.UI_2D; this.root.addComponent(UITransform).setContentSize(750, 1334);
     this.effects = new Node('FeedbackLayer'); this.effects.layer = Layers.Enum.UI_2D; this.node.addChild(this.effects); this.effects.addComponent(UITransform).setContentSize(750, 1334);
+    this.friendReturn = new FriendReturnLayer(this.node);
     this.modals = new ModalLayer(this.node);
     this.audio = new GameAudio(this.node);
     this.net.onState = () => this.stateChanged(); this.net.onStatus = () => this.render(); this.net.onError = s => this.toast(s);
@@ -143,7 +148,7 @@ export class GameApp extends Component {
     view.on('canvas-resize', this.resizeLayout, this);
     this.resizeLayout(); this.connect(); this.schedule(this.updateTimer, 0.2);
   }
-  onDestroy() { this.modals?.destroy(); this.stopJoinMotion(); this.scenery?.destroy(); view.off('canvas-resize', this.resizeLayout, this); this.audio.dispose(); if (this.profilePanel) Tween.stopAllByTarget(this.profilePanel); this.clearEffects(); this.net.stop(); input.off(Input.EventType.KEY_DOWN, this.onKey, this); game.off(Game.EVENT_SHOW, this.onShow, this); game.off(Game.EVENT_HIDE, this.onHide, this); }
+  onDestroy() { this.friendReturn?.destroy(); this.modals?.destroy(); this.stopJoinMotion(); this.scenery?.destroy(); view.off('canvas-resize', this.resizeLayout, this); this.audio.dispose(); if (this.profilePanel) Tween.stopAllByTarget(this.profilePanel); this.clearEffects(); this.net.stop(); input.off(Input.EventType.KEY_DOWN, this.onKey, this); game.off(Game.EVENT_SHOW, this.onShow, this); game.off(Game.EVENT_HIDE, this.onHide, this); }
   private onHide() { this.audio.background(true); }
   private onShow() { this.audio.background(false); if (this.net.online) this.net.command('sync').catch(() => {}); }
   private async connect() { try { await this.net.start(); } catch (e) { this.toast((e as Error).message); } }
@@ -155,6 +160,11 @@ export class GameApp extends Component {
     }
     if (this.overlay === 'gameMenu' && (!r || !['playing', 'reply'].includes(r.phase))) this.overlay = '';
     if (this.overlay === 'guessRecords' && r && ['finished', 'cancelled'].includes(r.phase)) this.overlay = 'resultRecords';
+    if (shouldReturnToJoin(this.lastRoom, this.lastPhase, !!r, s.queuedAt !== null)) {
+      this.page = 'join';
+      const departing = this.root.getChildByName('FriendRoom');
+      if (departing && this.joinArtReady && read('motion', '1') === '1') this.friendReturn.start(departing);
+    }
     const sameRoom = !!r && r.id === this.lastRoom, oldTurn = this.lastTurn, oldPhase = this.lastPhase;
     const fresh = sameRoom && r.history.length > this.seenGuesses ? r.history[r.history.length - 1] : undefined;
     if (!sameRoom && r && r.phase === 'preparing') this.audio.play('ready');
@@ -297,6 +307,7 @@ export class GameApp extends Component {
   }
   private render() {
     if (!this.root?.isValid) return;
+    if (this.friendReturn.active && (this.net.state?.room || this.net.state?.queuedAt != null || this.page !== 'join' || read('motion', '1') !== '1')) this.friendReturn.finish();
     const keepInput = this.page === 'profile' && !this.profileMotion && !this.busy && !this.overlay
       && !this.net.state?.room && this.net.state?.queuedAt === null;
     if (keepInput && this.nicknameSession.deferRedraw()) return;
@@ -487,6 +498,7 @@ export class GameApp extends Component {
     ];
     for (const [key, rect] of keys) art('key-' + key, rect,
       () => this.digit(key === 'clear' ? '清空' : key === 'delete' ? '删除' : key, 'join'), !this.busy && this.net.online);
+    this.friendReturn.attach(group);
   }
   private stopJoinMotion() {
     for (const label of this.joinDigits) {
@@ -533,7 +545,7 @@ export class GameApp extends Component {
     labels.forEach((label, i) => { if (context === 'guess' && i === 11) return; this.button(label, 165 + i % 3 * 210, top + Math.floor(i / 3) * 80, 194, 66, () => this.digit(label, context), false, enabled && !this.busy); });
   }
   private digit(value: string, context: 'join' | 'secret' | 'guess') {
-    if (context === 'join' && (this.busy || !this.net.online)) return;
+    if (context === 'join' && (this.friendReturn.active || this.busy || !this.net.online)) return;
     this.audio.play('tap');
     let v = context === 'join' ? this.code : this.draft;
     if (value === '删除') v = v.slice(0, -1);
@@ -551,7 +563,7 @@ export class GameApp extends Component {
   }
   private onKey(e: EventKeyboard) {
     this.audio.unlock();
-    if (this.modals.node.active || this.overlay || this.page === 'profile' && !this.net.state?.room || !this.net.online || this.busy) return;
+    if (this.friendReturn.active || this.modals.node.active || this.overlay || this.page === 'profile' && !this.net.state?.room || !this.net.online || this.busy) return;
     const r = this.net.state?.room;
     const context = !r && this.page === 'join' ? 'join' : r?.phase === 'preparing' && !r.ownSecret ? 'secret' : r && ['playing', 'reply'].includes(r.phase) && r.current === this.net.state?.me.id ? 'guess' : null;
     if (!context) return;
@@ -890,6 +902,7 @@ export class GameApp extends Component {
     this.scenery?.update(dt);
     this.applyMatchingMotion();
     this.modals?.update(dt, read('motion', '1') === '1');
+    this.friendReturn?.update(dt, read('motion', '1') === '1');
     if (!this.profileMotion || !this.profilePanel?.isValid) return;
     // Show the initial pose before advancing. Cap a stalled frame instead of skipping to the end.
     if (++this.profileMotionFrames <= 2) return;

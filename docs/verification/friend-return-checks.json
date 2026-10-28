@@ -1,0 +1,108 @@
+{
+  "checks": [
+    "cancel keeps the actual friend room",
+    "rejected close does not navigate or animate",
+    "actual server close returns to join without lobby/background flash; redraw and input guards passed",
+    "motion-off returns immediately on a short screen"
+  ],
+  "errors": [],
+  "frames": [
+    {
+      "at": 4555,
+      "elapsed": 0.01660000002384186,
+      "active": true,
+      "page": "join",
+      "room": null,
+      "scene": "friend"
+    },
+    {
+      "at": 4651.799999952316,
+      "elapsed": 0.11679999995231628,
+      "active": true,
+      "page": "join",
+      "room": null,
+      "scene": "friend"
+    },
+    {
+      "at": 4747.799999952316,
+      "elapsed": 0.2167999999523163,
+      "active": true,
+      "page": "join",
+      "room": null,
+      "scene": "friend"
+    },
+    {
+      "at": 4853.5,
+      "elapsed": 0.3167999999523163,
+      "active": true,
+      "page": "join",
+      "room": null,
+      "scene": "friend"
+    },
+    {
+      "at": 4939.100000023842,
+      "elapsed": 0.4001000000238419,
+      "active": true,
+      "page": "join",
+      "room": null,
+      "scene": "friend"
+    },
+    {
+      "at": 5021.799999952316,
+      "elapsed": 0.48320000004768376,
+      "active": true,
+      "page": "join",
+      "room": null,
+      "scene": "friend"
+    },
+    {
+      "at": 5107.600000023842,
+      "elapsed": 0.5658999999761581,
+      "active": true,
+      "page": "join",
+      "room": null,
+      "scene": "friend"
+    },
+    {
+      "at": 5188.399999976158,
+      "elapsed": 0.64,
+      "active": false,
+      "page": "join",
+      "room": null,
+      "scene": "friend"
+    },
+    {
+      "at": 5271.700000047684,
+      "elapsed": 0.64,
+      "active": false,
+      "page": "join",
+      "room": null,
+      "scene": "friend"
+    },
+    {
+      "at": 5356.899999976158,
+      "elapsed": 0.64,
+      "active": false,
+      "page": "join",
+      "room": null,
+      "scene": "friend"
+    },
+    {
+      "at": 5437.700000047684,
+      "elapsed": 0.64,
+      "active": false,
+      "page": "join",
+      "room": null,
+      "scene": "friend"
+    },
+    {
+      "at": 5527.799999952316,
+      "elapsed": 0.64,
+      "active": false,
+      "page": "join",
+      "room": null,
+      "scene": "friend"
+    }
+  ],
+  "preview": "friend-return.gif; friend-return-frames.jpg"
+}
