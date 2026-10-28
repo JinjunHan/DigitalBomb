@@ -1,4 +1,6 @@
 import { _decorator, Component, Node, UITransform, Label, Graphics, Color, Layers, view, ResolutionPolicy, resources, SpriteFrame, Sprite, Texture2D, profiler, tween, Tween, UIOpacity, Vec3, EditBox, input, Input, EventKeyboard, KeyCode, game, Game, BlockInputEvents, ScrollView, Mask, Vec2, Font, Rect } from 'cc';
+import { FeedbackArt } from './FeedbackArt';
+import { feedbackEvent, cancellationArt, resultCaption, type FeedbackEvent } from './shared/feedback-state';
 import { FriendReturnLayer } from './FriendReturnLayer';
 import { shouldReturnToJoin } from './shared/friend-return';
 import { ModalLayer } from './ModalLayer';
@@ -21,6 +23,11 @@ const reasons: Record<string, string> = { same_round: '同轮破解，旗鼓相�
 @ccclass('GameApp')
 export class GameApp extends Component {
   private audio!: GameAudio;
+  private feedbackArt!: FeedbackArt;
+  private suppressFeedback = false;
+  private rematchNotice = '';
+  private loginFailed = false;
+  private endFeedbackUntil = 0;
   private net = new Connection(); private root!: Node; private scenery!: SceneBackdrop;
   private effects!: Node; private seenGuesses = 0; private submitting = false;
   private modals!: ModalLayer;
@@ -88,7 +95,8 @@ export class GameApp extends Component {
     this.friendReturn = new FriendReturnLayer(this.node);
     this.modals = new ModalLayer(this.node);
     this.audio = new GameAudio(this.node);
-    this.net.onState = () => this.stateChanged(); this.net.onStatus = () => this.render(); this.net.onError = s => this.toast(s);
+    this.feedbackArt = new FeedbackArt(() => { if (this.isValid) this.render(); });
+    this.net.onState = () => this.stateChanged(); this.net.onStatus = () => { if (!this.net.online) this.suppressFeedback = true; this.render(); }; this.net.onError = s => this.toast(s);
     resources.load('art/opponent/texture', Texture2D, (err, texture) => { if (!err) { const sf = new SpriteFrame(); sf.texture = texture; this.opponentArt = sf; this.render(); } });
     for (const name of ['title', 'machine', 'match-full', 'friend-full', 'help-full', 'settings-full', 'sound-full', 'avatar-frame', 'nickname-frame']) {
       resources.load('art/lobby/' + name + '/texture', Texture2D, (err, texture) => {
@@ -159,12 +167,14 @@ export class GameApp extends Component {
     view.on('canvas-resize', this.resizeLayout, this);
     this.resizeLayout(); this.connect(); this.schedule(this.updateTimer, 0.2);
   }
-  onDestroy() { this.friendReturn?.destroy(); this.modals?.destroy(); this.stopJoinMotion(); this.scenery?.destroy(); view.off('canvas-resize', this.resizeLayout, this); this.audio.dispose(); if (this.profilePanel) Tween.stopAllByTarget(this.profilePanel); this.clearEffects(); this.net.stop(); input.off(Input.EventType.KEY_DOWN, this.onKey, this); game.off(Game.EVENT_SHOW, this.onShow, this); game.off(Game.EVENT_HIDE, this.onHide, this); }
+  onDestroy() { if (this.feedbackArt) this.feedbackArt.disposed = true; this.friendReturn?.destroy(); this.modals?.destroy(); this.stopJoinMotion(); this.scenery?.destroy(); view.off('canvas-resize', this.resizeLayout, this); this.audio.dispose(); if (this.profilePanel) Tween.stopAllByTarget(this.profilePanel); this.clearEffects(); this.net.stop(); input.off(Input.EventType.KEY_DOWN, this.onKey, this); game.off(Game.EVENT_SHOW, this.onShow, this); game.off(Game.EVENT_HIDE, this.onHide, this); }
   private onHide() { this.audio.background(true); }
   private onShow() { this.audio.background(false); if (this.net.online) this.net.command('sync').catch(() => {}); }
-  private async connect() { try { await this.net.start(); } catch (e) { this.toast((e as Error).message); } }
+  private async connect() { this.loginFailed = false; try { await this.net.start(); } catch (e) { this.loginFailed = true; this.toast((e as Error).message); } }
   private stateChanged() {
     const s = this.net.state!, r = s.room;
+    const event = r ? feedbackEvent(r, s.me.id, { roomId: this.lastRoom, phase: this.lastPhase, guesses: this.seenGuesses }, this.suppressFeedback) : undefined;
+    this.suppressFeedback = false;
     if (this.confirmation && !confirmationValid(this.confirmation, r, s.me.id)) {
       this.confirmation = undefined; this.confirmAction = undefined;
       if (this.overlay === 'confirm') this.overlay = '';
@@ -177,31 +187,35 @@ export class GameApp extends Component {
       if (departing && this.joinArtReady && read('motion', '1') === '1') this.friendReturn.start(departing);
     }
     const sameRoom = !!r && r.id === this.lastRoom, oldTurn = this.lastTurn, oldPhase = this.lastPhase;
-    const fresh = sameRoom && r.history.length > this.seenGuesses ? r.history[r.history.length - 1] : undefined;
     if (!sameRoom && r && r.phase === 'preparing') this.audio.play('ready');
-    if (!sameRoom) { this.clearEffects(); this.submitting = false; }
+    if (!sameRoom) { this.clearEffects(); this.submitting = false; this.rematchNotice = ''; }
     this.seenGuesses = r?.history.length ?? 0;
     if ((r?.id ?? '') !== this.lastRoom) { this.draft = ''; this.recordScrolls = []; this.recordPositions.clear(); this.recordsOpponent = false; this.overlay = ''; this.lastRoom = r?.id ?? ''; this.lastTurn = -1; }
     if (r && r.turn !== this.lastTurn) { this.draft = ''; this.selected = -1; this.lastTurn = r.turn; this.openingRendered = false; }
     if (r && this.lastPhase === 'preparing' && r.phase === 'playing') { this.draft = ''; this.selected = -1; }
     this.lastPhase = r?.phase ?? '';
     const key = JSON.stringify({ ...s, serverNow: 0 }); if (key !== this.lastKey) { this.lastKey = key; this.render(); }
-    if (fresh && fresh.playerId === s.me.id && fresh.hits !== null) {
-      this.submitting = false; vibrate();
-      const title = r?.phase === 'finished' ? (r.result?.winner === s.me.id ? '破解成功 · 你赢了' : r.result?.winner ? '本局结束' : '同轮破解 · 平局') : fresh.hits === 4 ? '全部命中 · 等待对手补猜' : '猜测结果';
-      this.feedback(title, fresh.hits, fresh.digits ?? '', fresh.hits === 4 ? '四位密码全部破解' : ['暂未命中，换个思路', '找到一点线索了', '推理正在接近答案', '只差一步，继续推理'][fresh.hits]);
-    } else if (sameRoom && r?.phase === 'finished' && oldPhase !== 'finished') {
-      this.feedback(r.result?.winner === s.me.id ? '胜利' : r.result?.winner ? '再接再厉' : '旗鼓相当 · 平局', null, '', reasons[r.result?.reason ?? ''] ?? '对局结束');
+    if (r?.phase === 'cancelled') this.clearEffects();
+    if (event) {
+      this.submitting = false;
+      if (event.kind === 'end') {
+        event.caption = resultCaption(r!, s.me.id);
+        if(r!.result?.reason==='timeout')event.art=r!.result.winner===s.me.id?'timeout-end-1':'timeout-end-0';
+        if(r!.result?.reason==='reply_timeout'&&r!.result.winner!==s.me.id)event.art='timeout-end-2';
+        this.endFeedbackUntil = Date.now() + 1800;
+      }
+      this.showFeedback(event);
     } else if (sameRoom && r && r.current === s.me.id && (r.turn !== oldTurn || oldPhase === 'preparing') && ['playing', 'reply'].includes(r.phase)) {
       this.turnCue(r.phase === 'reply' ? '最后一次补猜！' : '轮到你出牌了');
     }
   }
+
   private toast(text: string) { this.notice = text; this.noticeUntil = Date.now() + 6500; this.render(); }
   private async act(action: string, payload: Record<string, unknown> = {}) {
     if (this.busy) return; this.busy = true;
     if (action === 'guess') { this.submitting = true; this.feedback('正在验证', null, String(payload.digits ?? ''), '等待牌桌确认…', true); this.render(); }
     try { await this.net.command(action, { roomId: this.net.state?.room?.id, ...payload }); if (action === 'lock') this.audio.play('ready'); }
-    catch (e) { this.audio.play('error'); if (action === 'guess') { this.submitting = false; this.clearEffects(); } this.notice = (e as Error).message; this.noticeUntil = Date.now() + 6500; }
+    catch (e) { this.audio.play('error'); if (action === 'guess') { this.submitting = false; this.clearEffects(); } this.notice = (e as Error).message; if (action === 'rematch' && /对方已离开|再战邀请已过期/.test(this.notice)) this.rematchNotice = this.notice; this.noticeUntil = Date.now() + 6500; }
     finally { this.busy = false; this.render(); }
   }
   private n(name: string, x: number, y: number, w: number, h: number, parent = this.root) {
@@ -240,53 +254,43 @@ export class GameApp extends Component {
     for (const child of [...this.effects.children]) { stop(child); child.removeFromParent(); child.destroy(); }
   }
   private feedback(title: string, hits: number | null, digits: string, caption: string, pending = false) {
-    const r = this.net.state?.room;
-    this.audio.play(pending ? 'submit' : r?.phase === 'finished' ? (r.result?.winner === this.net.state?.me.id ? 'win' : r.result?.winner ? 'lose' : 'draw') : hits === null ? 'draw' : 'hit'+hits);
+    this.showFeedback({ kind: 'own', title: pending ? '正在验证' : title, hits: hits ?? undefined, caption, art: hits === 4 ? 'own-gold' : 'own' }, pending);
+  }
+  private showFeedback(event: FeedbackEvent, pending = false) {
     this.clearEffects();
-    const group = this.n('GuessFeedback', 375, 667, 750, 1334, this.effects);
-    const panel = this.box(375, 550, 620, 290, C.dark, 24, group);
-    this.box(375, 550, 600, 270, C.teal, 20, group);
-    this.text(title, 375, 448, 29, C.gold, 570, 48, group);
-    const value = this.text(pending ? digits.split('').join('  ') : hits === null ? '◇' : '0 / 4', 375, 540, 68, C.cream, 570, 100, group);
-    this.text(caption, 375, 635, 24, C.cream, 560, 50, group);
-    const motion = read('motion', '1') === '1';
-    if (!motion) {
-      if (hits !== null) value.string = hits + ' / 4';
-      if (!pending) tween(group).delay(2).call(() => { group.destroy(); }).start();
-      return;
-    }
-    const opacity = group.addComponent(UIOpacity); opacity.opacity = 0; group.setScale(.85, .85, 1);
-    tween(opacity).to(.14, { opacity: 255 }).start();
-    tween(group).to(.22, { scale: Vec3.ONE }, { easing: 'backOut' }).start();
-    if (pending) {
-      tween(value.node).to(.35, { scale: new Vec3(1.06, 1.06, 1) }).to(.35, { scale: Vec3.ONE }).union().repeatForever().start();
-      return;
-    }
-    let reveal = tween(value.node).delay(.22);
-    if (hits !== null) {
-      for (let i = 1; i <= hits; i++) reveal = reveal.delay(.13).call(() => { value.string = i + ' / 4'; });
-      reveal.to(.1, { scale: new Vec3(1.2, 1.2, 1) }).to(.2, { scale: Vec3.ONE }, { easing: 'backOut' }).start();
-      if (hits === 0) tween(group).delay(.25).by(.06, { position: new Vec3(-9, 0, 0) }).by(.06, { position: new Vec3(18, 0, 0) }).by(.06, { position: new Vec3(-9, 0, 0) }).start();
-      if (hits === 4) {
-        for (let i = 0; i < 14; i++) {
-          const angle = i * Math.PI * 2 / 14;
-          const spark = this.text('✦', 375, 540, 24, C.gold, 40, 40, group);
-          const alpha = spark.node.addComponent(UIOpacity); alpha.opacity = 0;
-          tween(alpha).delay(.7).to(.1, { opacity: 255 }).to(.65, { opacity: 0 }).start();
-          tween(spark.node).delay(.7).by(.75, { position: new Vec3(Math.cos(angle) * 260, Math.sin(angle) * 170, 0) }, { easing: 'quadOut' }).start();
-        }
+    const available = this.screenHeight - this.layoutTop - bottomSafeInset() - 24;
+    const group = this.feedbackArt.group(this.effects, 'GuessFeedback', this.screenHeight / 2 - this.layoutTop - available * .29, Math.min(1, available / 1100));
+    const opponent = event.kind === 'opponent', own = event.kind === 'own';
+    const width = own ? 430 : event.kind === 'end' ? 480 : 650;
+    if (this.feedbackArt.ready) {
+      this.feedbackArt.image(group, event.art, 0, 0, width);
+      if (own) {
+        this.feedbackArt.label(group, event.title, 0, -94, 335, 50, 29);
+        const value = this.feedbackArt.label(group, pending ? '···' : `${event.hits} / 4`, 0, 40, 310, 100, 68);
+        value.font = this.friendDigitFont ?? null;
+        this.feedbackArt.label(group, event.caption, 0, 126, 354, 58, 22);
+      } else if (opponent) {
+        const value = this.feedbackArt.label(group, `${event.hits} / 4`, 24, -8, 285, 96, 68, event.urgent ? '#751F23' : C.ink);value.font = this.friendDigitFont ?? null;
+      } else if (event.kind === 'end') {
+        // The fixed success/failure heading remains in the artwork. Overlay actual reason below.
+        const label = this.feedbackArt.label(group, event.art.startsWith('timeout-')?'':event.caption, 0, 125, 420, 60, 23, C.ink);
+        label.node.name = 'ActualEndReason';
       }
-    }
-    tween(opacity).delay(hits === 4 ? 2.4 : 1.8).to(.25, { opacity: 0 }).call(() => { group.destroy(); }).start();
+    } else this.feedbackArt.label(group, event.title + '\n' + event.caption, 0, 0, 650, 140, 30, C.cream);
+    this.audio.play(pending ? 'submit' : opponent ? (event.urgent ? 'warning' : 'tap') : event.kind === 'timeout' ? 'warning' : event.kind === 'end' ? (this.net.state?.room?.result?.winner === this.net.state?.me.id ? 'win' : this.net.state?.room?.result?.winner ? 'lose' : 'draw') : 'hit' + event.hits);
+    if (event.urgent) vibrate();
+    const opacity = group.addComponent(UIOpacity), motion = read('motion','1') === '1', scale = group.scale.clone();
+    if (motion) { opacity.opacity = 0; group.setScale(scale.x*.92,scale.y*.92,1);tween(opacity).to(.16,{opacity:255}).start();tween(group).to(.2,{scale},{easing:'backOut'}).start(); }
+    if (motion && opponent && event.hits === 0) tween(group).by(.07,{position:new Vec3(-6,0,0)}).by(.1,{position:new Vec3(12,0,0)}).by(.07,{position:new Vec3(-6,0,0)}).start();
+    if (!pending) tween(opacity).delay(event.urgent ? 1.8 : 1.5).to(motion ? .18 : 0,{opacity:0}).call(()=>{group.destroy();}).start();
   }
   private turnCue(message: string) {
-    this.audio.play('turn');
-    this.clearEffects();
-    const group = this.n('TurnCue', 375, 667, 750, 1334, this.effects);
-    this.box(375, 927, 560, 70, C.orange, 16, group); this.text(message, 375, 927, 30, C.cream, 530, 60, group);
-    const opacity = group.addComponent(UIOpacity);
-    if (read('motion', '1') === '1') { group.setPosition(-50, 0); tween(group).to(.25, { position: Vec3.ZERO }, { easing: 'quadOut' }).start(); }
-    tween(opacity).delay(1.2).to(.2, { opacity: 0 }).call(() => { group.destroy(); }).start(); vibrate();
+    if (Date.now() < this.endFeedbackUntil) return;
+    this.audio.play('turn'); this.clearEffects();
+    const group = this.feedbackArt.group(this.effects, 'TurnCue', this.screenHeight/2-this.layoutTop-(this.screenHeight-this.layoutTop-bottomSafeInset())*.28);
+    if(this.feedbackArt.ready) this.feedbackArt.image(group,'turn',0,0,600);
+    this.feedbackArt.label(group,message,56,8,430,70,28,this.feedbackArt.ready?C.ink:C.cream);
+    const opacity=group.addComponent(UIOpacity);tween(opacity).delay(1.2).to(read('motion','1')==='1'?.18:0,{opacity:0}).call(()=>group.destroy()).start();vibrate();
   }
   private actor(y: number, height = 230) {
     if (!this.opponentArt) return;
@@ -349,11 +353,30 @@ export class GameApp extends Component {
     this.modals.begin(this.modalArtReady ? modalKey : undefined, read('motion', '1') === '1');
     if (modalKey) this.artModal(modalKey);
     if (this.notice && Date.now() < this.noticeUntil) {
-      this.box(375, 1278, 700, 62, C.dark); this.toastLabel = this.text(this.notice, 375, 1278, 22, C.cream, 670, 58);
+      if (this.feedbackArt.ready) {
+        const group=this.feedbackArt.group(this.root,'Notice',-this.screenHeight/2+bottomSafeInset()+70);
+        if(this.notice.startsWith('确认超时')) {
+          this.feedbackArt.image(group,'timeout-2',0,0,520);
+          this.toastLabel=this.feedbackArt.label(group,'',0,0,1,1,1);
+        } else {
+          this.feedbackArt.image(group,/复制/.test(this.notice)?'toast':'warning',0,0,690);
+          this.toastLabel=this.feedbackArt.label(group,this.notice,75,10,470,92,24);
+        }
+      } else { this.box(375,1278,700,62,C.dark);this.toastLabel=this.text(this.notice,375,1278,22,C.cream,670,58); }
     }
     this.updateTimer();
   }
-  private loading() { this.header('猜数字暗号'); this.text('正在连接牌桌', 375, 540, 36); this.text('四位密码，一场智力对决', 375, 610, 22); this.button('重新连接', 375, 780, 360, 84, () => this.connect(), true); }
+  private loading() {
+    if(this.feedbackArt.ready) {
+      const group=this.feedbackArt.group(this.root,'LoginStatus',0,Math.min(1,(this.screenHeight-this.layoutTop-bottomSafeInset())/720));
+      this.feedbackArt.image(group,this.loginFailed?'connection-1':'connection-0',0,0,620);
+      if(this.loginFailed) this.feedbackArt.image(group,'retry',0,180,350,()=>{if(!this.reconnecting)this.retryLogin();});
+      else this.feedbackArt.label(group,'连接中…',0,155,400,70,28);
+      return;
+    }
+    this.header('猜数字暗号');this.text(this.loginFailed?'暂时无法连接牌桌':'正在连接牌桌',375,540,36);this.button('重新连接',375,780,360,84,()=>this.retryLogin(),true);
+  }
+  private async retryLogin() { if(this.reconnecting)return;this.reconnecting=true;this.net.stop();this.net=new Connection();this.net.onState=()=>this.stateChanged();this.net.onStatus=()=>this.render();this.net.onError=s=>this.toast(s);try{await this.connect();}finally{this.reconnecting=false;this.render();} }
   /** Whole-control artwork includes lettering and icons; hit targets stay in Cocos. */
   private lobbySprite(name: string, x: number, y: number, w: number, h: number) {
     const frame = this.lobbyArt.get(name);
@@ -848,7 +871,49 @@ export class GameApp extends Component {
     const digits = this.draft; const submit = () => this.act('guess', { digits, turn: r.turn });
     if (r.history.some(h => h.playerId === this.net.state!.me.id && h.digits === this.draft)) this.ask('repeat', submit); else submit();
   }
+  private artResult(r: RoomView) {
+    const me=this.net.state!.me.id;
+    const available=this.screenHeight-this.layoutTop-bottomSafeInset()-20;
+    const scale=Math.min(750/941,available/1450);
+    const group=this.feedbackArt.group(this.root,'ArtResult',this.screenHeight/2-this.layoutTop-(available-1450*scale)/2,scale);
+    const art=(key:string,x:number,y:number,w:number,action?:()=>void)=>this.feedbackArt.image(group,key,x,y,w,action?()=>{this.audio.unlock();this.audio.play('tap');action();}:undefined);
+    const label=(text:string,x:number,y:number,w:number,h:number,size=30)=>this.feedbackArt.label(group,text,x,y,w,h,size);
+    const home=()=>{this.page='lobby';this.act('leave');};
+    if(r.phase==='cancelled') {
+      art(cancellationArt(r.result?.reason),0,650,720);
+      art('home',0,860,420,home);return;
+    }
+    const win=r.result?.winner===me, draw=!r.result?.winner;
+    art(draw?'draw-title':win?'victory-title':'defeat-title',0,win||draw?180:200,draw?550:win?500:750);
+    if(!r.rematch.includes(me)&&!this.rematchNotice)label(resultCaption(r,me),0,380,650,50,28).color=new Color(C.cream);
+    if(r.rematch.includes(me)||this.rematchNotice) {
+      const key=this.rematchNotice.includes('离开')?1:this.rematchNotice?2:0;
+      art('rematch-'+key,0,850,730);
+      if(key===0)label('等待中…',0,1080,450,65,30);
+      else art('match',0,1080,360,()=>this.act('queue'));
+      art('result-home',0,1190,360,home);return;
+    }
+    art('result-paper',0,810,840);
+    const peer=r.players.find(p=>p.id!==me);
+    const count=(id:string)=>r.history.filter(h=>h.playerId===id&&h.digits!==null).length;
+    label(`我的猜测      ${count(me)} 次`,0,620,700,70,35);
+    label(`对手猜测      ${count(peer?.id??'')} 次`,0,720,700,70,35);
+    label('我的底牌',-260,870,200,70,30);label('对手密码',-260,1010,200,70,30);
+    for(const [digits,y] of [[r.ownSecret??'',870],[r.revealed?.[peer?.id??'']??'',1010]] as const) {
+      for(let i=0;i<4;i++) {
+        const x=-75+i*116;
+        const n=this.feedbackArt.group(group,'ResultDigit',-y);n.setPosition(x,-y);
+        const sprite=n.addComponent(Sprite);sprite.spriteFrame=this.battleArt.get('card-paper')??this.joinArt.get('digit-slot')??null;sprite.sizeMode=Sprite.SizeMode.CUSTOM;n.getComponent(UITransform)!.setContentSize(98,125);
+        const digit=label(digits[i]??'—',x,y,90,110,72);digit.font=this.friendDigitFont??null;
+      }
+    }
+    art('records',0,1135,380,()=>{this.overlay='resultRecords';this.render();});
+    art('rematch',0,1260,767,()=>{if(!this.busy)this.act('rematch');});
+    art('match',-200,1390,368,()=>{if(!this.busy)this.act('queue');});
+    art('result-home',200,1390,362,home);
+  }
   private result(r: RoomView) {
+    if (this.feedbackArt.ready) { this.artResult(r); return; }
     const me = this.net.state!.me.id, win = r.result?.winner === me;
     this.header('本局结果'); this.text(r.phase === 'cancelled' ? '对局取消' : !r.result?.winner ? '平局' : win ? '胜利' : '再接再厉', 375, 375, 68, C.gold);
     this.text(reasons[r.result?.reason ?? ''] ?? '对局结束', 375, 465, 26);
@@ -1063,7 +1128,7 @@ export class GameApp extends Component {
     const state = this.net.state;
     this.net.onStatus = () => {}; this.net.onState = () => {}; this.net.stop();
     this.net = new Connection(); this.net.state = state;
-    this.net.onState = () => this.stateChanged(); this.net.onStatus = () => this.render(); this.net.onError = s => this.toast(s);
+    this.net.onState = () => this.stateChanged(); this.net.onStatus = () => { if (!this.net.online) this.suppressFeedback = true; this.render(); }; this.net.onError = s => this.toast(s);
     this.render();
     try { await this.connect(); } finally { this.reconnecting = false; this.render(); }
   }
@@ -1076,7 +1141,10 @@ export class GameApp extends Component {
     if (!this.modalArtReady) {
       const blocker = this.n('ModalBlocker', 375, 667, 750, this.screenHeight); blocker.setPosition(0, 0); blocker.addComponent(BlockInputEvents);
       const shade = blocker.addComponent(Graphics); shade.fillColor = new Color(5, 17, 16, 170); shade.rect(-375, -this.screenHeight / 2, 750, this.screenHeight); shade.fill();
-      this.text(this.modalArtFailed ? '弹窗素材加载失败，请返回重试' : '正在加载弹窗素材…', 375, 620, 28);
+      if(this.feedbackArt.ready) {
+        const group=this.feedbackArt.group(blocker,'InterfaceLoading',0,Math.min(1,(this.screenHeight-this.layoutTop-bottomSafeInset())/750));
+        this.feedbackArt.image(group,this.modalArtFailed?'connection-3':'connection-2',0,0,620);
+      } else this.text(this.modalArtFailed ? '弹窗素材加载失败，请返回重试' : '正在加载弹窗素材…', 375, 620, 28);
       this.button(key === 'reconnect' ? '重新连接' : '返回', 375, 800, 360, 80, key === 'reconnect' ? () => this.retryConnection() : this.closeModal);
       return;
     }
@@ -1156,7 +1224,11 @@ export class GameApp extends Component {
         label(h.digits ? h.digits.split('').join(' ') : '本次超时', 470, y + rowHeight / 2, 37, 280, rowHeight - 6, C.ink, content);
         label(h.hits === null ? '—' : h.hits + '位', 692, y + rowHeight / 2, 35, 120, rowHeight - 6, C.ink, content);
       });
-      if (!rows.length) label('暂无猜测记录', 470, rowTop + height / 2, 32, 580, 80);
+      if (!rows.length) {
+        if (this.feedbackArt.ready) this.feedbackArt.image(group,'empty-ledger',0,rowTop+height/2-65,200);
+        label('暂无猜测记录',470,rowTop+height/2+100,32,580,60);
+        label('完成一次猜测后，记录会显示在这里',470,rowTop+height/2+160,24,580,60);
+      }
       const scrollKey = `modal-${key}:${this.recordsOpponent}`, position = this.recordPositions.get(scrollKey);
       const max = Math.max(0, rows.length * rowHeight - height);
       scroll.scrollToOffset(new Vec2(0, position && !position.bottom ? Math.min(max, position.offset) : max));

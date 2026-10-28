@@ -1,0 +1,1638 @@
+{
+  "coordinates": "source pixel LTRB",
+  "assets": [
+    {
+      "name": "own",
+      "source": "01-own-feedback.png",
+      "rect": [
+        542,
+        30,
+        1002,
+        484
+      ],
+      "body": [
+        542,
+        82,
+        1002,
+        484
+      ],
+      "ornament": [
+        682,
+        30,
+        867,
+        187
+      ],
+      "repairs": [
+        [
+          [
+            609,
+            150,
+            938,
+            226
+          ],
+          [
+            610,
+            375,
+            950,
+            397
+          ]
+        ],
+        [
+          [
+            622,
+            257,
+            927,
+            362
+          ],
+          [
+            610,
+            375,
+            950,
+            397
+          ]
+        ],
+        [
+          [
+            592,
+            386,
+            955,
+            443
+          ],
+          [
+            610,
+            375,
+            950,
+            397
+          ]
+        ]
+      ],
+      "role": "complete fixed artwork; patches reserve live content",
+      "mask": "supersampled rounded silhouette plus raised ornament",
+      "order": "background, artwork, live labels, controls",
+      "repairSource": "assets/resources/art/modals/record-row.png, crop [190,12,420,59], mirrored texture tile; reconstructed blank area, not lossless source extraction"
+    },
+    {
+      "name": "own-gold",
+      "source": "01-own-feedback.png",
+      "rect": [
+        1040,
+        515,
+        1500,
+        969
+      ],
+      "body": [
+        1040,
+        567,
+        1500,
+        969
+      ],
+      "ornament": [
+        1180,
+        515,
+        1365,
+        672
+      ],
+      "repairs": [
+        [
+          [
+            1107,
+            635,
+            1436,
+            711
+          ],
+          [
+            610,
+            375,
+            950,
+            397
+          ]
+        ],
+        [
+          [
+            1120,
+            742,
+            1425,
+            847
+          ],
+          [
+            610,
+            375,
+            950,
+            397
+          ]
+        ],
+        [
+          [
+            1090,
+            871,
+            1453,
+            928
+          ],
+          [
+            610,
+            375,
+            950,
+            397
+          ]
+        ]
+      ],
+      "role": "complete fixed artwork; patches reserve live content",
+      "mask": "supersampled rounded silhouette plus raised ornament",
+      "order": "background, artwork, live labels, controls",
+      "repairSource": "assets/resources/art/modals/record-row.png, crop [190,12,420,59], mirrored texture tile; reconstructed blank area, not lossless source extraction"
+    },
+    {
+      "name": "opponent-0",
+      "source": "02-opponent-feedback.png",
+      "rect": [
+        89,
+        79,
+        754,
+        342
+      ],
+      "body": [
+        89,
+        107,
+        754,
+        342
+      ],
+      "ornament": null,
+      "repairs": [
+        [
+          [
+            294,
+            151,
+            604,
+            256
+          ],
+          [
+            310,
+            298,
+            500,
+            313
+          ]
+        ]
+      ],
+      "role": "complete fixed artwork; patches reserve live content",
+      "mask": "supersampled rounded silhouette plus raised ornament",
+      "order": "background, artwork, live labels, controls",
+      "repairSource": "assets/resources/art/modals/record-row.png, crop [190,12,420,59], mirrored texture tile; reconstructed blank area, not lossless source extraction"
+    },
+    {
+      "name": "opponent-1",
+      "source": "02-opponent-feedback.png",
+      "rect": [
+        783,
+        79,
+        1448,
+        342
+      ],
+      "body": [
+        783,
+        107,
+        1448,
+        342
+      ],
+      "ornament": null,
+      "repairs": [
+        [
+          [
+            988,
+            151,
+            1298,
+            256
+          ],
+          [
+            310,
+            298,
+            500,
+            313
+          ]
+        ]
+      ],
+      "role": "complete fixed artwork; patches reserve live content",
+      "mask": "supersampled rounded silhouette plus raised ornament",
+      "order": "background, artwork, live labels, controls",
+      "repairSource": "assets/resources/art/modals/record-row.png, crop [190,12,420,59], mirrored texture tile; reconstructed blank area, not lossless source extraction"
+    },
+    {
+      "name": "opponent-2",
+      "source": "02-opponent-feedback.png",
+      "rect": [
+        89,
+        374,
+        754,
+        637
+      ],
+      "body": [
+        89,
+        402,
+        754,
+        637
+      ],
+      "ornament": null,
+      "repairs": [
+        [
+          [
+            294,
+            446,
+            604,
+            551
+          ],
+          [
+            310,
+            298,
+            500,
+            313
+          ]
+        ]
+      ],
+      "role": "complete fixed artwork; patches reserve live content",
+      "mask": "supersampled rounded silhouette plus raised ornament",
+      "order": "background, artwork, live labels, controls",
+      "repairSource": "assets/resources/art/modals/record-row.png, crop [190,12,420,59], mirrored texture tile; reconstructed blank area, not lossless source extraction"
+    },
+    {
+      "name": "opponent-3",
+      "source": "02-opponent-feedback.png",
+      "rect": [
+        783,
+        374,
+        1448,
+        637
+      ],
+      "body": [
+        783,
+        402,
+        1448,
+        637
+      ],
+      "ornament": null,
+      "repairs": [
+        [
+          [
+            988,
+            446,
+            1298,
+            551
+          ],
+          [
+            310,
+            298,
+            500,
+            313
+          ]
+        ]
+      ],
+      "role": "complete fixed artwork; patches reserve live content",
+      "mask": "supersampled rounded silhouette plus raised ornament",
+      "order": "background, artwork, live labels, controls",
+      "repairSource": "assets/resources/art/modals/record-row.png, crop [190,12,420,59], mirrored texture tile; reconstructed blank area, not lossless source extraction"
+    },
+    {
+      "name": "opponent-4",
+      "source": "02-opponent-feedback.png",
+      "rect": [
+        89,
+        667,
+        754,
+        930
+      ],
+      "body": [
+        89,
+        695,
+        754,
+        930
+      ],
+      "ornament": null,
+      "repairs": [
+        [
+          [
+            294,
+            739,
+            604,
+            844
+          ],
+          [
+            310,
+            298,
+            500,
+            313
+          ]
+        ]
+      ],
+      "role": "complete fixed artwork; patches reserve live content",
+      "mask": "supersampled rounded silhouette plus raised ornament",
+      "order": "background, artwork, live labels, controls",
+      "repairSource": "assets/resources/art/modals/record-row.png, crop [190,12,420,59], mirrored texture tile; reconstructed blank area, not lossless source extraction"
+    },
+    {
+      "name": "opponent-5",
+      "source": "02-opponent-feedback.png",
+      "rect": [
+        783,
+        667,
+        1448,
+        930
+      ],
+      "body": [
+        783,
+        695,
+        1448,
+        930
+      ],
+      "ornament": null,
+      "repairs": [
+        [
+          [
+            988,
+            739,
+            1298,
+            844
+          ],
+          [
+            310,
+            298,
+            500,
+            313
+          ]
+        ]
+      ],
+      "role": "complete fixed artwork; patches reserve live content",
+      "mask": "supersampled rounded silhouette plus raised ornament",
+      "order": "background, artwork, live labels, controls",
+      "repairSource": "assets/resources/art/modals/record-row.png, crop [190,12,420,59], mirrored texture tile; reconstructed blank area, not lossless source extraction"
+    },
+    {
+      "name": "timeout-0",
+      "source": "04-timeout-states.png",
+      "rect": [
+        34,
+        107,
+        532,
+        348
+      ],
+      "body": [
+        34,
+        152,
+        532,
+        348
+      ],
+      "ornament": [
+        233.0,
+        107,
+        333.0,
+        207
+      ],
+      "repairs": [],
+      "role": "complete fixed artwork; patches reserve live content",
+      "mask": "supersampled rounded silhouette plus raised ornament",
+      "order": "background, artwork, live labels, controls",
+      "repairSource": "assets/resources/art/modals/record-row.png, crop [190,12,420,59], mirrored texture tile; reconstructed blank area, not lossless source extraction"
+    },
+    {
+      "name": "timeout-1",
+      "source": "04-timeout-states.png",
+      "rect": [
+        540,
+        107,
+        998,
+        348
+      ],
+      "body": [
+        540,
+        152,
+        998,
+        348
+      ],
+      "ornament": [
+        719.0,
+        107,
+        819.0,
+        207
+      ],
+      "repairs": [],
+      "role": "complete fixed artwork; patches reserve live content",
+      "mask": "supersampled rounded silhouette plus raised ornament",
+      "order": "background, artwork, live labels, controls",
+      "repairSource": "assets/resources/art/modals/record-row.png, crop [190,12,420,59], mirrored texture tile; reconstructed blank area, not lossless source extraction"
+    },
+    {
+      "name": "timeout-2",
+      "source": "04-timeout-states.png",
+      "rect": [
+        1006,
+        107,
+        1498,
+        348
+      ],
+      "body": [
+        1006,
+        152,
+        1498,
+        348
+      ],
+      "ornament": [
+        1202.0,
+        107,
+        1302.0,
+        207
+      ],
+      "repairs": [],
+      "role": "complete fixed artwork; patches reserve live content",
+      "mask": "supersampled rounded silhouette plus raised ornament",
+      "order": "background, artwork, live labels, controls",
+      "repairSource": "assets/resources/art/modals/record-row.png, crop [190,12,420,59], mirrored texture tile; reconstructed blank area, not lossless source extraction"
+    },
+    {
+      "name": "timeout-end-0",
+      "source": "04-timeout-states.png",
+      "rect": [
+        35,
+        375,
+        531,
+        923
+      ],
+      "body": [
+        55,
+        379,
+        513,
+        901
+      ],
+      "ornament": null,
+      "repairs": [
+        [
+          [
+            95,
+            778,
+            471,
+            878
+          ],
+          [
+            100,
+            750,
+            450,
+            766
+          ]
+        ]
+      ],
+      "role": "complete fixed artwork; patches reserve live content",
+      "mask": "supersampled rounded silhouette plus raised ornament",
+      "order": "background, artwork, live labels, controls",
+      "repairSource": "assets/resources/art/modals/record-row.png, crop [190,12,420,59], mirrored texture tile; reconstructed blank area, not lossless source extraction"
+    },
+    {
+      "name": "timeout-end-1",
+      "source": "04-timeout-states.png",
+      "rect": [
+        540,
+        375,
+        998,
+        923
+      ],
+      "body": [
+        560,
+        379,
+        980,
+        901
+      ],
+      "ornament": null,
+      "repairs": [
+        [
+          [
+            600,
+            778,
+            938,
+            878
+          ],
+          [
+            100,
+            750,
+            450,
+            766
+          ]
+        ]
+      ],
+      "role": "complete fixed artwork; patches reserve live content",
+      "mask": "supersampled rounded silhouette plus raised ornament",
+      "order": "background, artwork, live labels, controls",
+      "repairSource": "assets/resources/art/modals/record-row.png, crop [190,12,420,59], mirrored texture tile; reconstructed blank area, not lossless source extraction"
+    },
+    {
+      "name": "timeout-end-2",
+      "source": "04-timeout-states.png",
+      "rect": [
+        1006,
+        375,
+        1499,
+        923
+      ],
+      "body": [
+        1026,
+        379,
+        1481,
+        901
+      ],
+      "ornament": null,
+      "repairs": [
+        [
+          [
+            1066,
+            778,
+            1439,
+            878
+          ],
+          [
+            100,
+            750,
+            450,
+            766
+          ]
+        ]
+      ],
+      "role": "complete fixed artwork; patches reserve live content",
+      "mask": "supersampled rounded silhouette plus raised ornament",
+      "order": "background, artwork, live labels, controls",
+      "repairSource": "assets/resources/art/modals/record-row.png, crop [190,12,420,59], mirrored texture tile; reconstructed blank area, not lossless source extraction"
+    },
+    {
+      "name": "cancel-0",
+      "source": "05-cancelled-states.png",
+      "rect": [
+        47,
+        101,
+        612,
+        616
+      ],
+      "body": [
+        47,
+        172,
+        612,
+        616
+      ],
+      "ornament": [
+        207,
+        101,
+        437,
+        281
+      ],
+      "repairs": [
+        [
+          [
+            157,
+            432,
+            510,
+            565
+          ],
+          [
+            120,
+            390,
+            500,
+            416
+          ]
+        ]
+      ],
+      "role": "complete fixed artwork; patches reserve live content",
+      "mask": "supersampled rounded silhouette plus raised ornament",
+      "order": "background, artwork, live labels, controls",
+      "repairSource": "assets/resources/art/modals/record-row.png, crop [190,12,420,59], mirrored texture tile; reconstructed blank area, not lossless source extraction"
+    },
+    {
+      "name": "cancel-1",
+      "source": "05-cancelled-states.png",
+      "rect": [
+        641,
+        101,
+        1206,
+        616
+      ],
+      "body": [
+        641,
+        172,
+        1206,
+        616
+      ],
+      "ornament": [
+        801,
+        101,
+        1031,
+        281
+      ],
+      "repairs": [
+        [
+          [
+            751,
+            432,
+            1104,
+            565
+          ],
+          [
+            120,
+            390,
+            500,
+            416
+          ]
+        ]
+      ],
+      "role": "complete fixed artwork; patches reserve live content",
+      "mask": "supersampled rounded silhouette plus raised ornament",
+      "order": "background, artwork, live labels, controls",
+      "repairSource": "assets/resources/art/modals/record-row.png, crop [190,12,420,59], mirrored texture tile; reconstructed blank area, not lossless source extraction"
+    },
+    {
+      "name": "cancel-2",
+      "source": "05-cancelled-states.png",
+      "rect": [
+        47,
+        657,
+        612,
+        1172
+      ],
+      "body": [
+        47,
+        728,
+        612,
+        1172
+      ],
+      "ornament": [
+        207,
+        657,
+        437,
+        837
+      ],
+      "repairs": [
+        [
+          [
+            157,
+            988,
+            510,
+            1121
+          ],
+          [
+            120,
+            390,
+            500,
+            416
+          ]
+        ]
+      ],
+      "role": "complete fixed artwork; patches reserve live content",
+      "mask": "supersampled rounded silhouette plus raised ornament",
+      "order": "background, artwork, live labels, controls",
+      "repairSource": "assets/resources/art/modals/record-row.png, crop [190,12,420,59], mirrored texture tile; reconstructed blank area, not lossless source extraction"
+    },
+    {
+      "name": "cancel-3",
+      "source": "05-cancelled-states.png",
+      "rect": [
+        641,
+        657,
+        1206,
+        1172
+      ],
+      "body": [
+        641,
+        728,
+        1206,
+        1172
+      ],
+      "ornament": [
+        801,
+        657,
+        1031,
+        837
+      ],
+      "repairs": [
+        [
+          [
+            751,
+            988,
+            1104,
+            1121
+          ],
+          [
+            120,
+            390,
+            500,
+            416
+          ]
+        ]
+      ],
+      "role": "complete fixed artwork; patches reserve live content",
+      "mask": "supersampled rounded silhouette plus raised ornament",
+      "order": "background, artwork, live labels, controls",
+      "repairSource": "assets/resources/art/modals/record-row.png, crop [190,12,420,59], mirrored texture tile; reconstructed blank area, not lossless source extraction"
+    },
+    {
+      "name": "home",
+      "source": "05-cancelled-states.png",
+      "rect": [
+        157,
+        432,
+        509,
+        551
+      ],
+      "body": [
+        157,
+        432,
+        509,
+        551
+      ],
+      "ornament": null,
+      "repairs": [],
+      "role": "complete fixed artwork; patches reserve live content",
+      "mask": "supersampled rounded silhouette plus raised ornament",
+      "order": "background, artwork, live labels, controls",
+      "repairSource": "assets/resources/art/modals/record-row.png, crop [190,12,420,59], mirrored texture tile; reconstructed blank area, not lossless source extraction"
+    },
+    {
+      "name": "toast",
+      "source": "08-notifications.png",
+      "rect": [
+        42,
+        306,
+        762,
+        495
+      ],
+      "body": [
+        42,
+        336,
+        762,
+        495
+      ],
+      "ornament": [
+        77,
+        306,
+        212,
+        456
+      ],
+      "repairs": [
+        [
+          [
+            257,
+            371,
+            722,
+            460
+          ],
+          [
+            280,
+            352,
+            660,
+            369
+          ]
+        ]
+      ],
+      "role": "complete fixed artwork; patches reserve live content",
+      "mask": "supersampled rounded silhouette plus raised ornament",
+      "order": "background, artwork, live labels, controls",
+      "repairSource": "assets/resources/art/modals/record-row.png, crop [190,12,420,59], mirrored texture tile; reconstructed blank area, not lossless source extraction"
+    },
+    {
+      "name": "warning",
+      "source": "08-notifications.png",
+      "rect": [
+        778,
+        306,
+        1499,
+        495
+      ],
+      "body": [
+        778,
+        336,
+        1499,
+        495
+      ],
+      "ornament": [
+        813,
+        306,
+        948,
+        456
+      ],
+      "repairs": [
+        [
+          [
+            993,
+            371,
+            1459,
+            460
+          ],
+          [
+            280,
+            352,
+            660,
+            369
+          ]
+        ]
+      ],
+      "role": "complete fixed artwork; patches reserve live content",
+      "mask": "supersampled rounded silhouette plus raised ornament",
+      "order": "background, artwork, live labels, controls",
+      "repairSource": "assets/resources/art/modals/record-row.png, crop [190,12,420,59], mirrored texture tile; reconstructed blank area, not lossless source extraction"
+    },
+    {
+      "name": "turn",
+      "source": "08-notifications.png",
+      "rect": [
+        42,
+        85,
+        762,
+        271
+      ],
+      "body": [
+        42,
+        115,
+        762,
+        271
+      ],
+      "ornament": [
+        77,
+        85,
+        212,
+        235
+      ],
+      "repairs": [
+        [
+          [
+            257,
+            150,
+            722,
+            236
+          ],
+          [
+            280,
+            352,
+            660,
+            369
+          ]
+        ]
+      ],
+      "role": "complete fixed artwork; patches reserve live content",
+      "mask": "supersampled rounded silhouette plus raised ornament",
+      "order": "background, artwork, live labels, controls",
+      "repairSource": "assets/resources/art/modals/record-row.png, crop [190,12,420,59], mirrored texture tile; reconstructed blank area, not lossless source extraction"
+    },
+    {
+      "name": "defeat-title",
+      "source": "06-defeat-result.png",
+      "rect": [
+        83,
+        110,
+        860,
+        414
+      ],
+      "body": [
+        83,
+        233,
+        860,
+        414
+      ],
+      "ornament": [
+        278,
+        110,
+        670,
+        315
+      ],
+      "repairs": [],
+      "role": "complete fixed artwork; patches reserve live content",
+      "mask": "supersampled rounded silhouette plus raised ornament",
+      "order": "background, artwork, live labels, controls",
+      "repairSource": "assets/resources/art/modals/record-row.png, crop [190,12,420,59], mirrored texture tile; reconstructed blank area, not lossless source extraction"
+    },
+    {
+      "name": "draw-title",
+      "source": "07-draw-result.png",
+      "rect": [
+        147,
+        114,
+        797,
+        526
+      ],
+      "body": [
+        147,
+        269,
+        797,
+        526
+      ],
+      "ornament": [
+        349,
+        114,
+        603,
+        341
+      ],
+      "repairs": [],
+      "role": "complete fixed artwork; patches reserve live content",
+      "mask": "supersampled rounded silhouette plus raised ornament",
+      "order": "background, artwork, live labels, controls",
+      "repairSource": "assets/resources/art/modals/record-row.png, crop [190,12,420,59], mirrored texture tile; reconstructed blank area, not lossless source extraction"
+    },
+    {
+      "name": "result-reason",
+      "source": "06-defeat-result.png",
+      "rect": [
+        103,
+        387,
+        842,
+        486
+      ],
+      "body": [
+        103,
+        387,
+        842,
+        486
+      ],
+      "ornament": null,
+      "repairs": [
+        [
+          [
+            150,
+            399,
+            792,
+            472
+          ],
+          [
+            106,
+            1200,
+            245,
+            1235
+          ]
+        ]
+      ],
+      "role": "complete fixed artwork; patches reserve live content",
+      "mask": "supersampled rounded silhouette plus raised ornament",
+      "order": "background, artwork, live labels, controls",
+      "repairSource": "assets/resources/art/modals/record-row.png, crop [190,12,420,59], mirrored texture tile; reconstructed blank area, not lossless source extraction"
+    },
+    {
+      "name": "result-paper",
+      "source": "06-defeat-result.png",
+      "rect": [
+        48,
+        481,
+        888,
+        1288
+      ],
+      "body": [
+        48,
+        481,
+        888,
+        1288
+      ],
+      "ornament": null,
+      "repairs": [
+        [
+          [
+            95,
+            614,
+            841,
+            1154
+          ],
+          [
+            106,
+            1200,
+            245,
+            1235
+          ]
+        ],
+        [
+          [
+            285,
+            1156,
+            665,
+            1264
+          ],
+          [
+            106,
+            1200,
+            245,
+            1235
+          ]
+        ]
+      ],
+      "role": "complete fixed artwork; patches reserve live content",
+      "mask": "supersampled rounded silhouette plus raised ornament",
+      "order": "background, artwork, live labels, controls",
+      "repairSource": "assets/resources/art/modals/record-row.png, crop [190,12,420,59], mirrored texture tile; reconstructed blank area, not lossless source extraction"
+    },
+    {
+      "name": "records",
+      "source": "06-defeat-result.png",
+      "rect": [
+        285,
+        1155,
+        665,
+        1255
+      ],
+      "body": [
+        285,
+        1155,
+        665,
+        1255
+      ],
+      "ornament": null,
+      "repairs": [],
+      "role": "complete fixed artwork; patches reserve live content",
+      "mask": "supersampled rounded silhouette plus raised ornament",
+      "order": "background, artwork, live labels, controls",
+      "repairSource": "assets/resources/art/modals/record-row.png, crop [190,12,420,59], mirrored texture tile; reconstructed blank area, not lossless source extraction"
+    },
+    {
+      "name": "rematch",
+      "source": "06-defeat-result.png",
+      "rect": [
+        89,
+        1289,
+        856,
+        1438
+      ],
+      "body": [
+        89,
+        1289,
+        856,
+        1438
+      ],
+      "ornament": null,
+      "repairs": [],
+      "role": "complete fixed artwork; patches reserve live content",
+      "mask": "supersampled rounded silhouette plus raised ornament",
+      "order": "background, artwork, live labels, controls",
+      "repairSource": "assets/resources/art/modals/record-row.png, crop [190,12,420,59], mirrored texture tile; reconstructed blank area, not lossless source extraction"
+    },
+    {
+      "name": "match",
+      "source": "06-defeat-result.png",
+      "rect": [
+        106,
+        1440,
+        474,
+        1550
+      ],
+      "body": [
+        106,
+        1440,
+        474,
+        1550
+      ],
+      "ornament": null,
+      "repairs": [],
+      "role": "complete fixed artwork; patches reserve live content",
+      "mask": "supersampled rounded silhouette plus raised ornament",
+      "order": "background, artwork, live labels, controls",
+      "repairSource": "assets/resources/art/modals/record-row.png, crop [190,12,420,59], mirrored texture tile; reconstructed blank area, not lossless source extraction"
+    },
+    {
+      "name": "result-home",
+      "source": "06-defeat-result.png",
+      "rect": [
+        489,
+        1440,
+        851,
+        1550
+      ],
+      "body": [
+        489,
+        1440,
+        851,
+        1550
+      ],
+      "ornament": null,
+      "repairs": [],
+      "role": "complete fixed artwork; patches reserve live content",
+      "mask": "supersampled rounded silhouette plus raised ornament",
+      "order": "background, artwork, live labels, controls",
+      "repairSource": "assets/resources/art/modals/record-row.png, crop [190,12,420,59], mirrored texture tile; reconstructed blank area, not lossless source extraction"
+    },
+    {
+      "name": "end-0",
+      "source": "12-end-feedback.png",
+      "rect": [
+        47,
+        113,
+        612,
+        579
+      ],
+      "body": [
+        47,
+        228,
+        612,
+        579
+      ],
+      "ornament": [
+        192,
+        113,
+        457,
+        328
+      ],
+      "repairs": [
+        [
+          [
+            107,
+            453,
+            562,
+            533
+          ],
+          [
+            120,
+            554,
+            500,
+            566
+          ]
+        ]
+      ],
+      "role": "complete fixed artwork; patches reserve live content",
+      "mask": "supersampled rounded silhouette plus raised ornament",
+      "order": "background, artwork, live labels, controls",
+      "repairSource": "assets/resources/art/modals/record-row.png, crop [190,12,420,59], mirrored texture tile; reconstructed blank area, not lossless source extraction"
+    },
+    {
+      "name": "end-1",
+      "source": "12-end-feedback.png",
+      "rect": [
+        641,
+        113,
+        1206,
+        579
+      ],
+      "body": [
+        641,
+        228,
+        1206,
+        579
+      ],
+      "ornament": [
+        786,
+        113,
+        1051,
+        328
+      ],
+      "repairs": [
+        [
+          [
+            701,
+            453,
+            1156,
+            533
+          ],
+          [
+            120,
+            554,
+            500,
+            566
+          ]
+        ]
+      ],
+      "role": "complete fixed artwork; patches reserve live content",
+      "mask": "supersampled rounded silhouette plus raised ornament",
+      "order": "background, artwork, live labels, controls",
+      "repairSource": "assets/resources/art/modals/record-row.png, crop [190,12,420,59], mirrored texture tile; reconstructed blank area, not lossless source extraction"
+    },
+    {
+      "name": "end-2",
+      "source": "12-end-feedback.png",
+      "rect": [
+        47,
+        644,
+        612,
+        1110
+      ],
+      "body": [
+        47,
+        759,
+        612,
+        1110
+      ],
+      "ornament": [
+        192,
+        644,
+        457,
+        859
+      ],
+      "repairs": [
+        [
+          [
+            107,
+            984,
+            562,
+            1064
+          ],
+          [
+            120,
+            554,
+            500,
+            566
+          ]
+        ]
+      ],
+      "role": "complete fixed artwork; patches reserve live content",
+      "mask": "supersampled rounded silhouette plus raised ornament",
+      "order": "background, artwork, live labels, controls",
+      "repairSource": "assets/resources/art/modals/record-row.png, crop [190,12,420,59], mirrored texture tile; reconstructed blank area, not lossless source extraction"
+    },
+    {
+      "name": "end-3",
+      "source": "12-end-feedback.png",
+      "rect": [
+        641,
+        644,
+        1206,
+        1110
+      ],
+      "body": [
+        641,
+        759,
+        1206,
+        1110
+      ],
+      "ornament": [
+        786,
+        644,
+        1051,
+        859
+      ],
+      "repairs": [
+        [
+          [
+            701,
+            984,
+            1156,
+            1064
+          ],
+          [
+            120,
+            554,
+            500,
+            566
+          ]
+        ]
+      ],
+      "role": "complete fixed artwork; patches reserve live content",
+      "mask": "supersampled rounded silhouette plus raised ornament",
+      "order": "background, artwork, live labels, controls",
+      "repairSource": "assets/resources/art/modals/record-row.png, crop [190,12,420,59], mirrored texture tile; reconstructed blank area, not lossless source extraction"
+    },
+    {
+      "name": "victory-title",
+      "source": "12-end-feedback.png",
+      "rect": [
+        58,
+        113,
+        610,
+        458
+      ],
+      "body": [
+        58,
+        232,
+        610,
+        458
+      ],
+      "ornament": [
+        192,
+        113,
+        457,
+        328
+      ],
+      "repairs": [],
+      "role": "complete fixed artwork; patches reserve live content",
+      "mask": "supersampled rounded silhouette plus raised ornament",
+      "order": "background, artwork, live labels, controls",
+      "repairSource": "assets/resources/art/modals/record-row.png, crop [190,12,420,59], mirrored texture tile; reconstructed blank area, not lossless source extraction"
+    },
+    {
+      "name": "rematch-0",
+      "source": "09-rematch-states.png",
+      "rect": [
+        65,
+        106,
+        571,
+        793
+      ],
+      "body": [
+        65,
+        181,
+        571,
+        793
+      ],
+      "ornament": [
+        220,
+        106,
+        416,
+        270
+      ],
+      "repairs": [
+        [
+          [
+            105,
+            566,
+            531,
+            755
+          ],
+          [
+            150,
+            550,
+            490,
+            566
+          ]
+        ]
+      ],
+      "role": "complete fixed artwork; patches reserve live content",
+      "mask": "supersampled rounded silhouette plus raised ornament",
+      "order": "background, artwork, live labels, controls",
+      "repairSource": "assets/resources/art/modals/record-row.png, crop [190,12,420,59], mirrored texture tile; reconstructed blank area, not lossless source extraction"
+    },
+    {
+      "name": "rematch-1",
+      "source": "09-rematch-states.png",
+      "rect": [
+        636,
+        106,
+        1147,
+        793
+      ],
+      "body": [
+        636,
+        181,
+        1147,
+        793
+      ],
+      "ornament": [
+        791,
+        106,
+        992,
+        270
+      ],
+      "repairs": [
+        [
+          [
+            676,
+            566,
+            1107,
+            755
+          ],
+          [
+            150,
+            550,
+            490,
+            566
+          ]
+        ]
+      ],
+      "role": "complete fixed artwork; patches reserve live content",
+      "mask": "supersampled rounded silhouette plus raised ornament",
+      "order": "background, artwork, live labels, controls",
+      "repairSource": "assets/resources/art/modals/record-row.png, crop [190,12,420,59], mirrored texture tile; reconstructed blank area, not lossless source extraction"
+    },
+    {
+      "name": "rematch-2",
+      "source": "09-rematch-states.png",
+      "rect": [
+        1210,
+        106,
+        1712,
+        793
+      ],
+      "body": [
+        1210,
+        181,
+        1712,
+        793
+      ],
+      "ornament": [
+        1365,
+        106,
+        1557,
+        270
+      ],
+      "repairs": [
+        [
+          [
+            1250,
+            566,
+            1672,
+            755
+          ],
+          [
+            150,
+            550,
+            490,
+            566
+          ]
+        ]
+      ],
+      "role": "complete fixed artwork; patches reserve live content",
+      "mask": "supersampled rounded silhouette plus raised ornament",
+      "order": "background, artwork, live labels, controls",
+      "repairSource": "assets/resources/art/modals/record-row.png, crop [190,12,420,59], mirrored texture tile; reconstructed blank area, not lossless source extraction"
+    },
+    {
+      "name": "empty-ledger",
+      "source": "10-records-empty-timeout.png",
+      "rect": [
+        263,
+        351,
+        516,
+        596
+      ],
+      "body": [
+        263,
+        351,
+        516,
+        596
+      ],
+      "ornament": null,
+      "repairs": [],
+      "role": "complete fixed artwork; patches reserve live content",
+      "mask": "supersampled rounded silhouette plus raised ornament",
+      "order": "background, artwork, live labels, controls",
+      "repairSource": "assets/resources/art/modals/record-row.png, crop [190,12,420,59], mirrored texture tile; reconstructed blank area, not lossless source extraction"
+    },
+    {
+      "name": "connection-0",
+      "source": "11-connection-loading.png",
+      "rect": [
+        104,
+        76,
+        571,
+        555
+      ],
+      "body": [
+        104,
+        145,
+        571,
+        555
+      ],
+      "ornament": [
+        249,
+        76,
+        434,
+        240
+      ],
+      "repairs": [
+        [
+          [
+            140,
+            376,
+            524,
+            519
+          ],
+          [
+            155,
+            344,
+            510,
+            359
+          ]
+        ]
+      ],
+      "role": "complete fixed artwork; patches reserve live content",
+      "mask": "supersampled rounded silhouette plus raised ornament",
+      "order": "background, artwork, live labels, controls",
+      "repairSource": "assets/resources/art/modals/record-row.png, crop [190,12,420,59], mirrored texture tile; reconstructed blank area, not lossless source extraction"
+    },
+    {
+      "name": "connection-1",
+      "source": "11-connection-loading.png",
+      "rect": [
+        733,
+        76,
+        1200,
+        555
+      ],
+      "body": [
+        733,
+        145,
+        1200,
+        555
+      ],
+      "ornament": [
+        878,
+        76,
+        1063,
+        240
+      ],
+      "repairs": [
+        [
+          [
+            769,
+            376,
+            1153,
+            519
+          ],
+          [
+            155,
+            344,
+            510,
+            359
+          ]
+        ]
+      ],
+      "role": "complete fixed artwork; patches reserve live content",
+      "mask": "supersampled rounded silhouette plus raised ornament",
+      "order": "background, artwork, live labels, controls",
+      "repairSource": "assets/resources/art/modals/record-row.png, crop [190,12,420,59], mirrored texture tile; reconstructed blank area, not lossless source extraction"
+    },
+    {
+      "name": "connection-2",
+      "source": "11-connection-loading.png",
+      "rect": [
+        104,
+        685,
+        571,
+        1164
+      ],
+      "body": [
+        104,
+        754,
+        571,
+        1164
+      ],
+      "ornament": [
+        249,
+        685,
+        434,
+        849
+      ],
+      "repairs": [
+        [
+          [
+            140,
+            985,
+            524,
+            1128
+          ],
+          [
+            155,
+            344,
+            510,
+            359
+          ]
+        ]
+      ],
+      "role": "complete fixed artwork; patches reserve live content",
+      "mask": "supersampled rounded silhouette plus raised ornament",
+      "order": "background, artwork, live labels, controls",
+      "repairSource": "assets/resources/art/modals/record-row.png, crop [190,12,420,59], mirrored texture tile; reconstructed blank area, not lossless source extraction"
+    },
+    {
+      "name": "connection-3",
+      "source": "11-connection-loading.png",
+      "rect": [
+        733,
+        685,
+        1200,
+        1164
+      ],
+      "body": [
+        733,
+        754,
+        1200,
+        1164
+      ],
+      "ornament": [
+        878,
+        685,
+        1063,
+        849
+      ],
+      "repairs": [
+        [
+          [
+            769,
+            985,
+            1153,
+            1128
+          ],
+          [
+            155,
+            344,
+            510,
+            359
+          ]
+        ]
+      ],
+      "role": "complete fixed artwork; patches reserve live content",
+      "mask": "supersampled rounded silhouette plus raised ornament",
+      "order": "background, artwork, live labels, controls",
+      "repairSource": "assets/resources/art/modals/record-row.png, crop [190,12,420,59], mirrored texture tile; reconstructed blank area, not lossless source extraction"
+    },
+    {
+      "name": "retry",
+      "source": "11-connection-loading.png",
+      "rect": [
+        788,
+        407,
+        1095,
+        512
+      ],
+      "body": [
+        788,
+        407,
+        1095,
+        512
+      ],
+      "ornament": null,
+      "repairs": [],
+      "role": "complete fixed artwork; patches reserve live content",
+      "mask": "supersampled rounded silhouette plus raised ornament",
+      "order": "background, artwork, live labels, controls",
+      "repairSource": "assets/resources/art/modals/record-row.png, crop [190,12,420,59], mirrored texture tile; reconstructed blank area, not lossless source extraction"
+    }
+  ]
+}
