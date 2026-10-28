@@ -1,0 +1,2295 @@
+{
+  "sourceSize": [
+    941,
+    1672
+  ],
+  "coordinates": "[left, top, right, bottom], source pixels",
+  "order": [
+    "body",
+    "controls",
+    "dynamic labels / rows"
+  ],
+  "pages": {
+    "settings": {
+      "body": "settings-body",
+      "controls": {
+        "back": "settings-back",
+        "done": "settings-done"
+      },
+      "bounds": [
+        78,
+        134,
+        864,
+        1498
+      ]
+    },
+    "rules": {
+      "body": "rules-body",
+      "controls": {
+        "back": "rules-back",
+        "done": "rules-done"
+      },
+      "bounds": [
+        54,
+        85,
+        890,
+        1527
+      ]
+    },
+    "menu": {
+      "body": "menu-body",
+      "controls": {
+        "back": "menu-back",
+        "continue": "menu-continue",
+        "resign": "menu-resign"
+      },
+      "bounds": [
+        92,
+        291,
+        852,
+        1298
+      ]
+    },
+    "live": {
+      "body": "live-body",
+      "controls": {
+        "back": "live-back",
+        "done": "live-done",
+        "latest": "live-latest"
+      },
+      "bounds": [
+        80,
+        112,
+        863,
+        1566
+      ]
+    },
+    "result": {
+      "body": "result-body",
+      "controls": {
+        "back": "result-back",
+        "done": "result-done"
+      },
+      "bounds": [
+        61,
+        116,
+        869,
+        1495
+      ]
+    },
+    "lock": {
+      "body": "lock-body",
+      "controls": {
+        "back": "lock-back",
+        "cancel": "lock-cancel",
+        "confirm": "lock-confirm"
+      },
+      "bounds": [
+        73,
+        345,
+        868,
+        1302
+      ]
+    },
+    "repeat": {
+      "body": "repeat-body",
+      "controls": {
+        "back": "repeat-back",
+        "cancel": "repeat-cancel",
+        "confirm": "repeat-confirm"
+      },
+      "bounds": [
+        70,
+        292,
+        876,
+        1258
+      ]
+    },
+    "leave": {
+      "body": "leave-body",
+      "controls": {
+        "back": "leave-back",
+        "confirm": "leave-confirm",
+        "cancel": "leave-cancel"
+      },
+      "bounds": [
+        94,
+        301,
+        853,
+        1339
+      ]
+    },
+    "close": {
+      "body": "close-body",
+      "controls": {
+        "back": "close-back",
+        "cancel": "close-cancel",
+        "confirm": "close-confirm"
+      },
+      "bounds": [
+        103,
+        291,
+        843,
+        1353
+      ]
+    },
+    "resign": {
+      "body": "resign-body",
+      "controls": {
+        "back": "resign-back",
+        "cancel": "resign-cancel",
+        "confirm": "resign-confirm"
+      },
+      "bounds": [
+        84,
+        265,
+        860,
+        1369
+      ]
+    },
+    "reconnect": {
+      "body": "reconnect-body",
+      "controls": {
+        "retry": "reconnect-retry"
+      },
+      "bounds": [
+        120,
+        311,
+        825,
+        1296
+      ]
+    }
+  },
+  "assets": {
+    "settings-back": {
+      "source": "01-settings.png",
+      "rect": [
+        90,
+        330,
+        192,
+        434
+      ],
+      "role": "fixed-text interactive control",
+      "mask": {
+        "rounded": 51.0
+      },
+      "textureRepairs": [],
+      "encoding": "libimagequant RGBA palette, min quality 85 / target 95, dither 1.0"
+    },
+    "settings-done": {
+      "source": "01-settings.png",
+      "rect": [
+        177,
+        1272,
+        766,
+        1425
+      ],
+      "role": "fixed-text interactive control",
+      "mask": {
+        "rounded": 36
+      },
+      "textureRepairs": [],
+      "encoding": "libimagequant RGBA palette, min quality 85 / target 95, dither 1.0"
+    },
+    "toggle-on": {
+      "source": "01-settings.png",
+      "rect": [
+        610,
+        542,
+        774,
+        630
+      ],
+      "role": "dynamic setting state",
+      "mask": {
+        "rounded": 43
+      },
+      "textureRepairs": [],
+      "encoding": "libimagequant RGBA palette, min quality 85 / target 95, dither 1.0"
+    },
+    "toggle-off": {
+      "source": "01-settings.png",
+      "rect": [
+        610,
+        1114,
+        774,
+        1202
+      ],
+      "role": "dynamic setting state",
+      "mask": {
+        "rounded": 43
+      },
+      "textureRepairs": [],
+      "encoding": "libimagequant RGBA palette, min quality 85 / target 95, dither 1.0"
+    },
+    "settings-body": {
+      "source": "01-settings.png",
+      "rect": [
+        78,
+        134,
+        864,
+        1498
+      ],
+      "role": "static frame, heading, illustration and helper text; no live data",
+      "mask": {
+        "roundedBody": [
+          78,
+          292,
+          863,
+          1497
+        ],
+        "radius": 42,
+        "topPolygon": [
+          [
+            215,
+            294
+          ],
+          [
+            218,
+            272
+          ],
+          [
+            245,
+            244
+          ],
+          [
+            274,
+            225
+          ],
+          [
+            382,
+            225
+          ],
+          [
+            403,
+            190
+          ],
+          [
+            444,
+            163
+          ],
+          [
+            462,
+            134
+          ],
+          [
+            479,
+            148
+          ],
+          [
+            498,
+            174
+          ],
+          [
+            536,
+            197
+          ],
+          [
+            559,
+            225
+          ],
+          [
+            662,
+            225
+          ],
+          [
+            684,
+            246
+          ],
+          [
+            722,
+            276
+          ],
+          [
+            725,
+            294
+          ]
+        ]
+      },
+      "textureRepairs": [
+        {
+          "target": [
+            90,
+            330,
+            192,
+            434
+          ],
+          "mirrorSample": [
+            749,
+            330,
+            851,
+            434
+          ]
+        },
+        {
+          "target": [
+            177,
+            1272,
+            766,
+            1425
+          ],
+          "sample": [
+            128,
+            1252,
+            813,
+            1264
+          ]
+        },
+        {
+          "target": [
+            609,
+            542,
+            774,
+            630
+          ],
+          "sample": [
+            540,
+            542,
+            600,
+            630
+          ]
+        },
+        {
+          "target": [
+            609,
+            733,
+            774,
+            821
+          ],
+          "sample": [
+            540,
+            733,
+            600,
+            821
+          ]
+        },
+        {
+          "target": [
+            609,
+            923,
+            774,
+            1011
+          ],
+          "sample": [
+            540,
+            923,
+            600,
+            1011
+          ]
+        },
+        {
+          "target": [
+            609,
+            1114,
+            774,
+            1202
+          ],
+          "sample": [
+            540,
+            1114,
+            600,
+            1202
+          ]
+        }
+      ],
+      "encoding": "libimagequant RGBA palette, min quality 85 / target 95, dither 1.0"
+    },
+    "rules-back": {
+      "source": "02-rules.png",
+      "rect": [
+        77,
+        229,
+        170,
+        319
+      ],
+      "role": "fixed-text interactive control",
+      "mask": {
+        "rounded": 45.0
+      },
+      "textureRepairs": [],
+      "encoding": "libimagequant RGBA palette, min quality 85 / target 95, dither 1.0"
+    },
+    "rules-done": {
+      "source": "02-rules.png",
+      "rect": [
+        216,
+        1349,
+        725,
+        1482
+      ],
+      "role": "fixed-text interactive control",
+      "mask": {
+        "rounded": 36
+      },
+      "textureRepairs": [],
+      "encoding": "libimagequant RGBA palette, min quality 85 / target 95, dither 1.0"
+    },
+    "rules-body": {
+      "source": "02-rules.png",
+      "rect": [
+        54,
+        85,
+        890,
+        1527
+      ],
+      "role": "static frame, heading, illustration and helper text; no live data",
+      "mask": {
+        "roundedBody": [
+          54,
+          199,
+          889,
+          1526
+        ],
+        "radius": 42,
+        "topPolygon": [
+          [
+            231,
+            210
+          ],
+          [
+            232,
+            182
+          ],
+          [
+            254,
+            162
+          ],
+          [
+            393,
+            162
+          ],
+          [
+            426,
+            124
+          ],
+          [
+            458,
+            109
+          ],
+          [
+            468,
+            85
+          ],
+          [
+            484,
+            106
+          ],
+          [
+            519,
+            132
+          ],
+          [
+            546,
+            161
+          ],
+          [
+            681,
+            160
+          ],
+          [
+            710,
+            183
+          ],
+          [
+            710,
+            211
+          ]
+        ]
+      },
+      "textureRepairs": [
+        {
+          "target": [
+            77,
+            229,
+            170,
+            319
+          ],
+          "mirrorSample": [
+            771,
+            229,
+            864,
+            319
+          ]
+        },
+        {
+          "target": [
+            216,
+            1349,
+            725,
+            1482
+          ],
+          "sample": [
+            104,
+            1329,
+            839,
+            1341
+          ]
+        }
+      ],
+      "encoding": "libimagequant RGBA palette, min quality 85 / target 95, dither 1.0"
+    },
+    "menu-back": {
+      "source": "03-table-menu.png",
+      "rect": [
+        121,
+        401,
+        221,
+        502
+      ],
+      "role": "fixed-text interactive control",
+      "mask": {
+        "rounded": 50.0
+      },
+      "textureRepairs": [],
+      "encoding": "libimagequant RGBA palette, min quality 85 / target 95, dither 1.0"
+    },
+    "menu-continue": {
+      "source": "03-table-menu.png",
+      "rect": [
+        158,
+        647,
+        784,
+        860
+      ],
+      "role": "fixed-text interactive control",
+      "mask": {
+        "rounded": 36
+      },
+      "textureRepairs": [],
+      "encoding": "libimagequant RGBA palette, min quality 85 / target 95, dither 1.0"
+    },
+    "menu-resign": {
+      "source": "03-table-menu.png",
+      "rect": [
+        169,
+        887,
+        773,
+        1054
+      ],
+      "role": "fixed-text interactive control",
+      "mask": {
+        "rounded": 36
+      },
+      "textureRepairs": [],
+      "encoding": "libimagequant RGBA palette, min quality 85 / target 95, dither 1.0"
+    },
+    "menu-body": {
+      "source": "03-table-menu.png",
+      "rect": [
+        92,
+        291,
+        852,
+        1298
+      ],
+      "role": "static frame, heading, illustration and helper text; no live data",
+      "mask": {
+        "roundedBody": [
+          92,
+          382,
+          851,
+          1297
+        ],
+        "radius": 42,
+        "topPolygon": [
+          [
+            201,
+            389
+          ],
+          [
+            208,
+            366
+          ],
+          [
+            340,
+            365
+          ],
+          [
+            376,
+            336
+          ],
+          [
+            428,
+            313
+          ],
+          [
+            468,
+            291
+          ],
+          [
+            486,
+            313
+          ],
+          [
+            534,
+            331
+          ],
+          [
+            575,
+            366
+          ],
+          [
+            725,
+            366
+          ],
+          [
+            742,
+            386
+          ]
+        ]
+      },
+      "textureRepairs": [
+        {
+          "target": [
+            121,
+            401,
+            221,
+            502
+          ],
+          "mirrorSample": [
+            720,
+            401,
+            820,
+            502
+          ]
+        },
+        {
+          "target": [
+            158,
+            647,
+            784,
+            860
+          ],
+          "sample": [
+            142,
+            627,
+            801,
+            639
+          ]
+        },
+        {
+          "target": [
+            169,
+            887,
+            773,
+            1054
+          ],
+          "sample": [
+            142,
+            867,
+            801,
+            879
+          ]
+        }
+      ],
+      "encoding": "libimagequant RGBA palette, min quality 85 / target 95, dither 1.0"
+    },
+    "live-back": {
+      "source": "04-guess-records.png",
+      "rect": [
+        61,
+        201,
+        269,
+        297
+      ],
+      "role": "fixed-text interactive control",
+      "mask": {
+        "rounded": 32
+      },
+      "textureRepairs": [],
+      "encoding": "libimagequant RGBA palette, min quality 85 / target 95, dither 1.0"
+    },
+    "live-done": {
+      "source": "04-guess-records.png",
+      "rect": [
+        194,
+        1370,
+        750,
+        1501
+      ],
+      "role": "fixed-text interactive control",
+      "mask": {
+        "rounded": 36
+      },
+      "textureRepairs": [],
+      "encoding": "libimagequant RGBA palette, min quality 85 / target 95, dither 1.0"
+    },
+    "live-latest": {
+      "source": "04-guess-records.png",
+      "rect": [
+        615,
+        1243,
+        810,
+        1307
+      ],
+      "role": "fixed-text interactive control",
+      "mask": {
+        "rounded": 32.0
+      },
+      "textureRepairs": [],
+      "encoding": "libimagequant RGBA palette, min quality 85 / target 95, dither 1.0"
+    },
+    "live-body": {
+      "source": "04-guess-records.png",
+      "rect": [
+        80,
+        112,
+        863,
+        1566
+      ],
+      "role": "static frame, heading, illustration and helper text; no live data",
+      "mask": {
+        "roundedBody": [
+          80,
+          237,
+          862,
+          1565
+        ],
+        "radius": 42,
+        "topPolygon": [
+          [
+            246,
+            245
+          ],
+          [
+            256,
+            202
+          ],
+          [
+            286,
+            196
+          ],
+          [
+            299,
+            181
+          ],
+          [
+            388,
+            181
+          ],
+          [
+            415,
+            146
+          ],
+          [
+            458,
+            131
+          ],
+          [
+            469,
+            112
+          ],
+          [
+            483,
+            134
+          ],
+          [
+            523,
+            150
+          ],
+          [
+            549,
+            192
+          ],
+          [
+            682,
+            192
+          ],
+          [
+            705,
+            211
+          ],
+          [
+            745,
+            239
+          ]
+        ]
+      },
+      "textureRepairs": [
+        {
+          "target": [
+            61,
+            201,
+            269,
+            297
+          ],
+          "mirrorSample": [
+            672,
+            201,
+            880,
+            297
+          ]
+        },
+        {
+          "target": [
+            194,
+            1370,
+            750,
+            1501
+          ],
+          "sample": [
+            130,
+            1350,
+            812,
+            1362
+          ]
+        },
+        {
+          "target": [
+            615,
+            1243,
+            810,
+            1307
+          ],
+          "sample": [
+            130,
+            1223,
+            812,
+            1235
+          ]
+        },
+        {
+          "target": [
+            122,
+            475,
+            822,
+            1310
+          ],
+          "sample": [
+            145,
+            1240,
+            590,
+            1315
+          ],
+          "verticalMirrorTile": true
+        },
+        {
+          "target": [
+            373,
+            393,
+            648,
+            440
+          ],
+          "sample": [
+            654,
+            393,
+            686,
+            440
+          ]
+        }
+      ],
+      "encoding": "libimagequant RGBA palette, min quality 85 / target 95, dither 1.0"
+    },
+    "result-back": {
+      "source": "05-result-records.png",
+      "rect": [
+        37,
+        220,
+        219,
+        304
+      ],
+      "role": "fixed-text interactive control",
+      "mask": {
+        "rounded": 32
+      },
+      "textureRepairs": [],
+      "encoding": "libimagequant RGBA palette, min quality 85 / target 95, dither 1.0"
+    },
+    "result-done": {
+      "source": "05-result-records.png",
+      "rect": [
+        220,
+        1271,
+        724,
+        1398
+      ],
+      "role": "fixed-text interactive control",
+      "mask": {
+        "rounded": 36
+      },
+      "textureRepairs": [],
+      "encoding": "libimagequant RGBA palette, min quality 85 / target 95, dither 1.0"
+    },
+    "result-body": {
+      "source": "05-result-records.png",
+      "rect": [
+        61,
+        116,
+        869,
+        1495
+      ],
+      "role": "static frame, heading, illustration and helper text; no live data",
+      "mask": {
+        "roundedBody": [
+          61,
+          304,
+          868,
+          1464
+        ],
+        "radius": 42,
+        "topPolygon": [
+          [
+            217,
+            311
+          ],
+          [
+            220,
+            239
+          ],
+          [
+            243,
+            216
+          ],
+          [
+            252,
+            190
+          ],
+          [
+            395,
+            189
+          ],
+          [
+            425,
+            150
+          ],
+          [
+            458,
+            137
+          ],
+          [
+            469,
+            116
+          ],
+          [
+            488,
+            139
+          ],
+          [
+            523,
+            159
+          ],
+          [
+            548,
+            190
+          ],
+          [
+            687,
+            190
+          ],
+          [
+            703,
+            216
+          ],
+          [
+            724,
+            240
+          ],
+          [
+            725,
+            309
+          ]
+        ]
+      },
+      "textureRepairs": [
+        {
+          "target": [
+            37,
+            220,
+            219,
+            304
+          ],
+          "mirrorSample": [
+            722,
+            220,
+            904,
+            304
+          ]
+        },
+        {
+          "target": [
+            220,
+            1271,
+            724,
+            1398
+          ],
+          "sample": [
+            111,
+            1251,
+            818,
+            1263
+          ]
+        },
+        {
+          "target": [
+            109,
+            424,
+            835,
+            1256
+          ],
+          "sample": [
+            220,
+            1400,
+            400,
+            1420
+          ],
+          "verticalMirrorTile": true
+        }
+      ],
+      "encoding": "libimagequant RGBA palette, min quality 85 / target 95, dither 1.0"
+    },
+    "lock-back": {
+      "source": "06-lock-secret.png",
+      "rect": [
+        72,
+        404,
+        180,
+        510
+      ],
+      "role": "fixed-text interactive control",
+      "mask": {
+        "rounded": 53.0
+      },
+      "textureRepairs": [],
+      "encoding": "libimagequant RGBA palette, min quality 85 / target 95, dither 1.0"
+    },
+    "lock-cancel": {
+      "source": "06-lock-secret.png",
+      "rect": [
+        132,
+        1066,
+        450,
+        1214
+      ],
+      "role": "fixed-text interactive control",
+      "mask": {
+        "rounded": 36
+      },
+      "textureRepairs": [],
+      "encoding": "libimagequant RGBA palette, min quality 85 / target 95, dither 1.0"
+    },
+    "lock-confirm": {
+      "source": "06-lock-secret.png",
+      "rect": [
+        457,
+        1066,
+        812,
+        1214
+      ],
+      "role": "fixed-text interactive control",
+      "mask": {
+        "rounded": 36
+      },
+      "textureRepairs": [],
+      "encoding": "libimagequant RGBA palette, min quality 85 / target 95, dither 1.0"
+    },
+    "lock-body": {
+      "source": "06-lock-secret.png",
+      "rect": [
+        73,
+        345,
+        868,
+        1302
+      ],
+      "role": "static frame, heading, illustration and helper text; no live data",
+      "mask": {
+        "roundedBody": [
+          73,
+          433,
+          867,
+          1301
+        ],
+        "radius": 42,
+        "topPolygon": [
+          [
+            309,
+            439
+          ],
+          [
+            344,
+            416
+          ],
+          [
+            373,
+            416
+          ],
+          [
+            389,
+            388
+          ],
+          [
+            426,
+            363
+          ],
+          [
+            461,
+            355
+          ],
+          [
+            469,
+            345
+          ],
+          [
+            483,
+            365
+          ],
+          [
+            516,
+            372
+          ],
+          [
+            555,
+            415
+          ],
+          [
+            589,
+            418
+          ],
+          [
+            625,
+            439
+          ]
+        ]
+      },
+      "textureRepairs": [
+        {
+          "target": [
+            72,
+            404,
+            180,
+            510
+          ],
+          "mirrorSample": [
+            761,
+            404,
+            869,
+            510
+          ]
+        },
+        {
+          "target": [
+            132,
+            1066,
+            450,
+            1214
+          ],
+          "sample": [
+            123,
+            1046,
+            817,
+            1058
+          ]
+        },
+        {
+          "target": [
+            457,
+            1066,
+            812,
+            1214
+          ],
+          "sample": [
+            123,
+            1046,
+            817,
+            1058
+          ]
+        },
+        {
+          "target": [
+            162,
+            757,
+            266,
+            884
+          ],
+          "sample": [
+            150,
+            757,
+            160,
+            884
+          ]
+        },
+        {
+          "target": [
+            333,
+            757,
+            437,
+            884
+          ],
+          "sample": [
+            321,
+            757,
+            331,
+            884
+          ]
+        },
+        {
+          "target": [
+            505,
+            757,
+            609,
+            884
+          ],
+          "sample": [
+            493,
+            757,
+            503,
+            884
+          ]
+        },
+        {
+          "target": [
+            677,
+            757,
+            781,
+            884
+          ],
+          "sample": [
+            665,
+            757,
+            675,
+            884
+          ]
+        }
+      ],
+      "encoding": "libimagequant RGBA palette, min quality 85 / target 95, dither 1.0"
+    },
+    "repeat-back": {
+      "source": "07-repeat-guess.png",
+      "rect": [
+        128,
+        439,
+        350,
+        527
+      ],
+      "role": "fixed-text interactive control",
+      "mask": {
+        "rounded": 32
+      },
+      "textureRepairs": [],
+      "encoding": "libimagequant RGBA palette, min quality 85 / target 95, dither 1.0"
+    },
+    "repeat-cancel": {
+      "source": "07-repeat-guess.png",
+      "rect": [
+        137,
+        1003,
+        463,
+        1148
+      ],
+      "role": "fixed-text interactive control",
+      "mask": {
+        "rounded": 36
+      },
+      "textureRepairs": [],
+      "encoding": "libimagequant RGBA palette, min quality 85 / target 95, dither 1.0"
+    },
+    "repeat-confirm": {
+      "source": "07-repeat-guess.png",
+      "rect": [
+        479,
+        1003,
+        809,
+        1148
+      ],
+      "role": "fixed-text interactive control",
+      "mask": {
+        "rounded": 36
+      },
+      "textureRepairs": [],
+      "encoding": "libimagequant RGBA palette, min quality 85 / target 95, dither 1.0"
+    },
+    "repeat-body": {
+      "source": "07-repeat-guess.png",
+      "rect": [
+        70,
+        292,
+        876,
+        1258
+      ],
+      "role": "static frame, heading, illustration and helper text; no live data",
+      "mask": {
+        "roundedBody": [
+          70,
+          390,
+          875,
+          1257
+        ],
+        "radius": 42,
+        "topPolygon": [
+          [
+            311,
+            398
+          ],
+          [
+            334,
+            375
+          ],
+          [
+            378,
+            372
+          ],
+          [
+            397,
+            339
+          ],
+          [
+            431,
+            318
+          ],
+          [
+            460,
+            309
+          ],
+          [
+            469,
+            292
+          ],
+          [
+            483,
+            308
+          ],
+          [
+            523,
+            326
+          ],
+          [
+            559,
+            372
+          ],
+          [
+            592,
+            373
+          ],
+          [
+            622,
+            396
+          ]
+        ]
+      },
+      "textureRepairs": [
+        {
+          "target": [
+            128,
+            439,
+            350,
+            527
+          ],
+          "mirrorSample": [
+            591,
+            439,
+            813,
+            527
+          ]
+        },
+        {
+          "target": [
+            137,
+            1003,
+            463,
+            1148
+          ],
+          "sample": [
+            120,
+            983,
+            825,
+            995
+          ]
+        },
+        {
+          "target": [
+            479,
+            1003,
+            809,
+            1148
+          ],
+          "sample": [
+            120,
+            983,
+            825,
+            995
+          ]
+        },
+        {
+          "target": [
+            173,
+            743,
+            277,
+            846
+          ],
+          "sample": [
+            161,
+            743,
+            171,
+            846
+          ]
+        },
+        {
+          "target": [
+            337,
+            743,
+            441,
+            846
+          ],
+          "sample": [
+            325,
+            743,
+            335,
+            846
+          ]
+        },
+        {
+          "target": [
+            501,
+            743,
+            605,
+            846
+          ],
+          "sample": [
+            489,
+            743,
+            499,
+            846
+          ]
+        },
+        {
+          "target": [
+            665,
+            743,
+            769,
+            846
+          ],
+          "sample": [
+            653,
+            743,
+            663,
+            846
+          ]
+        }
+      ],
+      "encoding": "libimagequant RGBA palette, min quality 85 / target 95, dither 1.0"
+    },
+    "leave-back": {
+      "source": "08-leave-preparation.png",
+      "rect": [
+        97,
+        333,
+        192,
+        428
+      ],
+      "role": "fixed-text interactive control",
+      "mask": {
+        "rounded": 47.5
+      },
+      "textureRepairs": [],
+      "encoding": "libimagequant RGBA palette, min quality 85 / target 95, dither 1.0"
+    },
+    "leave-confirm": {
+      "source": "08-leave-preparation.png",
+      "rect": [
+        190,
+        951,
+        754,
+        1080
+      ],
+      "role": "fixed-text interactive control",
+      "mask": {
+        "rounded": 36
+      },
+      "textureRepairs": [],
+      "encoding": "libimagequant RGBA palette, min quality 85 / target 95, dither 1.0"
+    },
+    "leave-cancel": {
+      "source": "08-leave-preparation.png",
+      "rect": [
+        184,
+        1095,
+        759,
+        1244
+      ],
+      "role": "fixed-text interactive control",
+      "mask": {
+        "rounded": 36
+      },
+      "textureRepairs": [],
+      "encoding": "libimagequant RGBA palette, min quality 85 / target 95, dither 1.0"
+    },
+    "leave-body": {
+      "source": "08-leave-preparation.png",
+      "rect": [
+        94,
+        301,
+        853,
+        1339
+      ],
+      "role": "static frame, heading, illustration and helper text; no live data",
+      "mask": {
+        "roundedBody": [
+          94,
+          350,
+          852,
+          1338
+        ],
+        "radius": 42,
+        "topPolygon": [
+          [
+            354,
+            356
+          ],
+          [
+            391,
+            344
+          ],
+          [
+            410,
+            324
+          ],
+          [
+            439,
+            308
+          ],
+          [
+            470,
+            301
+          ],
+          [
+            504,
+            309
+          ],
+          [
+            532,
+            326
+          ],
+          [
+            550,
+            345
+          ],
+          [
+            585,
+            354
+          ]
+        ]
+      },
+      "textureRepairs": [
+        {
+          "target": [
+            97,
+            333,
+            192,
+            428
+          ],
+          "mirrorSample": [
+            749,
+            333,
+            844,
+            428
+          ]
+        },
+        {
+          "target": [
+            190,
+            951,
+            754,
+            1080
+          ],
+          "sample": [
+            144,
+            931,
+            802,
+            943
+          ]
+        },
+        {
+          "target": [
+            184,
+            1095,
+            759,
+            1244
+          ],
+          "sample": [
+            144,
+            1075,
+            802,
+            1087
+          ]
+        }
+      ],
+      "encoding": "libimagequant RGBA palette, min quality 85 / target 95, dither 1.0"
+    },
+    "close-back": {
+      "source": "09-close-room.png",
+      "rect": [
+        133,
+        378,
+        236,
+        486
+      ],
+      "role": "fixed-text interactive control",
+      "mask": {
+        "rounded": 51.5
+      },
+      "textureRepairs": [],
+      "encoding": "libimagequant RGBA palette, min quality 85 / target 95, dither 1.0"
+    },
+    "close-cancel": {
+      "source": "09-close-room.png",
+      "rect": [
+        179,
+        977,
+        765,
+        1130
+      ],
+      "role": "fixed-text interactive control",
+      "mask": {
+        "rounded": 36
+      },
+      "textureRepairs": [],
+      "encoding": "libimagequant RGBA palette, min quality 85 / target 95, dither 1.0"
+    },
+    "close-confirm": {
+      "source": "09-close-room.png",
+      "rect": [
+        190,
+        1142,
+        753,
+        1274
+      ],
+      "role": "fixed-text interactive control",
+      "mask": {
+        "rounded": 36
+      },
+      "textureRepairs": [],
+      "encoding": "libimagequant RGBA palette, min quality 85 / target 95, dither 1.0"
+    },
+    "close-body": {
+      "source": "09-close-room.png",
+      "rect": [
+        103,
+        291,
+        843,
+        1353
+      ],
+      "role": "static frame, heading, illustration and helper text; no live data",
+      "mask": {
+        "roundedBody": [
+          103,
+          348,
+          842,
+          1352
+        ],
+        "radius": 42,
+        "topPolygon": [
+          [
+            344,
+            352
+          ],
+          [
+            389,
+            337
+          ],
+          [
+            410,
+            317
+          ],
+          [
+            445,
+            301
+          ],
+          [
+            469,
+            291
+          ],
+          [
+            492,
+            307
+          ],
+          [
+            524,
+            319
+          ],
+          [
+            553,
+            345
+          ],
+          [
+            590,
+            353
+          ]
+        ]
+      },
+      "textureRepairs": [
+        {
+          "target": [
+            133,
+            378,
+            236,
+            486
+          ],
+          "mirrorSample": [
+            705,
+            378,
+            808,
+            486
+          ]
+        },
+        {
+          "target": [
+            179,
+            977,
+            765,
+            1130
+          ],
+          "sample": [
+            153,
+            957,
+            792,
+            969
+          ]
+        },
+        {
+          "target": [
+            190,
+            1142,
+            753,
+            1274
+          ],
+          "sample": [
+            153,
+            1122,
+            792,
+            1134
+          ]
+        },
+        {
+          "target": [
+            103,
+            780,
+            175,
+            1120
+          ],
+          "mirrorSample": [
+            766,
+            780,
+            838,
+            1120
+          ]
+        }
+      ],
+      "encoding": "libimagequant RGBA palette, min quality 85 / target 95, dither 1.0"
+    },
+    "resign-back": {
+      "source": "10-resign.png",
+      "rect": [
+        133,
+        384,
+        222,
+        472
+      ],
+      "role": "fixed-text interactive control",
+      "mask": {
+        "rounded": 44.0
+      },
+      "textureRepairs": [],
+      "encoding": "libimagequant RGBA palette, min quality 85 / target 95, dither 1.0"
+    },
+    "resign-cancel": {
+      "source": "10-resign.png",
+      "rect": [
+        180,
+        997,
+        765,
+        1156
+      ],
+      "role": "fixed-text interactive control",
+      "mask": {
+        "rounded": 36
+      },
+      "textureRepairs": [],
+      "encoding": "libimagequant RGBA palette, min quality 85 / target 95, dither 1.0"
+    },
+    "resign-confirm": {
+      "source": "10-resign.png",
+      "rect": [
+        230,
+        1166,
+        716,
+        1291
+      ],
+      "role": "fixed-text interactive control",
+      "mask": {
+        "rounded": 36
+      },
+      "textureRepairs": [],
+      "encoding": "libimagequant RGBA palette, min quality 85 / target 95, dither 1.0"
+    },
+    "resign-body": {
+      "source": "10-resign.png",
+      "rect": [
+        84,
+        265,
+        860,
+        1369
+      ],
+      "role": "static frame, heading, illustration and helper text; no live data",
+      "mask": {
+        "roundedBody": [
+          84,
+          341,
+          859,
+          1368
+        ],
+        "radius": 42,
+        "topPolygon": [
+          [
+            246,
+            346
+          ],
+          [
+            265,
+            328
+          ],
+          [
+            300,
+            327
+          ],
+          [
+            313,
+            315
+          ],
+          [
+            397,
+            314
+          ],
+          [
+            418,
+            290
+          ],
+          [
+            455,
+            278
+          ],
+          [
+            469,
+            265
+          ],
+          [
+            488,
+            282
+          ],
+          [
+            529,
+            297
+          ],
+          [
+            550,
+            317
+          ],
+          [
+            630,
+            318
+          ],
+          [
+            652,
+            329
+          ],
+          [
+            683,
+            331
+          ],
+          [
+            701,
+            346
+          ]
+        ]
+      },
+      "textureRepairs": [
+        {
+          "target": [
+            133,
+            384,
+            222,
+            472
+          ],
+          "mirrorSample": [
+            719,
+            384,
+            808,
+            472
+          ]
+        },
+        {
+          "target": [
+            180,
+            997,
+            765,
+            1156
+          ],
+          "sample": [
+            134,
+            977,
+            809,
+            989
+          ]
+        },
+        {
+          "target": [
+            230,
+            1166,
+            716,
+            1291
+          ],
+          "sample": [
+            134,
+            1146,
+            809,
+            1158
+          ]
+        }
+      ],
+      "encoding": "libimagequant RGBA palette, min quality 85 / target 95, dither 1.0"
+    },
+    "reconnect-retry": {
+      "source": "11-reconnect.png",
+      "rect": [
+        192,
+        1064,
+        752,
+        1207
+      ],
+      "role": "fixed-text interactive control",
+      "mask": {
+        "rounded": 36
+      },
+      "textureRepairs": [],
+      "encoding": "libimagequant RGBA palette, min quality 85 / target 95, dither 1.0"
+    },
+    "reconnect-body": {
+      "source": "11-reconnect.png",
+      "rect": [
+        120,
+        311,
+        825,
+        1296
+      ],
+      "role": "static frame, heading, illustration and helper text; no live data",
+      "mask": {
+        "roundedBody": [
+          120,
+          382,
+          824,
+          1295
+        ],
+        "radius": 42,
+        "topPolygon": [
+          [
+            190,
+            388
+          ],
+          [
+            207,
+            368
+          ],
+          [
+            379,
+            365
+          ],
+          [
+            401,
+            339
+          ],
+          [
+            432,
+            319
+          ],
+          [
+            469,
+            311
+          ],
+          [
+            505,
+            318
+          ],
+          [
+            538,
+            339
+          ],
+          [
+            560,
+            365
+          ],
+          [
+            733,
+            367
+          ],
+          [
+            752,
+            388
+          ]
+        ]
+      },
+      "textureRepairs": [
+        {
+          "target": [
+            192,
+            1064,
+            752,
+            1207
+          ],
+          "sample": [
+            170,
+            1044,
+            774,
+            1056
+          ]
+        },
+        {
+          "target": [
+            120,
+            780,
+            192,
+            1120
+          ],
+          "mirrorSample": [
+            749,
+            780,
+            821,
+            1120
+          ]
+        }
+      ],
+      "encoding": "libimagequant RGBA palette, min quality 85 / target 95, dither 1.0"
+    },
+    "record-row": {
+      "source": "04-guess-records.png",
+      "rect": [
+        144,
+        642,
+        781,
+        713
+      ],
+      "role": "dynamic records background",
+      "mask": {
+        "rounded": 12
+      },
+      "textureRepairs": [
+        {
+          "target": [
+            191,
+            656,
+            263,
+            704
+          ],
+          "sample": [
+            350,
+            653,
+            383,
+            701
+          ]
+        },
+        {
+          "target": [
+            390,
+            656,
+            536,
+            704
+          ],
+          "sample": [
+            350,
+            653,
+            383,
+            701
+          ]
+        },
+        {
+          "target": [
+            645,
+            655,
+            732,
+            704
+          ],
+          "sample": [
+            350,
+            653,
+            383,
+            701
+          ]
+        }
+      ],
+      "encoding": "libimagequant RGBA palette, min quality 85 / target 95, dither 1.0"
+    },
+    "record-latest-row": {
+      "source": "04-guess-records.png",
+      "rect": [
+        144,
+        1155,
+        781,
+        1231
+      ],
+      "role": "dynamic records background",
+      "mask": {
+        "rounded": 12
+      },
+      "textureRepairs": [
+        {
+          "target": [
+            191,
+            1169,
+            263,
+            1223
+          ],
+          "sample": [
+            350,
+            1168,
+            383,
+            1220
+          ]
+        },
+        {
+          "target": [
+            390,
+            1169,
+            536,
+            1223
+          ],
+          "sample": [
+            350,
+            1168,
+            383,
+            1220
+          ]
+        },
+        {
+          "target": [
+            645,
+            1169,
+            732,
+            1223
+          ],
+          "sample": [
+            350,
+            1168,
+            383,
+            1220
+          ]
+        }
+      ],
+      "encoding": "libimagequant RGBA palette, min quality 85 / target 95, dither 1.0"
+    },
+    "tab-on": {
+      "source": "04-guess-records.png",
+      "rect": [
+        130,
+        476,
+        481,
+        559
+      ],
+      "role": "dynamic records background",
+      "mask": {
+        "rounded": 12
+      },
+      "textureRepairs": [
+        {
+          "target": [
+            192,
+            493,
+            423,
+            545
+          ],
+          "sample": [
+            157,
+            493,
+            190,
+            545
+          ]
+        }
+      ],
+      "encoding": "libimagequant RGBA palette, min quality 85 / target 95, dither 1.0"
+    },
+    "tab-off": {
+      "source": "04-guess-records.png",
+      "rect": [
+        482,
+        483,
+        812,
+        559
+      ],
+      "role": "dynamic records background",
+      "mask": {
+        "rounded": 12
+      },
+      "textureRepairs": [
+        {
+          "target": [
+            539,
+            497,
+            751,
+            546
+          ],
+          "sample": [
+            499,
+            497,
+            532,
+            546
+          ]
+        }
+      ],
+      "encoding": "libimagequant RGBA palette, min quality 85 / target 95, dither 1.0"
+    },
+    "record-header": {
+      "source": "04-guess-records.png",
+      "rect": [
+        144,
+        575,
+        802,
+        639
+      ],
+      "role": "fixed column headings",
+      "mask": {
+        "rectangle": true
+      },
+      "textureRepairs": [],
+      "encoding": "libimagequant RGBA palette, min quality 85 / target 95, dither 1.0"
+    },
+    "record-track": {
+      "source": "04-guess-records.png",
+      "rect": [
+        789,
+        645,
+        804,
+        1232
+      ],
+      "role": "scroll track",
+      "mask": {
+        "rounded": 7
+      },
+      "textureRepairs": [
+        {
+          "target": [
+            789,
+            850,
+            804,
+            993
+          ],
+          "sample": [
+            789,
+            1010,
+            804,
+            1153
+          ]
+        }
+      ],
+      "encoding": "libimagequant RGBA palette, min quality 85 / target 95, dither 1.0"
+    },
+    "record-thumb": {
+      "source": "04-guess-records.png",
+      "rect": [
+        789,
+        857,
+        804,
+        986
+      ],
+      "role": "dynamic scroll thumb",
+      "mask": {
+        "rounded": 7
+      },
+      "textureRepairs": [],
+      "encoding": "libimagequant RGBA palette, min quality 85 / target 95, dither 1.0"
+    }
+  }
+}

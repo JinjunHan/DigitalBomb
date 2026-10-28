@@ -1,0 +1,20 @@
+{
+  "checks": [
+    "lock: cancel, confirm and immutable payload passed",
+    "repeat: cancel, confirm and immutable payload passed",
+    "leave: cancel, confirm and immutable payload passed",
+    "close: cancel, confirm and immutable payload passed",
+    "resign: cancel, confirm and immutable payload passed",
+    "music toggle persisted; settings done closed",
+    "pointer scroll, retained offset, latest and opponent tab passed",
+    "stale turn dismissed",
+    "local server reauthenticated after retry"
+  ],
+  "errors": [],
+  "viewports": [
+    "390x844",
+    "375x667"
+  ],
+  "fixture": "40 records, null timeout, leading-zero secret, long opponent name",
+  "scope": "Web visual fixtures and local reconnect; not WeChat device validation"
+}
