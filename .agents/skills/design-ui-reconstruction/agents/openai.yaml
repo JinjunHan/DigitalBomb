@@ -1,0 +1,4 @@
+interface:
+  display_name: "设计图分层切图与 UI 还原"
+  short_description: "先分层切图，再用真实素材实现界面、转场和微信小游戏验证"
+  default_prompt: "使用 $design-ui-reconstruction，根据指定设计图先分类分层并切图，再接入 Cocos UI、交互与转场，完成视觉验证和微信导出。"
