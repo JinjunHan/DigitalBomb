@@ -21,6 +21,9 @@ export class GameApp extends Component {
   private friendArtReady = false;
   private joinArt = new Map<string, SpriteFrame>();
   private joinArtReady = false;
+  private joinDigits: Label[] = [];
+  private joinGlows: UIOpacity[] = [];
+  private joinButton?: Node;
   private friendDigitFont?: Font;
   private profilePanel?: Node;
   private profileBack?: Node;
@@ -99,7 +102,7 @@ export class GameApp extends Component {
     view.on('canvas-resize', this.resizeLayout, this);
     this.resizeLayout(); this.connect(); this.schedule(this.updateTimer, 0.2);
   }
-  onDestroy() { this.scenery?.destroy(); view.off('canvas-resize', this.resizeLayout, this); this.audio.dispose(); if (this.profilePanel) Tween.stopAllByTarget(this.profilePanel); this.clearEffects(); this.net.stop(); input.off(Input.EventType.KEY_DOWN, this.onKey, this); game.off(Game.EVENT_SHOW, this.onShow, this); game.off(Game.EVENT_HIDE, this.onHide, this); }
+  onDestroy() { this.stopJoinMotion(); this.scenery?.destroy(); view.off('canvas-resize', this.resizeLayout, this); this.audio.dispose(); if (this.profilePanel) Tween.stopAllByTarget(this.profilePanel); this.clearEffects(); this.net.stop(); input.off(Input.EventType.KEY_DOWN, this.onKey, this); game.off(Game.EVENT_SHOW, this.onShow, this); game.off(Game.EVENT_HIDE, this.onHide, this); }
   private onHide() { this.audio.background(true); }
   private onShow() { this.audio.background(false); if (this.net.online) this.net.command('sync').catch(() => {}); }
   private async connect() { try { await this.net.start(); } catch (e) { this.toast((e as Error).message); } }
@@ -257,6 +260,7 @@ export class GameApp extends Component {
       this.recordPositions.set(key, { offset, bottom: scroll.getMaxScrollOffset().y - offset < 24 });
     }
     this.recordScrolls = [];
+    this.stopJoinMotion(); this.joinDigits = []; this.joinGlows = []; this.joinButton = undefined;
     this.profilePanel = undefined; this.profileBack = undefined; this.transitionLobby = undefined;
     for (const child of [...this.root.children]) { child.removeFromParent(); child.destroy(); }
     this.timerLabel = undefined; this.toastLabel = undefined;
@@ -360,11 +364,12 @@ export class GameApp extends Component {
       const sprite = node.addComponent(Sprite); sprite.spriteFrame = this.joinArt.get(name)!;
       sprite.sizeMode = Sprite.SizeMode.CUSTOM; node.getComponent(UITransform)!.setContentSize(w, h);
       if (!enabled) { sprite.grayscale = true; node.addComponent(UIOpacity).opacity = 165; }
-      if (action && enabled) {
+      if (action && (enabled || name === 'join')) {
         node.on(Node.EventType.TOUCH_START, () => { if (read('motion', '1') === '1') node.setScale(.97, .97, 1); });
         node.on(Node.EventType.TOUCH_CANCEL, () => node.setScale(1, 1, 1));
-        node.on(Node.EventType.TOUCH_END, () => { node.setScale(1, 1, 1); this.audio.unlock(); if (!name.startsWith('key-')) this.audio.play('tap'); action(); });
+        node.on(Node.EventType.TOUCH_END, () => { node.setScale(1, 1, 1); if (name === 'join' && (this.code.length !== 4 || this.busy || !this.net.online)) return; this.audio.unlock(); if (!name.startsWith('key-')) this.audio.play('tap'); action(); });
       }
+      return node;
     };
     art('back', [26, 46, 227, 122], () => { this.page = 'lobby'; this.render(); }, !this.busy);
     art('heading', [249, 65, 696, 256]); art('paper', [120, 292, 823, 998]);
@@ -373,8 +378,14 @@ export class GameApp extends Component {
       digit.node.setPosition([266, 402, 540, 677][i] - 470.5, -557);
       digit.font = this.friendDigitFont ?? null; digit.fontFamily = 'serif'; digit.isBold = !this.friendDigitFont;
       digit.lineHeight = 112; digit.enableWrapText = false;
+      digit.node.addComponent(UIOpacity); this.joinDigits.push(digit);
+      const glow = this.n('JoinDigitGlow', 375, 667, 120, 145, group);
+      glow.setPosition([266, 402, 540, 677][i] - 470.5, -557);
+      const border = glow.addComponent(Graphics); border.strokeColor = new Color('#E9B55A'); border.lineWidth = 3;
+      border.roundRect(-58, -71, 116, 142, 7); border.stroke();
+      const opacity = glow.addComponent(UIOpacity); opacity.opacity = 0; this.joinGlows.push(opacity);
     }
-    art('join', [221, 716, 723, 842], () => this.act('join', { code: this.code }), this.code.length === 4 && !this.busy && this.net.online);
+    this.joinButton = art('join', [221, 716, 723, 842], () => this.act('join', { code: this.code }), this.code.length === 4 && !this.busy && this.net.online);
     art('create', [244, 849, 699, 949], () => this.act('create'), !this.busy && this.net.online);
     art('keyboard', [0, 1047, 941, 1632]);
     const keys: [string, number[]][] = [
@@ -386,11 +397,52 @@ export class GameApp extends Component {
     for (const [key, rect] of keys) art('key-' + key, rect,
       () => this.digit(key === 'clear' ? '清空' : key === 'delete' ? '删除' : key, 'join'), !this.busy && this.net.online);
   }
+  private stopJoinMotion() {
+    for (const label of this.joinDigits) {
+      if (!label.isValid) continue;
+      Tween.stopAllByTarget(label.node); const opacity = label.node.getComponent(UIOpacity);
+      if (opacity) Tween.stopAllByTarget(opacity);
+    }
+    for (const glow of this.joinGlows) if (glow.isValid) Tween.stopAllByTarget(glow);
+    if (this.joinButton?.isValid) Tween.stopAllByTarget(this.joinButton);
+  }
+  private animateJoinDigits(previous: string, next: string) {
+    const motion = read('motion', '1') === '1';
+    this.joinDigits.forEach((label, i) => {
+      if (previous[i] === next[i]) return;
+      const node = label.node, opacity = node.getComponent(UIOpacity)!, glow = this.joinGlows[i];
+      Tween.stopAllByTarget(node); Tween.stopAllByTarget(opacity); Tween.stopAllByTarget(glow);
+      const rest = new Vec3([266, 402, 540, 677][i] - 470.5, -557, 0);
+      node.setPosition(rest); node.setScale(1, 1, 1); opacity.opacity = 255; glow.opacity = 0;
+      if (!motion) { label.string = next[i] ?? ''; return; }
+      if (next[i] !== undefined) {
+        label.string = next[i]; node.setPosition(rest.x, rest.y + 10); node.setScale(.85, .85, 1); opacity.opacity = 0;
+        tween(node).to(.12, { position: rest, scale: new Vec3(1.05, 1.05, 1) }, { easing: 'quadOut' })
+          .to(.06, { scale: Vec3.ONE }).start();
+        tween(opacity).to(.10, { opacity: 255 }).start();
+        tween(glow).to(.06, { opacity: 150 }).to(.16, { opacity: 0 }).start();
+      } else {
+        // State changes immediately; a retyped slot cancels both exit tweens before reuse.
+        const delay = next.length === 0 ? (previous.length - 1 - i) * .03 : 0;
+        tween(node).delay(delay).to(.13, { position: new Vec3(rest.x, rest.y + 8, 0), scale: new Vec3(.85, .85, 1) }, { easing: 'quadIn' }).start();
+        tween(opacity).delay(delay).to(.13, { opacity: 0 }).call(() => { label.string = ''; }).start();
+      }
+    });
+    const button = this.joinButton;
+    if (button?.isValid) {
+      const enabled = next.length === 4 && !this.busy && this.net.online;
+      button.getComponent(Sprite)!.grayscale = !enabled;
+      const opacity = button.getComponent(UIOpacity) ?? button.addComponent(UIOpacity); opacity.opacity = enabled ? 255 : 165;
+      Tween.stopAllByTarget(button); button.setScale(1, 1, 1);
+      if (motion && enabled && previous.length < 4) tween(button).to(.09, { scale: new Vec3(1.025, 1.025, 1) }).to(.11, { scale: Vec3.ONE }).start();
+    }
+  }
   private keypad(top: number, context: 'join' | 'secret' | 'guess', enabled = true) {
     const labels = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '删除', '0', context === 'secret' ? '随机' : '清空'];
     labels.forEach((label, i) => { if (context === 'guess' && i === 11) return; this.button(label, 165 + i % 3 * 210, top + Math.floor(i / 3) * 80, 194, 66, () => this.digit(label, context), false, enabled && !this.busy); });
   }
   private digit(value: string, context: 'join' | 'secret' | 'guess') {
+    if (context === 'join' && (this.busy || !this.net.online)) return;
     this.audio.play('tap');
     let v = context === 'join' ? this.code : this.draft;
     if (value === '删除') v = v.slice(0, -1);
@@ -398,7 +450,13 @@ export class GameApp extends Component {
     else if (value === '随机') v = String(Math.floor(Math.random() * 10000)).padStart(4, '0');
     else if (this.selected >= 0 && context !== 'join' && this.selected < v.length) { v = v.slice(0, this.selected) + value + v.slice(this.selected + 1); this.selected = this.selected < 3 ? this.selected + 1 : -1; }
     else if (v.length < 4) v += value;
-    if (context === 'join') this.code = v; else this.draft = v; this.render();
+    if (context === 'join') {
+      const previous = this.code; this.code = v;
+      if (this.joinDigits.length === 4 && this.joinDigits.every(label => label.isValid)) {
+        this.animateJoinDigits(previous, v); return;
+      }
+    } else this.draft = v;
+    this.render();
   }
   private onKey(e: EventKeyboard) {
     this.audio.unlock();
