@@ -3,7 +3,7 @@ export interface ScenePose { zoom: number; lift: number; pan: number }
 export const SCENE_VIEWS: Record<SceneView, ScenePose> = {
   lobby: { zoom: 0, lift: 0, pan: 0 },
   friend: { zoom: -.28, lift: -.045, pan: -.012 },
-  matching: { zoom: .55, lift: .025, pan: .014 },
+  matching: { zoom: 1.8, lift: .12, pan: .014 },
   game: { zoom: 1, lift: .065, pan: 0 },
 };
 /** Retarget from the current pose; ordinary UI refreshes never restart the move. */
