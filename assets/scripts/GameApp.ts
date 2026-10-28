@@ -17,6 +17,8 @@ export class GameApp extends Component {
   private effects!: Node; private seenGuesses = 0; private submitting = false;
   private lobbyArt = new Map<string, SpriteFrame>();
   private profileArt = new Map<string, SpriteFrame>();
+  private friendArt = new Map<string, SpriteFrame>();
+  private friendArtReady = false;
   private profilePanel?: Node;
   private profileBack?: Node;
   private profileBackRest = new Vec3();
@@ -67,6 +69,14 @@ export class GameApp extends Component {
       resources.load('art/profile/' + name + '/texture', Texture2D, (err, texture) => {
         if (err || !this.isValid) return;
         const sf = new SpriteFrame(); sf.texture = texture; this.profileArt.set(name, sf); this.render();
+      });
+    }
+    const friendNames = ['back', 'heading', 'waiting', 'count', 'paper', 'copy', 'nameplate', 'seated', 'close'];
+    for (const name of friendNames) {
+      resources.load('art/friend/' + name + '/texture', Texture2D, (err, texture) => {
+        if (err || !this.isValid) return;
+        const frame = new SpriteFrame(); frame.texture = texture; this.friendArt.set(name, frame);
+        if (friendNames.every(key => this.friendArt.has(key))) { this.friendArtReady = true; this.render(); }
       });
     }
     profiler.hideStats();
@@ -359,11 +369,60 @@ export class GameApp extends Component {
     if (r.phase === 'preparing') this.preparation(r); else this.play(r);
   }
   private waiting(r: RoomView) {
+    if (this.friendArtReady) { this.friendWaiting(r); return; }
     this.header('好友房', () => this.ask('关闭当前房间？', () => this.act('leave')));
     this.text('等待好友入座', 375, 390, 36); this.text('1 / 2', 375, 455, 24, C.gold);
     this.box(375, 685, 650, 350, C.dark); this.text('房间口令', 375, 555, 28); this.cards(r.code!, 660, 100);
     this.button('复制口令', 375, 800, 340, 62, () => { copy(r.code!); this.toast('房间口令：' + r.code); }, true);
     this.timerLabel = this.text('', 375, 930, 24); this.button('关闭房间', 375, 1120, 520, 88, () => this.ask('关闭当前房间？', () => this.act('leave')));
+  }
+  /** Source-space composition: one uniform transform also scales fonts and hit targets. */
+  private friendWaiting(r: RoomView) {
+    const scale = Math.min(750 / 941, (this.screenHeight - this.layoutTop - bottomSafeInset() - 24) / 1463);
+    const group = this.n('FriendRoom', 375, 667, 941, 1672);
+    group.setPosition(0, this.screenHeight / 2 - this.layoutTop + 32 * scale);
+    group.setScale(scale, scale, 1);
+    const place = (node: Node, x: number, y: number) => { node.setPosition(x - 470.5, -y); return node; };
+    const art = (name: string, x: number, y: number, w: number, h: number, action?: () => void) => {
+      const node = place(this.n('Friend-' + name, 375, 667, w, h, group), x, y);
+      const sprite = node.addComponent(Sprite); sprite.spriteFrame = this.friendArt.get(name)!;
+      sprite.sizeMode = Sprite.SizeMode.CUSTOM; node.getComponent(UITransform)!.setContentSize(w, h);
+      if (action) {
+        if (this.busy) node.addComponent(UIOpacity).opacity = 150;
+        else {
+          node.on(Node.EventType.TOUCH_START, () => { if (read('motion', '1') === '1') node.setScale(.97, .97, 1); });
+          node.on(Node.EventType.TOUCH_CANCEL, () => node.setScale(1, 1, 1));
+          node.on(Node.EventType.TOUCH_END, () => { node.setScale(1, 1, 1); this.audio.unlock(); this.audio.play('tap'); action(); });
+        }
+      }
+      return node;
+    };
+    const label = (value: string, x: number, y: number, size: number, color: string, w: number, h: number) => {
+      const l = this.text(value, 375, 667, size, color, w, h, group); place(l.node, x, y); return l;
+    };
+    const close = () => this.ask('关闭当前房间？', () => this.act('leave'));
+    art('back', 133.5, 81, 199, 84, close);
+    art('heading', 471, 80, 320, 96);
+    art('waiting', 471, 328, 158, 148);
+    art('count', 471.5, 488, 187, 76);
+    label(`${r.players.length}/2`, 492, 487, 37, C.cream, 78, 50);
+    art('paper', 478.5, 814.5, 807, 561);
+    for (let i = 0; i < 4; i++) label(r.code?.[i] ?? '—', 253 + i * 145, 724, 105, '#191007', 108, 132);
+    art('copy', 470.5, 872.5, 397, 105, () => { if (r.code) { copy(r.code); this.toast('房间口令：' + r.code); } });
+    this.timerLabel = label('', 569, 1024, 27, C.ink, 88, 40);
+    const me = this.net.state!.me;
+    // Actual player portrait, followed by the existing hollow decorative rim.
+    for (const [key, size] of [['portrait-background', 178], ['avatar-' + me.avatar, 178], ['portrait-frame', 198]] as const) {
+      const frame = this.profileArt.get(key);
+      if (!frame) { if (size === 178) label(AVATARS[me.avatar] ?? '客', 471, 1195, 60, C.ink, 150, 160); continue; }
+      const node = place(this.n('Friend-' + key, 375, 667, size, size, group), 471, 1195);
+      const sprite = node.addComponent(Sprite); sprite.spriteFrame = frame; sprite.sizeMode = Sprite.SizeMode.CUSTOM;
+      node.getComponent(UITransform)!.setContentSize(size, size);
+    }
+    art('nameplate', 471, 1278.5, 210, 51);
+    label(me.name, 471, 1278, 26, C.cream, 174, 38);
+    art('seated', 471.5, 1318, 163, 36);
+    art('close', 470.5, 1439.5, 447, 111, close);
   }
   private preparation(r: RoomView) {
     this.text(r.players.find(p => p.id !== this.net.state!.me.id)?.ready ? '对手已准备' : '对手正在设置', 375, 365, 22, C.gold);
@@ -663,7 +722,7 @@ export class GameApp extends Component {
       if (s.queuedAt !== null) { const seconds = Math.floor((now - s.queuedAt) / 1000); this.timerLabel.string = `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`; }
       else if (r) {
         const remaining = Math.max(0, Math.ceil((r.deadline - now) / 1000));
-        if (r.phase === 'waiting') this.timerLabel.string = `房间有效期  ${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, '0')}`;
+        if (r.phase === 'waiting') this.timerLabel.string = `${this.friendArtReady ? '' : '房间有效期  '}${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, '0')}`;
         else if (r.phase === 'preparing') this.timerLabel.string = `准备倒计时 ${remaining}s`;
         else if (now < r.startAt) this.timerLabel.string = `即将开局 ${Math.ceil((r.startAt - now) / 1000)}s`;
         else this.timerLabel.string = `${r.phase === 'reply' ? '最后一次补猜 · ' : ''}${r.current === s.me.id ? '轮到你了' : '对手正在猜测'}  ${remaining}s`;

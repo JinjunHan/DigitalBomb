@@ -1,0 +1,254 @@
+{
+  "back": {
+    "rect": [
+      34,
+      39,
+      233,
+      123
+    ],
+    "polygon": [
+      [
+        35,
+        63
+      ],
+      [
+        49,
+        43
+      ],
+      [
+        208,
+        41
+      ],
+      [
+        230,
+        59
+      ],
+      [
+        231,
+        103
+      ],
+      [
+        214,
+        120
+      ],
+      [
+        51,
+        120
+      ],
+      [
+        35,
+        105
+      ]
+    ],
+    "radius": null,
+    "ellipse": null,
+    "repair": null
+  },
+  "heading": {
+    "rect": [
+      311,
+      32,
+      631,
+      128
+    ],
+    "polygon": [
+      [
+        312,
+        76
+      ],
+      [
+        338,
+        38
+      ],
+      [
+        356,
+        33
+      ],
+      [
+        588,
+        34
+      ],
+      [
+        608,
+        48
+      ],
+      [
+        628,
+        78
+      ],
+      [
+        610,
+        112
+      ],
+      [
+        589,
+        126
+      ],
+      [
+        348,
+        125
+      ],
+      [
+        329,
+        105
+      ]
+    ],
+    "radius": null,
+    "ellipse": null,
+    "repair": null
+  },
+  "waiting": {
+    "rect": [
+      392,
+      254,
+      550,
+      402
+    ],
+    "polygon": null,
+    "radius": 22,
+    "ellipse": [
+      411,
+      255,
+      531,
+      375
+    ],
+    "repair": null,
+    "maskOverride": {
+      "ellipseLocal": [
+        19,
+        1,
+        139,
+        121
+      ],
+      "roundedRectLocal": [
+        2,
+        101,
+        156,
+        144
+      ],
+      "radius": 20
+    }
+  },
+  "count": {
+    "rect": [
+      378,
+      450,
+      565,
+      526
+    ],
+    "polygon": [
+      [
+        379,
+        486
+      ],
+      [
+        403,
+        454
+      ],
+      [
+        532,
+        453
+      ],
+      [
+        562,
+        483
+      ],
+      [
+        544,
+        519
+      ],
+      [
+        402,
+        523
+      ]
+    ],
+    "radius": null,
+    "ellipse": null,
+    "repair": "count_repair"
+  },
+  "paper": {
+    "rect": [
+      75,
+      534,
+      882,
+      1095
+    ],
+    "polygon": [
+      [
+        174,
+        537
+      ],
+      [
+        767,
+        536
+      ],
+      [
+        879,
+        1071
+      ],
+      [
+        870,
+        1089
+      ],
+      [
+        82,
+        1088
+      ],
+      [
+        76,
+        1069
+      ]
+    ],
+    "radius": null,
+    "ellipse": null,
+    "repair": "paper_repair"
+  },
+  "copy": {
+    "rect": [
+      272,
+      820,
+      669,
+      925
+    ],
+    "polygon": null,
+    "radius": 37,
+    "ellipse": null,
+    "repair": null
+  },
+  "nameplate": {
+    "rect": [
+      366,
+      1253,
+      576,
+      1304
+    ],
+    "polygon": null,
+    "radius": 24,
+    "ellipse": null,
+    "repair": "name_repair"
+  },
+  "seated": {
+    "rect": [
+      390,
+      1300,
+      553,
+      1336
+    ],
+    "polygon": null,
+    "radius": 18,
+    "ellipse": null,
+    "repair": null
+  },
+  "close": {
+    "rect": [
+      247,
+      1384,
+      694,
+      1495
+    ],
+    "polygon": null,
+    "radius": 52,
+    "ellipse": null,
+    "repair": null
+  }
+}
