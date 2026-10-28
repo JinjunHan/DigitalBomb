@@ -1,27 +1,26 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { matchingHourglass } from '../assets/scripts/shared/matching-hourglass';
-test('sand transfers with constant total amount, then pauses while turning', () => {
-  for (let t = 0; t < 20; t += .037) {
-    const p = matchingHourglass(t);
-    assert.ok(Math.abs(p.upper + p.lower - 1.2) < 1e-9);
-    assert.ok(p.upper >= .2 && p.upper <= 1 && p.lower >= .2 && p.lower <= 1);
+
+test('flow holds frames slowly and turnover advances without skipping its endpoints', () => {
+  assert.equal(matchingHourglass(.499), 0);
+  assert.equal(matchingHourglass(.5), 1);
+  assert.equal(matchingHourglass(3.999), 7);
+  assert.equal(matchingHourglass(4), 8);
+  assert.equal(matchingHourglass(4.099), 8);
+  assert.equal(matchingHourglass(4.1), 9);
+  assert.equal(matchingHourglass(4.799), 15);
+  assert.equal(matchingHourglass(4.8), 0);
+});
+test('session-time sampling survives redraws and long waits, staying inside the atlas', () => {
+  for (let ms = 0; ms < 60000; ms += 37) {
+    const index = matchingHourglass(ms / 1000);
+    assert.ok(Number.isInteger(index) && index >= 0 && index < 16);
   }
-  assert.ok(matchingHourglass(2).upper < matchingHourglass(1).upper);
-  assert.equal(matchingHourglass(4.4).flowing, false);
-  assert.ok(matchingHourglass(4.4).angle < 0);
-  assert.ok(matchingHourglass(6).upper > matchingHourglass(5).upper);
+  assert.equal(matchingHourglass(12.25), matchingHourglass(2.65));
+  assert.equal(matchingHourglass(480), 0);
 });
-test('half-turn boundary preserves sand volumes and orientation across redraws', () => {
-  const before = matchingHourglass(4.8 - 1e-7), after = matchingHourglass(4.8);
-  assert.ok(Math.abs(before.angle - after.angle) < 1e-5);
-  assert.ok(Math.abs(before.upper - after.upper) < 1e-7);
-  assert.ok(Math.abs(before.lower - after.lower) < 1e-7);
-  assert.equal(matchingHourglass(9.6).angle, 0);
-});
-test('motion-off and invalid clocks give a stable non-flowing pose', () => {
-  assert.deepEqual(matchingHourglass(123, false), matchingHourglass(0, false));
-  assert.equal(matchingHourglass(123, false).flowing, false);
-  assert.deepEqual(matchingHourglass(-1), matchingHourglass(0));
-  assert.deepEqual(matchingHourglass(NaN), matchingHourglass(0));
+test('motion disabled and invalid clocks hold the initial frame', () => {
+  assert.equal(matchingHourglass(4.5, false), 0);
+  for (const time of [-1, NaN, Infinity]) assert.equal(matchingHourglass(time), 0);
 });

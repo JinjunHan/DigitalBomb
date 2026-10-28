@@ -1,0 +1,306 @@
+[
+  {
+    "sourceRect": [
+      0,
+      0,
+      313,
+      310
+    ],
+    "offset": [
+      -6,
+      4
+    ],
+    "atlasRect": [
+      0,
+      0,
+      320,
+      320
+    ],
+    "durationMs": 500
+  },
+  {
+    "sourceRect": [
+      313,
+      0,
+      626,
+      310
+    ],
+    "offset": [
+      0,
+      3
+    ],
+    "atlasRect": [
+      320,
+      0,
+      320,
+      320
+    ],
+    "durationMs": 500
+  },
+  {
+    "sourceRect": [
+      626,
+      0,
+      940,
+      310
+    ],
+    "offset": [
+      5,
+      2
+    ],
+    "atlasRect": [
+      640,
+      0,
+      320,
+      320
+    ],
+    "durationMs": 500
+  },
+  {
+    "sourceRect": [
+      940,
+      0,
+      1254,
+      310
+    ],
+    "offset": [
+      11,
+      2
+    ],
+    "atlasRect": [
+      960,
+      0,
+      320,
+      320
+    ],
+    "durationMs": 500
+  },
+  {
+    "sourceRect": [
+      0,
+      310,
+      313,
+      610
+    ],
+    "offset": [
+      -6,
+      8
+    ],
+    "atlasRect": [
+      0,
+      320,
+      320,
+      320
+    ],
+    "durationMs": 500
+  },
+  {
+    "sourceRect": [
+      313,
+      310,
+      626,
+      610
+    ],
+    "offset": [
+      0,
+      8
+    ],
+    "atlasRect": [
+      320,
+      320,
+      320,
+      320
+    ],
+    "durationMs": 500
+  },
+  {
+    "sourceRect": [
+      626,
+      310,
+      940,
+      610
+    ],
+    "offset": [
+      6,
+      7
+    ],
+    "atlasRect": [
+      640,
+      320,
+      320,
+      320
+    ],
+    "durationMs": 500
+  },
+  {
+    "sourceRect": [
+      940,
+      310,
+      1254,
+      610
+    ],
+    "offset": [
+      12,
+      6
+    ],
+    "atlasRect": [
+      960,
+      320,
+      320,
+      320
+    ],
+    "durationMs": 500
+  },
+  {
+    "sourceRect": [
+      0,
+      610,
+      313,
+      910
+    ],
+    "offset": [
+      -5,
+      8
+    ],
+    "atlasRect": [
+      0,
+      640,
+      320,
+      320
+    ],
+    "durationMs": 100
+  },
+  {
+    "sourceRect": [
+      313,
+      610,
+      626,
+      910
+    ],
+    "offset": [
+      1,
+      10
+    ],
+    "atlasRect": [
+      320,
+      640,
+      320,
+      320
+    ],
+    "durationMs": 100
+  },
+  {
+    "sourceRect": [
+      626,
+      610,
+      940,
+      910
+    ],
+    "offset": [
+      -2,
+      12
+    ],
+    "atlasRect": [
+      640,
+      640,
+      320,
+      320
+    ],
+    "durationMs": 100
+  },
+  {
+    "sourceRect": [
+      940,
+      610,
+      1254,
+      910
+    ],
+    "offset": [
+      4,
+      8
+    ],
+    "atlasRect": [
+      960,
+      640,
+      320,
+      320
+    ],
+    "durationMs": 100
+  },
+  {
+    "sourceRect": [
+      0,
+      910,
+      313,
+      1254
+    ],
+    "offset": [
+      -4,
+      13
+    ],
+    "atlasRect": [
+      0,
+      960,
+      320,
+      320
+    ],
+    "durationMs": 100
+  },
+  {
+    "sourceRect": [
+      313,
+      910,
+      626,
+      1254
+    ],
+    "offset": [
+      9,
+      12
+    ],
+    "atlasRect": [
+      320,
+      960,
+      320,
+      320
+    ],
+    "durationMs": 100
+  },
+  {
+    "sourceRect": [
+      626,
+      910,
+      940,
+      1254
+    ],
+    "offset": [
+      -4,
+      11
+    ],
+    "atlasRect": [
+      640,
+      960,
+      320,
+      320
+    ],
+    "durationMs": 100
+  },
+  {
+    "sourceRect": [
+      940,
+      910,
+      1254,
+      1254
+    ],
+    "offset": [
+      12,
+      8
+    ],
+    "atlasRect": [
+      960,
+      960,
+      320,
+      320
+    ],
+    "durationMs": 100
+  }
+]

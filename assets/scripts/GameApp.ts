@@ -1,4 +1,4 @@
-import { _decorator, Component, Node, UITransform, Label, Graphics, Color, Layers, view, ResolutionPolicy, resources, SpriteFrame, Sprite, Texture2D, profiler, tween, Tween, UIOpacity, Vec3, EditBox, input, Input, EventKeyboard, KeyCode, game, Game, BlockInputEvents, ScrollView, Mask, Vec2, Font } from 'cc';
+import { _decorator, Component, Node, UITransform, Label, Graphics, Color, Layers, view, ResolutionPolicy, resources, SpriteFrame, Sprite, Texture2D, profiler, tween, Tween, UIOpacity, Vec3, EditBox, input, Input, EventKeyboard, KeyCode, game, Game, BlockInputEvents, ScrollView, Mask, Vec2, Font, Rect } from 'cc';
 import { matchingHourglass } from './shared/matching-hourglass';
 import { SceneBackdrop } from './SceneBackdrop';
 import { InputEditSession } from './shared/input-edit-session';
@@ -24,10 +24,8 @@ export class GameApp extends Component {
   private joinArtReady = false;
   private matchingArt = new Map<string, SpriteFrame>();
   private matchingArtReady = false;
-  private hourglass?: Node;
-  private upperSand?: Node;
-  private lowerSand?: Node;
-  private sandGrains: Node[] = [];
+  private hourglass?: Sprite;
+  private hourglassFrames: SpriteFrame[] = [];
   private joinDigits: Label[] = [];
   private joinGlows: UIOpacity[] = [];
   private joinButton?: Node;
@@ -104,11 +102,18 @@ export class GameApp extends Component {
         if (joinNames.every(key => this.joinArt.has(key))) { this.joinArtReady = true; this.render(); }
       });
     }
-    const matchingNames = ['opponent', 'heading', 'base', 'glass', 'sand-top', 'sand-bottom', 'portrait-rim', 'nameplate', 'cancel'];
+    const matchingNames = ['opponent', 'heading', 'base', 'hourglass-sheet', 'portrait-rim', 'nameplate', 'cancel'];
     for (const name of matchingNames) {
       resources.load('art/matching/' + name + '/texture', Texture2D, (err, texture) => {
         if (err || !this.isValid) return;
         const frame = new SpriteFrame(); frame.texture = texture; this.matchingArt.set(name, frame);
+        if (name === 'hourglass-sheet') {
+          this.hourglassFrames = Array.from({ length: 16 }, (_, index) => {
+            const cell = new SpriteFrame(); cell.texture = texture;
+            cell.rect = new Rect(index % 4 * 320, Math.floor(index / 4) * 320, 320, 320);
+            return cell;
+          });
+        }
         if (matchingNames.every(key => this.matchingArt.has(key))) { this.matchingArtReady = true; this.render(); }
       });
     }
@@ -276,7 +281,7 @@ export class GameApp extends Component {
     }
     this.recordScrolls = [];
     this.stopJoinMotion(); this.joinDigits = []; this.joinGlows = []; this.joinButton = undefined;
-    this.hourglass = undefined; this.upperSand = undefined; this.lowerSand = undefined; this.sandGrains = [];
+    this.hourglass = undefined;
     this.profilePanel = undefined; this.profileBack = undefined; this.transitionLobby = undefined;
     for (const child of [...this.root.children]) { child.removeFromParent(); child.destroy(); }
     this.timerLabel = undefined; this.toastLabel = undefined;
@@ -377,17 +382,9 @@ export class GameApp extends Component {
     };
     sprite('opponent', [383,157,555,329]); sprite('heading', [229,344,716,550]);
     sprite('base', [142,704,799,1010]);
-    const hourglass = this.n('MatchingHourglass', 375, 667, 214, 292, group); hourglass.setPosition(0,-705); this.hourglass = hourglass;
-    this.upperSand = sprite('sand-top', [423,659,522,717], hourglass);
-    this.upperSand.getComponent(UITransform)!.setAnchorPoint(.5,0); this.upperSand.setPosition(2,-12);
-    this.lowerSand = sprite('sand-bottom', [422,767,524,815], hourglass);
-    this.lowerSand.getComponent(UITransform)!.setAnchorPoint(.5,0); this.lowerSand.setPosition(2.5,-110);
-    sprite('glass', [365,559,579,851], hourglass);
-    for (let i=0;i<8;i++) {
-      const grain = this.n('SandGrain',375,667,4,6,hourglass); const ink=grain.addComponent(Graphics);
-      ink.fillColor=new Color(i%2 ? '#FFCE65' : '#FFF1B0'); ink.ellipse(-1,-2,2,4); ink.fill();
-      this.sandGrains.push(grain);
-    }
+    // Uniform square cells keep the art pivot fixed, including tilted frames.
+    const hourglass = sprite('hourglass-sheet', [302.5,537,638.5,873], group, this.hourglassFrames[0]);
+    this.hourglass = hourglass.getComponent(Sprite)!;
     this.timerLabel = this.text('',375,667,57,'#FFD978',225,72,group);
     this.timerLabel.fontFamily = 'Times New Roman'; this.timerLabel.isBold = true;
     this.timerLabel.node.setPosition(0,-913);
@@ -408,14 +405,8 @@ export class GameApp extends Component {
   private applyMatchingMotion() {
     const queuedAt=this.net.state?.queuedAt;
     if(!this.hourglass?.isValid || queuedAt == null || this.net.state?.room) return;
-    const pose=matchingHourglass((this.net.now()-queuedAt)/1000,read('motion','1')==='1');
-    this.hourglass.angle=pose.angle;
-    this.upperSand!.setScale(1,pose.upper,1); this.lowerSand!.setScale(1,pose.lower,1);
-    this.sandGrains.forEach((grain,i)=>{
-      grain.active=pose.flowing;
-      const phase=(pose.grainPhase+i/8)%1;
-      grain.setPosition((i%3-1)*1.8,pose.inverted ? -90+phase*75 : -15-phase*75);
-    });
+    const frame=this.hourglassFrames[matchingHourglass((this.net.now()-queuedAt)/1000,read('motion','1')==='1')];
+    if(this.hourglass.spriteFrame !== frame) this.hourglass.spriteFrame=frame;
   }
   private join() {
     if (this.joinArtReady) { this.joinArtwork(); return; }
