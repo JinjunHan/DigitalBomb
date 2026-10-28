@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { SceneCamera, SCENE_VIEWS } from '../assets/scripts/shared/scene-camera';
+import { SceneCamera, SCENE_VIEWS, sceneTableScale } from '../assets/scripts/shared/scene-camera';
 
 test('repeated UI refresh does not restart the scene transition', () => {
   const camera = new SceneCamera();
@@ -21,7 +21,7 @@ test('motion off snaps, stalled frame is bounded, and all views cover the screen
   assert.ok(camera.pose.zoom > 0 && camera.pose.zoom < .1);
   camera.setView('friend', false); assert.deepEqual(camera.pose, SCENE_VIEWS.friend);
   for (const p of Object.values(SCENE_VIEWS)) {
-    const tableScale = 1.08 + p.zoom * .1;
+    const tableScale = sceneTableScale(p);
     assert.ok(-tableScale / 2 + p.lift <= -.5, 'table covers lower screen edge');
     assert.ok(tableScale / 2 - Math.abs(p.pan) >= .5, 'table covers both sides');
     const roomScale = 1.1 + p.zoom * .025;

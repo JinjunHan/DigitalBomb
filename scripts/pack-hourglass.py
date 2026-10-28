@@ -1,7 +1,7 @@
 """Pack generated RGBA art into registered sprite cells; no painted/generated pixels."""
 from pathlib import Path
 import json
-from PIL import Image
+from PIL import Image, ImageChops, ImageFilter
 
 ROOT = Path(__file__).resolve().parents[1]
 source = ROOT / 'docs/design/matching/hourglass-sprites/generated-v2.png'
@@ -14,6 +14,12 @@ for i in range(16):
     col, row = i % 4, i // 4
     rect = (xs[col], ys[row], xs[col+1], ys[row+1])
     tile = im.crop(rect)
+    # Generated cells contain very faint alpha across their entire rectangular canvas.
+    # Restrict that fringe to a soft 6px neighborhood of the actual silhouette;
+    # preserve RGB and translucent glass inside the supported region.
+    alpha = tile.getchannel('A')
+    support = alpha.point(lambda a: 255 if a >= 48 else 0).filter(ImageFilter.MaxFilter(13)).filter(ImageFilter.GaussianBlur(1.5))
+    tile.putalpha(ImageChops.multiply(alpha, support))
     # Ignore near-transparent fringe when measuring the pivot, preserve all RGBA.
     bounds = tile.getchannel('A').point(lambda a: 255 if a >= 80 else 0).getbbox()
     cx, cy = (bounds[0]+bounds[2])/2, (bounds[1]+bounds[3])/2

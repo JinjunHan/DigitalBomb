@@ -1,5 +1,5 @@
 import { Node, Layers, UITransform, Sprite, SpriteFrame, Texture2D, resources, Graphics, Color } from 'cc';
-import { SceneCamera, type SceneView } from './shared/scene-camera';
+import { SceneCamera, sceneTableScale, type SceneView } from './shared/scene-camera';
 
 /** Persistent scenery, below all interactive UI. No touch handlers or DOM dependencies. */
 export class SceneBackdrop {
@@ -59,14 +59,20 @@ export class SceneBackdrop {
     this.fallback.getComponent(UITransform)!.setContentSize(750, h);
     if (!this.ready) return;
     const room = this.layers.get('room')!, table = this.layers.get('table')!;
+    // Dim distant scenery as the camera approaches the table; keep lobby/profile tones unchanged.
+    const focus = Math.min(1, Math.max(0, p.zoom));
+    room.getComponent(Sprite)!.color = new Color(255 - 48 * focus, 255 - 52 * focus, 255 - 54 * focus);
+    table.getComponent(Sprite)!.color = new Color(255 - 22 * focus, 255 - 22 * focus, 255 - 20 * focus);
     room.getComponent(UITransform)!.setContentSize(750, h);
     room.setScale(1.1 + p.zoom * .025, 1.1 + p.zoom * .025, 1);
     room.setPosition(p.pan * 750 * .25, p.lift * h * .25);
     table.getComponent(UITransform)!.setContentSize(750, h);
-    table.setScale(1.08 + p.zoom * .1, 1.08 + p.zoom * .1, 1);
+    const tableScale = sceneTableScale(p);
+    table.setScale(tableScale, tableScale, 1);
     table.setPosition(p.pan * 750, p.lift * h);
     for (const [name, sign] of [['near-left', -1], ['near-right', 1]] as const) {
       const n = this.layers.get(name)!;
+      n.getComponent(Sprite)!.color = new Color(255 - 30 * focus, 255 - 32 * focus, 255 - 34 * focus);
       // Props move faster than the table, creating foreground parallax without covering controls.
       const width = 265, frame = n.getComponent(Sprite)!.spriteFrame!;
       n.getComponent(UITransform)!.setContentSize(width, width * frame.originalSize.height / frame.originalSize.width);

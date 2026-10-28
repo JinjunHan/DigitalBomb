@@ -439,10 +439,16 @@ export class GameApp extends Component {
     this.timerLabel.fontFamily = 'Times New Roman'; this.timerLabel.isBold = true;
     this.timerLabel.node.setPosition(0,-913);
     const me=this.net.state!.me, portrait=this.profileArt.get('avatar-'+me.avatar);
-    if (portrait) sprite('portrait',[369,1057,575,1263],group,portrait);
-    else { const label=this.text(AVATARS[me.avatar] ?? '客',375,667,65,C.cream,180,190,group);label.node.setPosition(0,-1158); }
+    const portraitBackground=this.profileArt.get('portrait-background');
+    const portraitClip=this.n('MatchingPortraitClip',375,667,206,206,group);portraitClip.setPosition(1.5,-1160);
+    portraitClip.addComponent(Mask).type=Mask.Type.GRAPHICS_ELLIPSE;
+    const clipPortrait=(node:Node)=>{node.parent=portraitClip;node.setPosition(0,0);};
+    if(portraitBackground) clipPortrait(sprite('portrait-background',[369,1057,575,1263],group,portraitBackground));
+    if (portrait) clipPortrait(sprite('portrait',[369,1057,575,1263],group,portrait));
+    else { const label=this.text(AVATARS[me.avatar] ?? '客',375,667,65,C.ink,180,190,group);label.node.setPosition(0,-1158); }
     sprite('portrait-rim',[315,1040,626,1240]); sprite('nameplate',[337,1224,603,1284]);
-    const name=this.text(me.name,375,667,32,C.cream,215,45,group);name.node.setPosition(0,-1253);name.enableWrapText=false;
+    const displayName=Array.from(me.name).length>7?Array.from(me.name).slice(0,6).join('')+'…':me.name;
+    const name=this.text(displayName,375,667,32,C.cream,215,45,group);name.node.setPosition(0,-1253);name.enableWrapText=false;
     const cancel=sprite('cancel',[207,1390,734,1545]);
     if(this.busy) cancel.addComponent(UIOpacity).opacity=150;
     else {
@@ -670,7 +676,7 @@ export class GameApp extends Component {
     group.setPosition(0, this.screenHeight / 2 - this.layoutTop + 20 * scale); group.setScale(scale, scale, 1);
     const place = (node: Node, x: number, y: number) => { node.setPosition(x - 470.5, -y); return node; };
     const touch = (node: Node, action: () => void, enabled = true) => {
-      if (!enabled) { node.addComponent(UIOpacity).opacity = 135; return; }
+      if (!enabled) { node.addComponent(UIOpacity).opacity = 170; return; }
       node.on(Node.EventType.TOUCH_START, () => { if (read('motion', '1') === '1') node.setScale(.98, .98, 1); });
       node.on(Node.EventType.TOUCH_CANCEL, () => node.setScale(1, 1, 1));
       node.on(Node.EventType.TOUCH_END, () => { node.setScale(1, 1, 1); this.audio.unlock(); action(); });
@@ -684,8 +690,19 @@ export class GameApp extends Component {
     const label = (value: string, x: number, y: number, size: number, w: number, color = C.ink, h = size * 1.5) => {
       const l = this.text(value,375,667,size,color,w,h,group); place(l.node,x,y); l.enableWrapText = false; return l;
     };
+    const number = (value: string, x: number, y: number, size: number, w: number, h = size * 1.5) => {
+      const l = label(value,x,y,size,w,C.ink,h);
+      if (this.friendDigitFont && /^[0-9—]+$/.test(value)) { l.font=this.friendDigitFont; l.lineHeight=size*1.1; }
+      else l.isBold=true;
+      return l;
+    };
+    const shortName = (name: string, limit: number) => Array.from(name).length > limit ? Array.from(name).slice(0,limit-1).join('')+'…' : name;
+    // The tray is below all controls and hands; each key remains independently clickable.
+    art(prep ? 'tray' : 'play-tray');
     art('opponent');
-    art('nameplate'); label(opponent.name + (opponent.online ? '' : ' · 离线'),472,153,23,134,C.cream,30);
+    const nameplate=art('nameplate');
+    touch(nameplate,()=>this.toast(opponent.name+(opponent.online?'':' · 连接中')));
+    label(shortName(opponent.name,6),472,153,23,134,C.cream,30);
     art('card-backs');
     const nav = art('round'); label(prep ? '设置底牌  ‹' : `第 ${r.round} 轮 / 20  ‹`,145,61,30,223,C.cream);
     touch(nav, () => { if (prep) this.ask('leave',()=>this.act('leave')); else { this.overlay='gameMenu';this.render(); } });
@@ -696,11 +713,13 @@ export class GameApp extends Component {
       const rules=art('rules'); touch(rules,()=>{this.overlay='rules';this.render();});
       const value=r.ownSecret ?? this.draft;
       for(let i=0;i<4;i++) {
-        const x=248+i*149, y=752+(i===0||i===3?25:0);
-        const card=art('card',[x-92,y-130,x+92,y+130]);card.angle=[14,5,-5,-14][i];
-        const digit=label(value[i] ?? '·',x,y,112,155);digit.node.angle=card.angle;
+        const active=editable && (this.selected===i || this.selected<0 && value.length===i);
+        const x=248+i*149, y=752+(i===0||i===3?25:0)-(active?14:0);
+        const card=art('card-paper',[x-96,y-132,x+96,y+132]);card.angle=[14,5,-5,-14][i];
+        if(active) { const edge=art('card-selected',[x-100,y-137,x+100,y+137]);edge.angle=card.angle; }
+        const digit=number(value[i] ?? '—',x,y,132,155,172);digit.node.angle=card.angle;
         if(editable) { touch(card,()=>{this.selected=i;this.render();});touch(digit.node,()=>{this.selected=i;this.render();}); }
-        if(editable && (this.selected===i || this.selected<0 && value.length===i)) label('◆',x,y-102,22,40,C.orange);
+
       }
       art('hands');art('hand-right');
       const lock=art('lock');touch(lock,()=>this.lockSecret(),editable&&this.draft.length===4);
@@ -715,25 +734,35 @@ export class GameApp extends Component {
         const y=443+i*94;
         art('record-row',[149,y-46,805,y+44]);
         label(`第${Math.floor(h.turn/2)+1}轮`,231,y,30,145);
-        if(h.digits) for(let j=0;j<4;j++) label(h.digits[j],349+j*88,y,43,67);
+        if(h.digits) for(let j=0;j<4;j++) number(h.digits[j],349+j*88,y,45,67);
         else label('本次超时',481,y,30,350);
         label(h.hits===null?'—':`${h.hits}/4`,727,y,35,110,'#FFD978');
       });
       art('guess');
       for(let i=0;i<4;i++) {
-        const digit=label(this.draft[i] ?? '·',298+i*116,840,70,95,C.ink,100);
+        const digit=number(this.draft[i] ?? '—',298+i*116,840,77,95,106);
         touch(digit.node,()=>{this.selected=i;this.render();},editable);
       }
       for(let i=0;i<4;i++) {
         const x=306+i*105,y=1030+(i===0||i===3?15:0);
-        const card=art('card',[x-66,y-94,x+66,y+94]);card.angle=[16,6,-6,-16][i];
-        const digit=label(this.hideSecret?'?':r.ownSecret?.[i] ?? '·',x,y,73,100);digit.node.angle=card.angle;
+        const card=art('card-paper',[x-69,y-95,x+69,y+95]);card.angle=[16,6,-6,-16][i];
+        const digit=number(this.hideSecret?'?':r.ownSecret?.[i] ?? '—',x,y,83,100,115);digit.node.angle=card.angle;
         touch(card,()=>{this.hideSecret=!this.hideSecret;this.render();});touch(digit.node,()=>{this.hideSecret=!this.hideSecret;this.render();});
       }
+      art('play-hand-left'); art('play-hand-right');
+      const portraitRect=[28,1000,208,1180];
       const portrait=this.profileArt.get('avatar-'+me.avatar);
-      if(portrait) art('portrait',[28,1000,198,1170],portrait);
+      const portraitBg=this.profileArt.get('portrait-background');
+      const portraitClip=place(this.n('BattlePortraitClip',375,667,180,180,group),118,1090);
+      portraitClip.addComponent(Mask).type=Mask.Type.GRAPHICS_ELLIPSE;
+      const clipPortrait=(node:Node)=>{node.parent=portraitClip;node.setPosition(0,0);};
+      if(portraitBg) clipPortrait(art('portrait-background',portraitRect,portraitBg));
+      if(portrait) clipPortrait(art('portrait',portraitRect,portrait));
+      else label(AVATARS[me.avatar] ?? '客',118,1090,64,140,C.ink,120);
+      const rim=this.profileArt.get('portrait-frame');
+      if(rim) art('portrait-frame',[23,995,213,1185],rim);
       art('nameplate',[18,1154,213,1192]);
-      label(me.name,115,1173,24,181,C.cream);
+      label(shortName(me.name,7),115,1173,24,181,C.cream);
       const secretStatus=art('status',[315,1106,626,1151]);
       touch(secretStatus,()=>{this.hideSecret=!this.hideSecret;this.render();});
       label(this.hideSecret?'底牌已隐藏 · 点击查看':'我的底牌 · 已锁定',470,1128,23,280,C.cream);

@@ -1,4 +1,4 @@
-/** Source rectangles: docs/design/battle/slices.json. */
+/** Source rectangles: docs/design/battle/slices.json; generated layers: generated/packing.json. */
 export const BATTLE_RECTS: Record<string, readonly number[]> = {
   "opponent": [
     330,
@@ -245,5 +245,41 @@ export const BATTLE_RECTS: Record<string, readonly number[]> = {
     1484,
     899,
     1588
+  ],
+  "play-hand-left": [
+    184,
+    991,
+    340,
+    1192
+  ],
+  "play-hand-right": [
+    610,
+    1004,
+    941,
+    1194
+  ],
+  "card-selected": [
+    0,
+    0,
+    190,
+    260
+  ],
+  "card-paper": [
+    0,
+    0,
+    190,
+    260
+  ],
+  "tray": [
+    -45,
+    900,
+    986,
+    1660
+  ],
+  "play-tray": [
+    -20,
+    1190,
+    961,
+    1650
   ]
 };

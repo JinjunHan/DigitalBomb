@@ -3,9 +3,11 @@ export interface ScenePose { zoom: number; lift: number; pan: number }
 export const SCENE_VIEWS: Record<SceneView, ScenePose> = {
   lobby: { zoom: 0, lift: 0, pan: 0 },
   friend: { zoom: -.28, lift: -.045, pan: -.012 },
-  matching: { zoom: 1.8, lift: .12, pan: .014 },
-  game: { zoom: 1, lift: .065, pan: 0 },
+  matching: { zoom: 1.8, lift: .16, pan: .014 },
+  game: { zoom: 1, lift: .12, pan: 0 },
 };
+/** Keep the lower edge covered when an upward camera shift reveals more of the table. */
+export function sceneTableScale(p: ScenePose) { return Math.max(1.08 + p.zoom * .1, 1 + 2 * Math.abs(p.lift) + .02); }
 /** Retarget from the current pose; ordinary UI refreshes never restart the move. */
 export class SceneCamera {
   pose = { ...SCENE_VIEWS.lobby };

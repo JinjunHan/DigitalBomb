@@ -1,0 +1,41 @@
+{
+  "tray": {
+    "source": "docs/design/battle/generated/keypad-tray.png",
+    "alphaCrop": [
+      0,
+      25,
+      1402,
+      1122
+    ],
+    "size": [
+      1000,
+      782
+    ]
+  },
+  "card-paper": {
+    "source": "docs/design/battle/generated/card-paper.png",
+    "alphaCrop": [
+      38,
+      23,
+      1036,
+      1425
+    ],
+    "size": [
+      240,
+      337
+    ]
+  },
+  "play-tray": {
+    "source": "docs/design/battle/generated/gameplay-tray.png",
+    "alphaCrop": [
+      0,
+      25,
+      1810,
+      845
+    ],
+    "size": [
+      1000,
+      453
+    ]
+  }
+}

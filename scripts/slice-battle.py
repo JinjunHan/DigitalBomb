@@ -30,6 +30,8 @@ add('hands',p,[0,736,941,1165],0,polygon=[[0,858],[72,780],[148,745],[161,773],[
 add('hand-right',p,[637,737,941,1076],0,polygon=[[637,823],[648,806],[667,801],[692,812],[735,838],[757,784],[768,747],[805,744],[864,776],[898,816],[941,870],[941,1076],[858,1035],[811,951],[765,914],[700,888],[659,852]])
 for prefix,src,rects in [('prep',p,[[183,972,371,1052],[379,972,567,1052],[571,972,759,1052],[168,1056,370,1140],[376,1056,570,1140],[573,1056,777,1140],[155,1144,365,1231],[370,1144,577,1231],[578,1144,791,1231],[133,1236,361,1339],[366,1236,578,1339],[583,1236,808,1339]]),('play',g,[[87,1238,337,1312],[348,1238,593,1312],[604,1238,855,1312],[75,1314,334,1394],[344,1314,598,1394],[607,1314,866,1394],[62,1396,330,1478],[339,1396,601,1478],[612,1396,879,1478],[47,1484,324,1588],[336,1484,605,1588],[615,1484,899,1588]])]:
  for name,rect in zip(['1','2','3','4','5','6','7','8','9','delete','0','action'],rects):add(prefix+'-'+name,src,rect,18)
+add('play-hand-left',g,[184,991,340,1192],0,polygon=[[188,1038],[213,1014],[230,998],[243,1010],[253,1057],[281,1057],[306,1054],[326,1062],[336,1075],[330,1091],[306,1109],[269,1126],[237,1147],[225,1190],[185,1190],[198,1152],[211,1120],[199,1088]])
+add('play-hand-right',g,[610,1004,941,1194],0,polygon=[[610,1076],[620,1062],[637,1058],[660,1067],[685,1074],[704,1008],[725,1007],[760,1022],[793,1046],[820,1072],[853,1090],[893,1108],[941,1130],[941,1194],[788,1194],[764,1164],[722,1144],[681,1127],[646,1109],[621,1094]])
 spec['card']['quad']=[300,609,321,866,503,849,488,594]
 manifest={'coordinates':'left,top,right,bottom; 941x1672 source pixels','drawOrder':['existing persistent scene','opponent','panels','cards','hands','dynamic labels','buttons'],'dynamic':'All nicknames, readiness, round, timer, secret, draft and history come from session state. Fixed button lettering retained. Repairs copy same-source clean texture, not lossless crops.','assets':spec}
 (DOC/'slices.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+'\n')
@@ -47,9 +49,26 @@ for name,s in spec.items():
    for px in range(0,130,tile.width):patch.paste(tile,(px,py))
   im.paste(patch,(30,60))
  mask=Image.new('L',(im.width*4,im.height*4));d=ImageDraw.Draw(mask)
- if s['polygon']:d.polygon([((x-l)*4,(y-t)*4) for x,y in s['polygon']],fill=255)
+ if name.startswith(('prep-','play-')) and 'hand' not in name:
+  w,h=im.size
+  # Perspective slopes toward screen center; bottom rows have stronger taper.
+  digit=name.split('-')[1];col={'1':0,'4':0,'7':0,'delete':0,'2':1,'5':1,'8':1,'0':1}.get(digit,2)
+  inset=10 if col!=1 else 3
+  points=[(inset if col==0 else 3,2),(w-(inset if col==2 else 3),2),(w-2,h-3),(2,h-3)]
+  # Quadratic corner arcs keep the original bevel and antialiasing.
+  pts=[]
+  for i,(x,y) in enumerate(points):
+   prev=points[i-1];nxt=points[(i+1)%4];a=(x+(prev[0]-x)*.10,y+(prev[1]-y)*.10);b=(x+(nxt[0]-x)*.10,y+(nxt[1]-y)*.10)
+   for j in range(13):
+    t=j/12;pts.append(((1-t)**2*a[0]+2*(1-t)*t*x+t*t*b[0],(1-t)**2*a[1]+2*(1-t)*t*y+t*t*b[1]))
+  d.polygon([(x*4,y*4) for x,y in pts],fill=255)
+ elif s['polygon']:d.polygon([((x-l)*4,(y-t)*4) for x,y in s['polygon']],fill=255)
  else:d.rounded_rectangle((2,2,mask.width-3,mask.height-3),s['radius']*4,fill=255)
  im.putalpha(mask.resize(im.size,Image.Resampling.LANCZOS));im.save(OUT/(name+'.png'),optimize=True)
+card=Image.open(OUT/'card.png').convert('RGBA')
+ring=card.getchannel('A');inner=Image.new('L',card.size);ImageDraw.Draw(inner).rounded_rectangle((7,7,card.width-8,card.height-8),radius=10,fill=255)
+from PIL import ImageChops
+card.putalpha(ImageChops.subtract(ring,inner));card.save(OUT/'card-selected.png',optimize=True)
 for bg,label in [('#173E3C','dark'),('#eee3ce','light')]:
  sheet=Image.new('RGB',(1200,1700),bg);x=y=10;row=0
  for name in spec:
