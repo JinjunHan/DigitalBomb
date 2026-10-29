@@ -9,6 +9,7 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright'),assert=req
   app.wxFlow.wx=wx;app.net.online=true;app.net.command=async(action,payload)=>{native.command={action,payload};};app.net.state={...base,room:null,queuedAt:null};localStorage.setItem('db-motion','0');app.openProfile();
  });
  await page.evaluate(()=>app.authorizeProfile());
+ await page.evaluate(()=>{const destroyed=native.destroyed;app.noticeUntil=0;app.updateTimer();if(native.destroyed!==destroyed)throw Error('toast expiry destroyed native authorization button');});
  const rect=await page.evaluate(()=>native.rect);assert.ok(rect.top>0&&rect.left>=0&&rect.top+rect.height<844);
  await page.evaluate(()=>native.tap({userInfo:{nickName:'微信玩家',avatarUrl:'https://thirdwx.qlogo.cn/mmopen/vi_32/test/132'}}));await page.waitForTimeout(400);
  assert.equal(await page.evaluate(()=>app.nickname),'微信玩家');await page.screenshot({path:'docs/verification/wechat-profile-preview.png'});

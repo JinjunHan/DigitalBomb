@@ -84,6 +84,8 @@ export class GameApp extends Component {
   private nicknameEditBox?: EditBox;
   private nicknameEditingBegan = false;
   private nickname = ''; private avatar = 0; private busy = false; private notice = ''; private noticeUntil = 0;
+  private noticeNode?: Node;
+  private noticePage = '';
   private timerLabel?: Label; private toastLabel?: Label; private lastKey = ''; private lastRoom = ''; private lastPhase = ''; private lastTurn = -1; private warnedTurn = -1; private openingRendered = false;
   private confirmAction?: () => void; private hideSecret = false;
   private screenHeight = 1334; private layoutTop = 80; private layoutScale = 1;
@@ -205,7 +207,7 @@ export class GameApp extends Component {
     }
     const sameRoom = !!r && r.id === this.lastRoom, oldTurn = this.lastTurn, oldPhase = this.lastPhase;
     if (!sameRoom && r && r.phase === 'preparing') this.audio.play('ready');
-    if (!sameRoom) { this.clearEffects(); this.submitting = false; this.rematchNotice = ''; }
+    if (!sameRoom) { this.clearEffects(); this.dismissNotice(); this.warnedTurn=-1; this.submitting = false; this.rematchNotice = ''; }
     this.seenGuesses = r?.history.length ?? 0;
     if ((r?.id ?? '') !== this.lastRoom) { this.draft = ''; this.recordScrolls = []; this.recordPositions.clear(); this.recordsOpponent = false; this.overlay = ''; this.lastRoom = r?.id ?? ''; this.lastTurn = -1; }
     if (r && r.turn !== this.lastTurn) { this.draft = ''; this.selected = -1; this.lastTurn = r.turn; this.openingRendered = false; }
@@ -227,12 +229,19 @@ export class GameApp extends Component {
     }
   }
 
-  private toast(text: string) { this.notice = text; this.noticeUntil = Date.now() + 6500; this.render(); }
+  private noticeContext() { const s=this.net.state;return s?.room?s.room.id+':'+s.room.phase:s?.queuedAt!=null?'matching':this.page; }
+  private toast(text: string) { this.noticePage=this.noticeContext();this.notice = text; this.noticeUntil = Date.now() + 6500; this.render(); }
+  private dismissNotice() {
+    this.notice='';this.noticeUntil=0;
+    if(this.noticeNode?.isValid){this.noticeNode.removeFromParent();this.noticeNode.destroy();}
+    this.noticeNode=undefined;this.toastLabel=undefined;
+  }
   private async act(action: string, payload: Record<string, unknown> = {}) {
     if (this.busy) return; this.busy = true;
-    if (action === 'guess') { this.submitting = true; this.feedback('正在验证', null, String(payload.digits ?? ''), '等待牌桌确认…', true); this.render(); }
+    if (action === 'guess') { this.submitting = true; this.feedback('正在验证', null, String(payload.digits ?? ''), '等待牌桌确认…', true); }
+    this.render();
     try { await this.net.command(action, { roomId: this.net.state?.room?.id, ...payload }); if (action === 'lock') this.audio.play('ready'); }
-    catch (e) { this.audio.play('error'); if (action === 'guess') { this.submitting = false; this.clearEffects(); } this.notice = (e as Error).message; if (action === 'rematch' && /对方已离开|再战邀请已过期/.test(this.notice)) this.rematchNotice = this.notice; this.noticeUntil = Date.now() + 6500; }
+    catch (e) { this.audio.play('error'); if (action === 'guess') { this.submitting = false; this.clearEffects(); } this.noticePage=this.noticeContext();this.notice = (e as Error).message; if (action === 'rematch' && /对方已离开|再战邀请已过期/.test(this.notice)) this.rematchNotice = this.notice; this.noticeUntil = Date.now() + 6500; }
     finally { this.busy = false; this.render(); }
   }
   private n(name: string, x: number, y: number, w: number, h: number, parent = this.root) {
@@ -351,6 +360,9 @@ export class GameApp extends Component {
       this.recordPositions.set(key, { offset, bottom: scroll.getMaxScrollOffset().y - offset < 24 });
     }
     this.recordScrolls = [];
+    const noticePage=this.noticeContext();
+    if(this.noticePage!==noticePage){this.dismissNotice();this.noticePage=noticePage;}
+    this.noticeNode=undefined;
     this.stopJoinMotion(); this.joinDigits = []; this.joinGlows = []; this.joinButton = undefined;
     this.hourglass = undefined; this.roundOld = undefined; this.roundNew = undefined;
     this.profilePanel = undefined; this.profileBack = undefined; this.transitionLobby = undefined;
@@ -372,7 +384,7 @@ export class GameApp extends Component {
     if (modalKey) this.artModal(modalKey);
     if (this.notice && Date.now() < this.noticeUntil) {
       if (this.feedbackArt.ready) {
-        const group=this.feedbackArt.group(this.root,'Notice',0);
+        const group=this.feedbackArt.group(this.root,'Notice',0);this.noticeNode=group;
         let noticeArt: Node;
         if(this.notice.startsWith('确认超时')) {
           noticeArt=this.feedbackArt.image(group,'timeout-2',0,0,520);
@@ -382,9 +394,10 @@ export class GameApp extends Component {
           this.toastLabel=this.feedbackArt.label(group,this.notice,75,10,470,92,24);
         }
         // New artwork is taller than the original text-only toast. Keep its whole frame above the safe area.
+        noticeArt.on(Node.EventType.TOUCH_END,()=>this.dismissNotice());
         const height=noticeArt.getComponent(UITransform)!.height;
         group.setPosition(0,-this.screenHeight/2+bottomSafeInset()+16+height/2);
-      } else { this.box(375,1278,700,62,C.dark);this.toastLabel=this.text(this.notice,375,1278,22,C.cream,670,58); }
+      } else { const panel=this.box(375,1278,700,62,C.dark);this.noticeNode=panel;panel.on(Node.EventType.TOUCH_END,()=>this.dismissNotice());this.toastLabel=this.text(this.notice,375,667,22,C.cream,670,58,panel);this.toastLabel.node.setPosition(0,0); }
     }
     this.updateTimer();
   }
@@ -1015,7 +1028,7 @@ export class GameApp extends Component {
     if(s.room||s.queuedAt!==null){this.pendingInvitation=undefined;this.wxFlow.allowInvitationAgain();this.toast('已收到好友邀请，请先结束当前对局或匹配，再打开邀请');return;}
     this.pendingInvitation=undefined;this.joiningInvitation=true;
     this.net.command('join',{code:invite.code,inviteRoomId:invite.roomId}).catch(error=>{
-      this.wxFlow.allowInvitationAgain();this.page='join';this.draft=invite.code;this.toast((error as Error).message);
+      this.wxFlow.allowInvitationAgain();this.page='join';this.code=invite.code;this.toast((error as Error).message);
     }).finally(()=>{this.joiningInvitation=false;});
   }
   private async copyRoomCode(code: string) {try{await copy(code);this.toast('口令已复制：'+code);}catch(e){this.toast((e as Error).message);}}
@@ -1355,10 +1368,12 @@ export class GameApp extends Component {
         if (r.phase === 'waiting') this.timerLabel.string = `${this.friendArtReady ? '' : '房间有效期  '}${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, '0')}`;
         else if (r.phase === 'preparing') this.timerLabel.string = this.battleArtReady ? String(remaining) : `准备倒计时 ${remaining}s`;
         else if (now < r.startAt) this.timerLabel.string = `即将开局 ${Math.ceil((r.startAt - now) / 1000)}s`;
-        else this.timerLabel.string = `${r.phase === 'reply' ? '最后一次补猜 · ' : ''}${r.current === s.me.id ? '轮到你了' : '对手正在猜测'}  ${remaining}s`;
+        else this.timerLabel.string = r.phase === 'reply'
+          ? `${r.current === s.me.id ? '最后补猜' : '等待对手补猜'}  ${remaining}s`
+          : `${r.current === s.me.id ? '轮到你了' : '对手正在猜测'}  ${remaining}s`;
         if (['playing', 'reply'].includes(r.phase) && remaining <= 5 && r.current === s.me.id && this.warnedTurn !== r.turn) { this.warnedTurn = r.turn; vibrate(); this.audio.play('warning'); }
       }
     }
-    if (this.toastLabel && Date.now() >= this.noticeUntil) { this.notice = ''; this.render(); }
+    if (this.toastLabel && Date.now() >= this.noticeUntil) this.dismissNotice();
   };
 }
