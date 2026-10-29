@@ -758,7 +758,7 @@ export class GameApp extends Component {
   private battleArtwork(r: RoomView) {
     const prep = r.phase === 'preparing', me = this.net.state!.me;
     const opponent = r.players.find(p => p.id !== me.id)!;
-    const scale = Math.min(750 / 941, (this.screenHeight - this.layoutTop - bottomSafeInset() - 16) / 1590);
+    const scale = Math.min(750 / 941, (this.screenHeight - this.layoutTop - bottomSafeInset() - 16) / (prep ? 1590 : 1750));
     const group = this.n('BattleRoom', 375, 667, 941, 1672);
     group.setPosition(0, this.screenHeight / 2 - this.layoutTop + 20 * scale); group.setScale(scale, scale, 1);
     const place = (node: Node, x: number, y: number) => { node.setPosition(x - 470.5, -y); return node; };
@@ -785,7 +785,9 @@ export class GameApp extends Component {
     };
     const shortName = (name: string, limit: number) => Array.from(name).length > limit ? Array.from(name).slice(0,limit-1).join('')+'…' : name;
     // The tray is below all controls and hands; each key remains independently clickable.
-    art(prep ? 'tray' : 'play-tray');
+    // Extend the gameplay keyboard down from its top; keep keys and artwork in one transform.
+    const keyboardY=(y:number)=>1190+(y-1190)*1.28;
+    art(prep ? 'tray' : 'play-tray',prep?BATTLE_RECTS.tray:BATTLE_RECTS['play-tray'].map((v,i)=>i%2?keyboardY(v):v));
     this.playerPortrait(group, opponent, 0, -65, 126);
     const nameplate=art('nameplate',[355,134,586,179]);
     touch(nameplate,()=>this.toast(opponent.name+(opponent.online?'':' · 连接中')));
@@ -905,7 +907,7 @@ export class GameApp extends Component {
     for(const key of ['1','2','3','4','5','6','7','8','9','delete','0','action']) {
       // Keep gameplay keys inside the leather inset, clear of the tray's metal rim.
       const rect=BATTLE_RECTS[prefix+key];
-      const keyRect=prep?rect:rect.map((v,i)=>i%2===0?470.5+(v-470.5)*.88:1425+(v-1425)*.84);
+      const keyRect=prep?rect:rect.map((v,i)=>i%2===0?470.5+(v-470.5)*.88:keyboardY(1425+(v-1425)*.84));
       const node=art(prefix+key,keyRect);
       touch(node,()=>{if(key==='action') {if(prep)this.digit('随机','secret');else this.submitGuess();}
         else this.digit(key==='delete'?'删除':key,prep?'secret':'guess');}, editable && (key!=='action'||prep||this.draft.length===4));
