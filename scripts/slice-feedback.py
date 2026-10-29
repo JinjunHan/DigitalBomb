@@ -38,10 +38,9 @@ add('victory-title','12-end-feedback',[58,113,610,458],[58,232,610,458],[192,113
 for i,(l,r) in enumerate([(65,571),(636,1147),(1210,1712)]):
  add('rematch-'+str(i),'09-rematch-states',[l,106,r,793],[l,181,r,793],[l+155,106,r-155,270],[[[l+40,566,r-40,755],[l+30,533,r-30,551]]])
 add('empty-ledger','10-records-empty-timeout',[263,351,516,596],[263,351,516,596])
-# Loading panels: no dependency on these textures in actual failure fallback.
-for i,(x,y) in enumerate([(104,76),(733,76),(104,685),(733,685)]):
+# Only modal-asset loading/error panels remain; login uses the startup screen.
+for i,(x,y) in enumerate([(104,685),(733,685)], start=2):
  add('connection-'+str(i),'11-connection-loading',[x,y,x+467,y+479],[x,y+69,x+467,y+479],[x+145,y,x+330,y+164],[[[x+91,y+311,x+390,y+430],[x+40,y+279,x+427,y+300]]])
-add('retry','11-connection-loading',[788,407,1095,512],[788,407,1095,512])
 # Clean-paper samples were visually checked; tile, never stretch glyph-bearing strips.
 clean={
  '01-own-feedback.png':[610,375,950,397],

@@ -1667,90 +1667,6 @@
       "repairSource": "assets/resources/art/modals/record-row.png, crop [190,12,420,59], mirrored texture tile; reconstructed blank area, not lossless source extraction"
     },
     {
-      "name": "connection-0",
-      "source": "11-connection-loading.png",
-      "rect": [
-        104,
-        76,
-        571,
-        555
-      ],
-      "body": [
-        104,
-        145,
-        571,
-        555
-      ],
-      "ornament": [
-        249,
-        76,
-        434,
-        240
-      ],
-      "repairs": [
-        [
-          [
-            140,
-            376,
-            524,
-            519
-          ],
-          [
-            155,
-            344,
-            510,
-            359
-          ]
-        ]
-      ],
-      "role": "complete fixed artwork; patches reserve live content",
-      "mask": "supersampled rounded silhouette plus raised ornament",
-      "order": "background, artwork, live labels, controls",
-      "repairSource": "assets/resources/art/modals/record-row.png, crop [190,12,420,59], mirrored texture tile; reconstructed blank area, not lossless source extraction"
-    },
-    {
-      "name": "connection-1",
-      "source": "11-connection-loading.png",
-      "rect": [
-        733,
-        76,
-        1200,
-        555
-      ],
-      "body": [
-        733,
-        145,
-        1200,
-        555
-      ],
-      "ornament": [
-        878,
-        76,
-        1063,
-        240
-      ],
-      "repairs": [
-        [
-          [
-            769,
-            376,
-            1153,
-            519
-          ],
-          [
-            155,
-            344,
-            510,
-            359
-          ]
-        ]
-      ],
-      "role": "complete fixed artwork; patches reserve live content",
-      "mask": "supersampled rounded silhouette plus raised ornament",
-      "order": "background, artwork, live labels, controls",
-      "repairSource": "assets/resources/art/modals/record-row.png, crop [190,12,420,59], mirrored texture tile; reconstructed blank area, not lossless source extraction"
-    },
-    {
       "name": "connection-2",
       "source": "11-connection-loading.png",
       "rect": [
@@ -1829,28 +1745,6 @@
           ]
         ]
       ],
-      "role": "complete fixed artwork; patches reserve live content",
-      "mask": "supersampled rounded silhouette plus raised ornament",
-      "order": "background, artwork, live labels, controls",
-      "repairSource": "assets/resources/art/modals/record-row.png, crop [190,12,420,59], mirrored texture tile; reconstructed blank area, not lossless source extraction"
-    },
-    {
-      "name": "retry",
-      "source": "11-connection-loading.png",
-      "rect": [
-        788,
-        407,
-        1095,
-        512
-      ],
-      "body": [
-        788,
-        407,
-        1095,
-        512
-      ],
-      "ornament": null,
-      "repairs": [],
       "role": "complete fixed artwork; patches reserve live content",
       "mask": "supersampled rounded silhouette plus raised ornament",
       "order": "background, artwork, live labels, controls",

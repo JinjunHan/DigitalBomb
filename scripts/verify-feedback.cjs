@@ -31,12 +31,12 @@ const assert=require('node:assert/strict'),fs=require('node:fs');
  await page.evaluate(()=>{fixture('finished');app.net.state.room.rematch=[base.me.id];app.render();});await shot('rematch');
  await page.evaluate(()=>{fixture();app.toast('确认超时，请查看同步后的状态');});await shot('notice');
  await page.evaluate(()=>{fixture();app.suppressFeedback=true;app.net.state.room.history=[{playerId:'peer',turn:6,digits:'1234',hits:3}];app.stateChanged();});assert.equal(await page.evaluate(()=>app.effects.children.length),0);
- for(const kind of ['win','expired-invite','peer-left','timeout-end','loading','login-failed']) {
+ for(const kind of ['win','expired-invite','peer-left','timeout-end','startup','login-failed']) {
   await page.evaluate(kind=>{
    fixture('finished','cracked',kind==='win'?base.me.id:'peer');
    if(kind==='expired-invite')app.rematchNotice='再战邀请已过期，请重新匹配';
    if(kind==='peer-left')app.rematchNotice='对方已离开，请重新匹配';
-   if(kind==='loading'||kind==='login-failed'){app.net.state=null;app.loginFailed=kind==='login-failed';}
+   if(kind==='startup'||kind==='login-failed'){app.net.state=null;app.loginFailed=kind==='login-failed';}
    if(kind==='timeout-end'){fixture();app.net.state.room.phase='finished';app.net.state.room.result={winner:'peer',reason:'timeout'};app.stateChanged();}else app.render();
   },kind);await shot(kind);
  }

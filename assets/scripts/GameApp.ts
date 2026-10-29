@@ -206,6 +206,7 @@ export class GameApp extends Component {
   }
   private async connect() {
     this.loginFailed = false;
+    if (!this.net.state) this.dismissNotice();
     const connection = this.net;
     clearTimeout(this.loginDeadline);
     // start() initiates the socket; authentication finishes with its first state.
@@ -423,7 +424,7 @@ export class GameApp extends Component {
     const s = this.net.state;
     if (s && this.startupFrame) this.releaseStartup();
     this.lobbyShuffle.show(this.lobbyDigitFrames.length === 10 && this.lobbyArt.has('machine') && !!s && !s.room && s.queuedAt === null && this.page === 'lobby');
-    if (!s) this.loading();
+    if (!s) this.startup();
     else if (s.room) this.room(s.room);
     else if (s.queuedAt !== null) this.matching();
     else if (this.page === 'join') this.join();
@@ -451,26 +452,23 @@ export class GameApp extends Component {
     }
     this.updateTimer();
   }
-  private loading() {
-    if (this.startupFrame && !this.loginFailed) {
+  private startup() {
+    if (this.startupFrame) {
       const cover = this.n('Startup', 375, 667, 750, this.screenHeight);
       cover.setPosition(0, 0);
       const sprite = cover.addComponent(Sprite); sprite.spriteFrame = this.startupFrame;
       sprite.sizeMode = Sprite.SizeMode.CUSTOM;
       cover.getComponent(UITransform)!.setContentSize(750, this.screenHeight);
       cover.addComponent(BlockInputEvents);
-      return;
+    } else {
+      // Web preview (or missing native splash): use the same startup state.
+      this.header('猜数字暗号');
+      this.text('正在准备牌桌…', 375, 540, 36);
     }
-    if(this.feedbackArt.ready) {
-      const group=this.feedbackArt.group(this.root,'LoginStatus',0,Math.min(1,(this.screenHeight-this.layoutTop-bottomSafeInset())/720));
-      this.feedbackArt.image(group,this.loginFailed?'connection-1':'connection-0',0,0,620);
-      if(this.loginFailed) this.feedbackArt.image(group,'retry',0,180,350,()=>{if(!this.reconnecting)this.retryLogin();});
-      else this.feedbackArt.label(group,'连接中…',0,155,400,70,28);
-      return;
+    if (this.loginFailed) {
+      this.button('重新连接', 375, 960, 360, 84, () => this.retryConnection(), true, !this.reconnecting);
     }
-    this.header('猜数字暗号');this.text(this.loginFailed?'暂时无法连接牌桌':'正在连接牌桌',375,540,36);this.button('重新连接',375,780,360,84,()=>this.retryLogin(),true);
   }
-  private async retryLogin() { if(this.reconnecting)return;this.reconnecting=true;this.net.stop();this.net=new Connection();this.net.onState=()=>this.stateChanged();this.net.onStatus=()=>{if(!this.net.online)this.suppressFeedback=true;this.render();};this.net.onError=s=>this.toast(s);try{await this.connect();}finally{this.reconnecting=false;this.render();} }
   /** Whole-control artwork includes lettering and icons; hit targets stay in Cocos. */
   private lobbySprite(name: string, x: number, y: number, w: number, h: number) {
     const frame = this.lobbyArt.get(name);

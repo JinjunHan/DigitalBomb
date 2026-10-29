@@ -156,14 +156,6 @@ export const FEEDBACK_SIZES: Record<string, readonly number[]> = {
     253,
     245
   ],
-  "connection-0": [
-    467,
-    479
-  ],
-  "connection-1": [
-    467,
-    479
-  ],
   "connection-2": [
     467,
     479
@@ -172,8 +164,4 @@ export const FEEDBACK_SIZES: Record<string, readonly number[]> = {
     467,
     479
   ],
-  "retry": [
-    307,
-    105
-  ]
 };
