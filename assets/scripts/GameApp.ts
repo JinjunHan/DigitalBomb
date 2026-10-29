@@ -18,6 +18,11 @@ import { GameAudio } from './GameAudio';
 import { Connection } from './Connection';
 import { AVATARS, type RoomView } from './shared/protocol';
 import { read, write, copy, vibrate, topSafeInset, bottomSafeInset, wechat } from './Platform';
+interface StartupScreen {
+  surface: HTMLCanvasElement;
+  retryRect: { x: number; y: number; width: number; height: number };
+  draw(progress: number, status: string): void;
+}
 const { ccclass } = _decorator;
 const C = { ink: '#352719', cream: '#F7E7C8', paper: '#EAD5AC', gold: '#D8AA58', teal: '#173E3C', dark: '#102D2C', muted: '#C3C8B6', orange: '#D96A32', blue: '#2A4656' };
 const reasons: Record<string, string> = { same_round: '同轮破解，旗鼓相当', reply_missed: '后手补猜未命中', reply_timeout: '后手补猜超时', cracked: '四位密码全部破解', round_limit: '20 轮挑战完成', timeout: '连续两次行动超时', disconnect: '对方未能重新连接', resigned: '一方认输', prepare_timeout: '准备超时，本局不计胜负', room_expired: '房间已过期', player_left: '玩家离开，本局已取消', both_offline: '双方掉线，本局不计胜负' };
@@ -40,6 +45,8 @@ export class GameApp extends Component {
   private opponentFeedbackActive = false;
   private rematchNotice = '';
   private loginFailed = false;
+  private startupScreen?: StartupScreen;
+  private startupStatus = '';
   private startupFrame?: SpriteFrame;
   private startupTexture?: Texture2D;
   private startupImage?: ImageAsset;
@@ -109,12 +116,13 @@ export class GameApp extends Component {
     this.clearEffects(); this.render();
   };
   onLoad() {
-    const startup = globalThis as typeof globalThis & { __digitalBombStartupImage?: HTMLCanvasElement };
-    if (startup.__digitalBombStartupImage) {
-      this.startupImage = new ImageAsset(startup.__digitalBombStartupImage);
+    const startup = globalThis as typeof globalThis & { __digitalBombStartup?: StartupScreen };
+    if (startup.__digitalBombStartup) {
+      this.startupScreen = startup.__digitalBombStartup;
+      this.startupImage = new ImageAsset(this.startupScreen.surface);
       this.startupTexture = new Texture2D(); this.startupTexture.image = this.startupImage;
       this.startupFrame = new SpriteFrame(); this.startupFrame.texture = this.startupTexture;
-      delete startup.__digitalBombStartupImage;
+      delete startup.__digitalBombStartup;
     }
     view.setDesignResolutionSize(750, 1334, ResolutionPolicy.FIXED_WIDTH);
     this.scenery = new SceneBackdrop(this.node);
@@ -203,6 +211,7 @@ export class GameApp extends Component {
   private releaseStartup() {
     this.startupFrame?.destroy(); this.startupTexture?.destroy(); this.startupImage?.destroy();
     this.startupFrame = undefined; this.startupTexture = undefined; this.startupImage = undefined;
+    this.startupScreen = undefined;
   }
   private async connect() {
     this.loginFailed = false;
@@ -453,19 +462,32 @@ export class GameApp extends Component {
     this.updateTimer();
   }
   private startup() {
-    if (this.startupFrame) {
+    if (this.startupFrame && this.startupScreen) {
+      const status = this.loginFailed ? '连接未完成，点击这里重试' : '正在连接牌桌…';
+      if (status !== this.startupStatus) {
+        this.startupScreen.draw(0.9, status);
+        this.startupTexture!.uploadData(this.startupScreen.surface);
+        this.startupStatus = status;
+      }
       const cover = this.n('Startup', 375, 667, 750, this.screenHeight);
       cover.setPosition(0, 0);
       const sprite = cover.addComponent(Sprite); sprite.spriteFrame = this.startupFrame;
       sprite.sizeMode = Sprite.SizeMode.CUSTOM;
       cover.getComponent(UITransform)!.setContentSize(750, this.screenHeight);
       cover.addComponent(BlockInputEvents);
+      if (this.loginFailed) {
+        const rect = this.startupScreen.retryRect;
+        const scale = 750 / this.startupScreen.surface.width;
+        const retry = this.n('StartupRetry', 375, 667, rect.width * scale, rect.height * scale);
+        retry.setPosition((rect.x + rect.width / 2) * scale - 375, this.screenHeight / 2 - (rect.y + rect.height / 2) * scale);
+        retry.on(Node.EventType.TOUCH_END, () => this.retryConnection());
+      }
     } else {
       // Web preview (or missing native splash): use the same startup state.
       this.header('猜数字暗号');
       this.text('正在准备牌桌…', 375, 540, 36);
     }
-    if (this.loginFailed) {
+    if (this.loginFailed && !this.startupScreen) {
       this.button('重新连接', 375, 960, 360, 84, () => this.retryConnection(), true, !this.reconnecting);
     }
   }
