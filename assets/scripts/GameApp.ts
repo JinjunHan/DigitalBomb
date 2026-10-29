@@ -1,4 +1,5 @@
-import { _decorator, Component, Node, UITransform, Label, Graphics, Color, Layers, view, ResolutionPolicy, resources, SpriteFrame, Sprite, Texture2D, profiler, tween, Tween, UIOpacity, Vec3, EditBox, input, Input, EventKeyboard, KeyCode, game, Game, BlockInputEvents, ScrollView, Mask, Vec2, Font, Rect } from 'cc';
+import { WechatFlow, avatarUrl, type Invitation } from './shared/wechat-flow';
+import { _decorator, Component, Node, UITransform, Label, Graphics, Color, Layers, view, ResolutionPolicy, resources, SpriteFrame, Sprite, Texture2D, profiler, tween, Tween, UIOpacity, Vec3, EditBox, input, Input, EventKeyboard, KeyCode, game, Game, BlockInputEvents, ScrollView, Mask, Vec2, Font, Rect, assetManager, ImageAsset } from 'cc';
 import { RoundRoll } from './shared/round-roll';
 import { FeedbackArt } from './FeedbackArt';
 import { feedbackEvent, cancellationArt, resultCaption, type FeedbackEvent } from './shared/feedback-state';
@@ -24,6 +25,13 @@ const reasons: Record<string, string> = { same_round: '同轮破解，旗鼓相�
 @ccclass('GameApp')
 export class GameApp extends Component {
   private audio!: GameAudio;
+  private wxFlow!: WechatFlow;
+  private profilePrompted = false;
+  private pendingInvitation?: Invitation;
+  private joiningInvitation = false;
+  private draftAvatarUrl = '';
+  private wechatProfileNode?: Node;
+  private remoteAvatars = new Map<string, SpriteFrame | null>();
   private roundRoll = new RoundRoll();
   private roundOld?: Node;
   private roundNew?: Node;
@@ -169,14 +177,18 @@ export class GameApp extends Component {
     profiler.hideStats();
     input.on(Input.EventType.KEY_DOWN, this.onKey, this); game.on(Game.EVENT_SHOW, this.onShow, this); game.on(Game.EVENT_HIDE, this.onHide, this);
     view.on('canvas-resize', this.resizeLayout, this);
+    this.wxFlow = new WechatFlow(wechat(), () => { const r=this.net.state?.room;return r?.mode==='friend'&&r.phase==='waiting'&&r.code?{code:r.code,roomId:r.id}:undefined; }, value => { this.pendingInvitation=value;this.consumeInvitation(); });
+    this.wxFlow.start();
     this.resizeLayout(); this.connect(); this.schedule(this.updateTimer, 0.2);
   }
-  onDestroy() { if (this.feedbackArt) this.feedbackArt.disposed = true; this.friendReturn?.destroy(); this.modals?.destroy(); this.stopJoinMotion(); this.scenery?.destroy(); view.off('canvas-resize', this.resizeLayout, this); this.audio.dispose(); if (this.profilePanel) Tween.stopAllByTarget(this.profilePanel); this.clearEffects(); this.net.stop(); input.off(Input.EventType.KEY_DOWN, this.onKey, this); game.off(Game.EVENT_SHOW, this.onShow, this); game.off(Game.EVENT_HIDE, this.onHide, this); }
-  private onHide() { this.audio.background(true); }
+  onDestroy() { this.wxFlow?.destroy(); if (this.feedbackArt) this.feedbackArt.disposed = true; this.friendReturn?.destroy(); this.modals?.destroy(); this.stopJoinMotion(); this.scenery?.destroy(); view.off('canvas-resize', this.resizeLayout, this); this.audio.dispose(); if (this.profilePanel) Tween.stopAllByTarget(this.profilePanel); this.clearEffects(); this.net.stop(); input.off(Input.EventType.KEY_DOWN, this.onKey, this); game.off(Game.EVENT_SHOW, this.onShow, this); game.off(Game.EVENT_HIDE, this.onHide, this); }
+  private onHide() { this.wxFlow?.clearButton();this.audio.background(true); }
   private onShow() { this.audio.background(false); if (this.net.online) this.net.command('sync').catch(() => {}); }
   private async connect() { this.loginFailed = false; try { await this.net.start(); } catch (e) { this.loginFailed = true; this.toast((e as Error).message); } }
   private stateChanged() {
     const s = this.net.state!, r = s.room;
+    this.consumeInvitation();
+    if(wechat()&&!this.profilePrompted){this.profilePrompted=true;this.scheduleOnce(()=>this.offerWechatProfile(),.6);}
     const event = r ? feedbackEvent(r, s.me.id, { roomId: this.lastRoom, phase: this.lastPhase, guesses: this.seenGuesses }, this.suppressFeedback) : undefined;
     if (r && this.suppressFeedback) this.roundRoll.sync(r.id, r.round, false, true);
     this.suppressFeedback = false;
@@ -331,6 +343,7 @@ export class GameApp extends Component {
     const keepInput = this.page === 'profile' && !this.profileMotion && !this.busy && !this.overlay
       && !this.net.state?.room && this.net.state?.queuedAt === null;
     if (keepInput && this.nicknameSession.deferRedraw()) return;
+    this.wxFlow?.clearButton();this.wechatProfileNode=undefined;
     this.nicknameSession.end(); this.nicknameEditBox = undefined;
     for (const { view: scroll, key } of this.recordScrolls) {
       if (!scroll.isValid) continue;
@@ -385,7 +398,7 @@ export class GameApp extends Component {
     }
     this.header('猜数字暗号');this.text(this.loginFailed?'暂时无法连接牌桌':'正在连接牌桌',375,540,36);this.button('重新连接',375,780,360,84,()=>this.retryLogin(),true);
   }
-  private async retryLogin() { if(this.reconnecting)return;this.reconnecting=true;this.net.stop();this.net=new Connection();this.net.onState=()=>this.stateChanged();this.net.onStatus=()=>this.render();this.net.onError=s=>this.toast(s);try{await this.connect();}finally{this.reconnecting=false;this.render();} }
+  private async retryLogin() { if(this.reconnecting)return;this.reconnecting=true;this.net.stop();this.net=new Connection();this.net.onState=()=>this.stateChanged();this.net.onStatus=()=>{if(!this.net.online)this.suppressFeedback=true;this.render();};this.net.onError=s=>this.toast(s);try{await this.connect();}finally{this.reconnecting=false;this.render();} }
   /** Whole-control artwork includes lettering and icons; hit targets stay in Cocos. */
   private lobbySprite(name: string, x: number, y: number, w: number, h: number) {
     const frame = this.lobbyArt.get(name);
@@ -417,7 +430,7 @@ export class GameApp extends Component {
     const nameplate = this.lobbySprite('nickname-frame', 203, 126, 183, 54);
     this.text(me.name, 205, 126, 22, C.cream, 137, 38);
     const avatarBase = this.box(80, 120, 108, 108, '#302014', 54);
-    if (!this.profileSprite('avatar-' + me.avatar, 80, 120, 108, 108)) this.text(AVATARS[me.avatar] ?? '客', 80, 120, 38, C.cream, 80, 75);
+    if (!this.profileSprite('avatar-' + me.avatar, 80, 120, 108, 108, this.avatarFrame(me))) this.text(AVATARS[me.avatar] ?? '客', 80, 120, 38, C.cream, 80, 75);
     const avatarFrame = this.lobbySprite('avatar-frame', 80, 120, 124, 123);
     for (const node of [nameplate, avatarBase, avatarFrame]) node?.on(Node.EventType.TOUCH_END, () => { this.audio.unlock(); this.audio.play('tap'); openProfile(); });
     if (!this.lobbySprite('title', 375, 330, 635 * fit, 350 * fit)) this.text('猜数字暗号', 375, 355, 72, C.cream, 660, 110);
@@ -470,7 +483,7 @@ export class GameApp extends Component {
     this.timerLabel = this.text('',375,667,57,'#FFD978',225,72,group);
     this.timerLabel.fontFamily = 'Times New Roman'; this.timerLabel.isBold = true;
     this.timerLabel.node.setPosition(0,-913);
-    const me=this.net.state!.me, portrait=this.profileArt.get('avatar-'+me.avatar);
+    const me=this.net.state!.me, portrait=this.avatarFrame(me)??this.profileArt.get('avatar-'+me.avatar);
     const portraitBackground=this.profileArt.get('portrait-background');
     const portraitClip=this.n('MatchingPortraitClip',375,667,206,206,group);portraitClip.setPosition(1.5,-1160);
     portraitClip.addComponent(Mask).type=Mask.Type.GRAPHICS_ELLIPSE;
@@ -638,7 +651,7 @@ export class GameApp extends Component {
     this.header('好友房', () => this.ask('close', () => this.act('leave')));
     this.text('等待好友入座', 375, 390, 36); this.text('1 / 2', 375, 455, 24, C.gold);
     this.box(375, 685, 650, 350, C.dark); this.text('房间口令', 375, 555, 28); this.cards(r.code!, 660, 100);
-    this.button('复制口令', 375, 800, 340, 62, () => { copy(r.code!); this.toast('房间口令：' + r.code); }, true);
+    this.button('复制口令', 375, 800, 340, 62, () => { this.copyRoomCode(r.code!); }, true);
     this.timerLabel = this.text('', 375, 930, 24); this.button('关闭房间', 375, 1120, 520, 88, () => this.ask('close', () => this.act('leave')));
   }
   /** Source-space composition: one uniform transform also scales fonts and hit targets. */
@@ -683,16 +696,19 @@ export class GameApp extends Component {
       digit.fontFamily = 'serif'; digit.isBold = !this.friendDigitFont;
       digit.lineHeight = 112; digit.enableWrapText = false;
     }
-    art('copy', 470.5, 872.5, 397, 105, () => { if (r.code) { copy(r.code); this.toast('房间口令：' + r.code); } });
+    art('copy', wechat()?290:470.5, 872.5, wechat()?320:397, wechat()?85:105, () => { if (r.code) { this.copyRoomCode(r.code); } });
+    if(wechat()){const invite=label('邀请微信好友 ›',660,872,28,C.ink,310,85);invite.node.name='WechatInvite';invite.node.on(Node.EventType.TOUCH_END,()=>{try{this.wxFlow.share();}catch(e){this.toast((e as Error).message);}});}
     this.timerLabel = label('', 569, 1024, 27, C.ink, 88, 40);
     const me = this.net.state!.me;
     // Actual player portrait, followed by the existing hollow decorative rim.
     for (const [key, size] of [['portrait-background', 178], ['avatar-' + me.avatar, 178], ['portrait-frame', 198]] as const) {
-      const frame = this.profileArt.get(key);
+      const frame = key.startsWith('avatar-')?(this.avatarFrame(me)??this.profileArt.get(key)):this.profileArt.get(key);
       if (!frame) { if (size === 178) label(AVATARS[me.avatar] ?? '客', 471, 1195, 60, C.ink, 150, 160); continue; }
       const node = place(this.n('Friend-' + key, 375, 667, size, size, group), 471, 1195);
-      const sprite = node.addComponent(Sprite); sprite.spriteFrame = frame; sprite.sizeMode = Sprite.SizeMode.CUSTOM;
-      node.getComponent(UITransform)!.setContentSize(size, size);
+      let target=node;
+      if(key.startsWith('avatar-')){node.addComponent(Mask).type=Mask.Type.GRAPHICS_ELLIPSE;target=this.n('FriendAvatarImage',375,667,size,size,node);target.setPosition(0,0);}
+      const sprite = target.addComponent(Sprite); sprite.spriteFrame = frame; sprite.sizeMode = Sprite.SizeMode.CUSTOM;
+      target.getComponent(UITransform)!.setContentSize(size, size);
     }
     art('nameplate', 471, 1278.5, 210, 51);
     label(me.name, 471, 1278, 26, C.cream, 174, 38);
@@ -809,7 +825,7 @@ export class GameApp extends Component {
       }
       art('play-hand-left'); art('play-hand-right');
       const portraitRect=[28,1000,208,1180];
-      const portrait=this.profileArt.get('avatar-'+me.avatar);
+      const portrait=this.avatarFrame(me)??this.profileArt.get('avatar-'+me.avatar);
       const portraitBg=this.profileArt.get('portrait-background');
       const portraitClip=place(this.n('BattlePortraitClip',375,667,180,180,group),118,1090);
       portraitClip.addComponent(Mask).type=Mask.Type.GRAPHICS_ELLIPSE;
@@ -956,9 +972,56 @@ export class GameApp extends Component {
     this.button('返回大厅', 375, 1160, 610, 82, () => { this.page = 'lobby'; this.act('leave'); });
     this.button('查看本局记录', 375, 1245, 300, 48, () => { this.overlay = 'resultRecords'; this.render(); });
   }
+  private offerWechatProfile() {
+    const wx=wechat(),s=this.net.state;if(!wx||!s||s.room||s.queuedAt!==null||this.page!=='lobby'||read('profile-choice-'+s.me.id)==='1')return;
+    write('profile-choice-'+s.me.id,'1');
+    wx.showModal?.({title:'完善游戏资料',content:'可以使用微信头像昵称，也可以保留默认资料直接开始游戏。',confirmText:'完善资料',cancelText:'先用默认',success:(result:any)=>{
+      if(result.confirm&&this.isValid&&!this.net.state?.room&&this.net.state?.queuedAt===null)this.openProfile();
+    }});
+  }
+  private avatarFrame(profile: { avatarUrl?: string }): SpriteFrame | undefined {
+    const url=avatarUrl(profile.avatarUrl);if(!url)return;
+    if(this.remoteAvatars.has(url))return this.remoteAvatars.get(url)??undefined;
+    this.remoteAvatars.set(url,null);
+    assetManager.loadRemote<ImageAsset>(url,{ext:'.png'},(error,image)=>{
+      if(error||!this.isValid)return;
+      const texture=new Texture2D();texture.image=image;
+      const frame=new SpriteFrame();frame.texture=texture;this.remoteAvatars.set(url,frame);this.render();
+    });
+    return;
+  }
+  private async authorizeProfile() {
+    if(this.busy||this.profileMotion)return;
+    if(!wechat()){this.toast('请在微信中获取头像昵称，本地可手动设置资料');return;}
+    this.finishNicknameEditing();this.toast('请点击“使用微信头像昵称”完成授权，拒绝仍可继续游戏');
+    const node=this.wechatProfileNode;if(!node)return;
+    const rect=node.getComponent(UITransform)!.getBoundingBoxToWorld();
+    const window=wechat().getWindowInfo?.()??wechat().getSystemInfoSync();
+    const visible=view.getVisibleSize();
+    try { await this.wxFlow.authorize({left:rect.x/visible.width*window.windowWidth,top:(visible.height-rect.y-rect.height)/visible.height*window.windowHeight,width:rect.width/visible.width*window.windowWidth,height:rect.height/visible.height*window.windowHeight},(profile,message)=>{
+      if(!this.isValid||this.page!=='profile')return;
+      if(profile){
+        const valid=/^[\p{L}\p{N} _·-]{2,12}$/u.test(profile.name);
+        if(valid)this.nickname=profile.name;
+        this.draftAvatarUrl=profile.avatarUrl;
+        this.toast(valid?'微信资料已填入，点击保存修改后生效':'头像已填入；微信昵称含不支持的字符，请手动填写昵称');
+      }else this.toast(message!);
+    }); }catch(e){this.toast((e as Error).message);}
+  }
+  private consumeInvitation() {
+    const invite=this.pendingInvitation,s=this.net.state;
+    if(!invite||!s||!this.net.online||this.joiningInvitation)return;
+    if(s.room?.id===invite.roomId){this.pendingInvitation=undefined;return;}
+    if(s.room||s.queuedAt!==null){this.pendingInvitation=undefined;this.wxFlow.allowInvitationAgain();this.toast('已收到好友邀请，请先结束当前对局或匹配，再打开邀请');return;}
+    this.pendingInvitation=undefined;this.joiningInvitation=true;
+    this.net.command('join',{code:invite.code,inviteRoomId:invite.roomId}).catch(error=>{
+      this.wxFlow.allowInvitationAgain();this.page='join';this.draft=invite.code;this.toast((error as Error).message);
+    }).finally(()=>{this.joiningInvitation=false;});
+  }
+  private async copyRoomCode(code: string) {try{await copy(code);this.toast('口令已复制：'+code);}catch(e){this.toast((e as Error).message);}}
   private openProfile() {
     const me = this.net.state?.me; if (!me || this.profileMotion) return;
-    this.nickname = me.name; this.avatar = me.avatar; this.page = 'profile'; this.profileMotionFrom = undefined; this.profileMotionTo = undefined;
+    this.nickname = me.name; this.avatar = me.avatar; this.draftAvatarUrl=me.avatarUrl??''; this.page = 'profile'; this.profileMotionFrom = undefined; this.profileMotionTo = undefined;
     this.profileMotion = read('motion', '1') === '1' ? 'in' : '';
     this.profileMotionElapsed = 0; this.profileMotionFrames = 0; this.render();
   }
@@ -976,15 +1039,17 @@ export class GameApp extends Component {
     if (!/^[\p{L}\p{N} _·-]{2,12}$/u.test(name)) { this.toast('昵称需为 2–12 个中文、字母或数字'); return; }
     this.busy = true; this.render();
     try {
-      await this.net.command('profile', { name, avatar: this.avatar });
-      this.busy = false; this.closeProfile();
+      await this.net.command('profile', { name, avatar: this.avatar, avatarUrl: this.draftAvatarUrl });
+      write('profile-choice-'+this.net.state!.me.id,'1');this.busy = false; this.closeProfile();
     } catch (error) { this.busy = false; this.toast((error as Error).message); }
   }
-  private profileSprite(name: string, x: number, y: number, w: number, h: number) {
-    const frame = this.profileArt.get(name); if (!frame) return null;
+  private profileSprite(name: string, x: number, y: number, w: number, h: number, override?: SpriteFrame) {
+    const frame = override??this.profileArt.get(name); if (!frame) return null;
     const n = this.n('Profile-' + name, x, y, w, h);
-    const sp = n.addComponent(Sprite); sp.spriteFrame = frame; sp.sizeMode = Sprite.SizeMode.CUSTOM;
-    n.getComponent(UITransform)!.setContentSize(w, h); return n;
+    let target=n;
+    if(override){n.addComponent(Mask).type=Mask.Type.GRAPHICS_ELLIPSE;target=this.n('WechatAvatar',375,667,w,h,n);target.setPosition(0,0);}
+    const sp = target.addComponent(Sprite); sp.spriteFrame = frame; sp.sizeMode = Sprite.SizeMode.CUSTOM;
+    target.getComponent(UITransform)!.setContentSize(w, h); return n;
   }
   private finishNicknameEditing() {
     const edit = this.nicknameEditBox;
@@ -1041,12 +1106,12 @@ export class GameApp extends Component {
       if (!this.profileSprite('heading', 375, 165, 300, 89)) this.text('个人资料', 375, 165, 40);
       this.profileBack = this.profileButton('back', '返回', 100, 85, 166, 62, () => this.closeProfile());
       this.profileSprite('portrait-background', 375, 365, 320, 320);
-      if (!this.profileSprite('avatar-' + this.avatar, 375, 365, 190, 190)) {
+      if (!this.profileSprite('avatar-' + this.avatar, 375, 365, 190, 190, this.avatarFrame({avatarUrl:this.draftAvatarUrl}))) {
         this.box(375, 365, 180, 180, C.blue, 90); this.text(AVATARS[this.avatar], 375, 365, 72, C.cream, 150, 120);
       }
       this.profileSprite('portrait-frame', 375, 365, 234, 234);
       this.profileButton('change-avatar', '更换头像', 375, 490, 245, 64, () => {
-        this.avatar = (this.avatar + 1) % 4; this.render();
+        this.draftAvatarUrl='';this.avatar = (this.avatar + 1) % 4; this.render();
       });
       this.text('昵称', 130, 600, 31, C.ink, 90, 60);
       this.box(435, 600, 435, 72, '#EBD1A6', 10);
@@ -1071,16 +1136,17 @@ export class GameApp extends Component {
       n.on('text-changed', (edit: EditBox) => { this.nickname = edit.string; });
       n.on('editing-did-ended', (edit: EditBox) => this.nicknameEditingEnded(edit));
       this.text('2–12 个字符', 326, 657, 23, '#8D714E', 220, 40);
-      this.profileButton('wechat', '使用微信头像昵称', 375, 745, 560, 114, () => this.toast(wechat() ? '当前开发版尚未配置微信资料授权，可先选择下方头像' : '微信资料需在微信真机授权，本地可编辑昵称和选择头像'));
+      this.wechatProfileNode=this.profileButton('wechat', '使用微信头像昵称', 375, 745, 560, 114, () => this.authorizeProfile());
+      const privacy=this.text('隐私保护指引',375,1100,24,C.ink,300,50);privacy.node.on(Node.EventType.TOUCH_END,()=>{try{this.wxFlow.openPrivacy();}catch(e){this.toast((e as Error).message);}});
       this.text('—  选择头像  —', 375, 840, 29, C.ink, 550, 50);
       AVATARS.slice(0, 4).forEach((a, i) => {
         const x = 150 + (i % 4) * 150, y = 985;
         const face = this.profileSprite('avatar-' + i, x, y, 125, 125) ?? this.box(x, y, 122, 122, C.blue, 61);
         if (!this.profileArt.has('avatar-' + i)) this.text(a, x, y, 36, C.cream, 80, 70);
-        if (!this.busy && !this.profileMotion) face.on(Node.EventType.TOUCH_END, () => { this.finishNicknameEditing(); this.audio.play('tap'); this.avatar = i; this.render(); });
-        const frameSize = i === this.avatar ? 156 : 150;
+        if (!this.busy && !this.profileMotion) face.on(Node.EventType.TOUCH_END, () => { this.finishNicknameEditing(); this.audio.play('tap'); this.draftAvatarUrl='';this.avatar = i; this.render(); });
+        const frameSize = !this.draftAvatarUrl && i === this.avatar ? 156 : 150;
         this.profileSprite('portrait-frame', x, y, frameSize, frameSize);
-        if (i === this.avatar && !this.profileSprite('avatar-selected', x + 46, y + 45, 58, 58)) {
+        if (!this.draftAvatarUrl && i === this.avatar && !this.profileSprite('avatar-selected', x + 46, y + 45, 58, 58)) {
           this.text('✓', x + 45, y + 45, 26, C.ink, 36, 36);
         }
       });
