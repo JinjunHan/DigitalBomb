@@ -1,0 +1,3400 @@
+{
+  "applied": true,
+  "policy": "No upscaling. Explicit dimension budgets only; all other images retain dimensions and exact decoded RGBA pixels. Keep originals when re-encoding saves <1% or <1KB. Design source images and atlas geometry untouched.",
+  "beforeBytes": 38022449,
+  "afterBytes": 34415714,
+  "images": [
+    {
+      "path": "assets/resources/art/battle/all-records.png",
+      "beforeSize": [
+        177,
+        47
+      ],
+      "afterSize": [
+        177,
+        47
+      ],
+      "beforeBytes": 14783,
+      "afterBytes": 14783,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "a3f810d3b6d1051d92c307d6a98127f6322abbc0938883e246bd02652c7b2542"
+    },
+    {
+      "path": "assets/resources/art/battle/card-backs.png",
+      "beforeSize": [
+        308,
+        128
+      ],
+      "afterSize": [
+        308,
+        128
+      ],
+      "beforeBytes": 70873,
+      "afterBytes": 70873,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "8f7a6df330a3cd5c4d2014076cbe4f13d402000e4ed94ab6f19c73fd64e29886"
+    },
+    {
+      "path": "assets/resources/art/battle/card-paper.png",
+      "beforeSize": [
+        240,
+        337
+      ],
+      "afterSize": [
+        240,
+        337
+      ],
+      "beforeBytes": 114006,
+      "afterBytes": 114006,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "b8c9ae64cf761cbac7c0f720c287891fe1cd8d049105211518d59b945b5b2856"
+    },
+    {
+      "path": "assets/resources/art/battle/card-selected.png",
+      "beforeSize": [
+        190,
+        260
+      ],
+      "afterSize": [
+        190,
+        260
+      ],
+      "beforeBytes": 46774,
+      "afterBytes": 46774,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "cae848ebff447e08e3166ba87176feaf170dfc4e1b5276796d9819cac8b4adec"
+    },
+    {
+      "path": "assets/resources/art/battle/card.png",
+      "beforeSize": [
+        190,
+        260
+      ],
+      "afterSize": [
+        190,
+        260
+      ],
+      "beforeBytes": 46733,
+      "afterBytes": 46733,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "f058e501ac0709ffd277fbf4f587b26b053a229060bb62639a4d9f1e0ac03ba6"
+    },
+    {
+      "path": "assets/resources/art/battle/guess.png",
+      "beforeSize": [
+        578,
+        214
+      ],
+      "afterSize": [
+        578,
+        214
+      ],
+      "beforeBytes": 146783,
+      "afterBytes": 146783,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "33168cfcfb5d6e981b6160bd6d7a022e7bd5ba5de92dcf2104c084ce674e0b6b"
+    },
+    {
+      "path": "assets/resources/art/battle/hand-right.png",
+      "beforeSize": [
+        304,
+        339
+      ],
+      "afterSize": [
+        304,
+        339
+      ],
+      "beforeBytes": 160747,
+      "afterBytes": 160747,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "0f9479adbcf0fbf96a86c11fd4ac927ad9a10aa62cf08e4877fdd8e6391d972a"
+    },
+    {
+      "path": "assets/resources/art/battle/hands.png",
+      "beforeSize": [
+        941,
+        429
+      ],
+      "afterSize": [
+        941,
+        429
+      ],
+      "beforeBytes": 622748,
+      "afterBytes": 622748,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "ae4fdbda04be9b84215cb7e64cb4cfe18a2572608b61c59a3ea31559d4396fd8"
+    },
+    {
+      "path": "assets/resources/art/battle/heading.png",
+      "beforeSize": [
+        583,
+        134
+      ],
+      "afterSize": [
+        583,
+        134
+      ],
+      "beforeBytes": 129572,
+      "afterBytes": 129572,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "b8c63239a85baca36bfcce3a7553b60bbc76205e9f16c0f6be70e3b5f10509a6"
+    },
+    {
+      "path": "assets/resources/art/battle/lock.png",
+      "beforeSize": [
+        729,
+        163
+      ],
+      "afterSize": [
+        729,
+        163
+      ],
+      "beforeBytes": 193664,
+      "afterBytes": 193664,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "e0768096aba837a4db144ed67463475e9ce1d245e618188bae6f96810d32f0db"
+    },
+    {
+      "path": "assets/resources/art/battle/nameplate.png",
+      "beforeSize": [
+        148,
+        39
+      ],
+      "afterSize": [
+        148,
+        39
+      ],
+      "beforeBytes": 6756,
+      "afterBytes": 6756,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "5548a6124ac039b2cae15271b163feb878d4f1c9e3f91a11f5f870d295454f52"
+    },
+    {
+      "path": "assets/resources/art/battle/opponent.png",
+      "beforeSize": [
+        280,
+        180
+      ],
+      "afterSize": [
+        280,
+        180
+      ],
+      "beforeBytes": 87932,
+      "afterBytes": 87932,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "6b9d3818f854acd6ce95aa76441759ce780d29103d7514b2ecf9eb6b052dccb1"
+    },
+    {
+      "path": "assets/resources/art/battle/play-0.png",
+      "beforeSize": [
+        269,
+        104
+      ],
+      "afterSize": [
+        269,
+        104
+      ],
+      "beforeBytes": 35079,
+      "afterBytes": 35079,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "eae8533506e8208165793a226c4dbc20ce65b5d5fefe174ffe509bb89a945381"
+    },
+    {
+      "path": "assets/resources/art/battle/play-1.png",
+      "beforeSize": [
+        250,
+        74
+      ],
+      "afterSize": [
+        250,
+        74
+      ],
+      "beforeBytes": 24861,
+      "afterBytes": 24861,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "39719fa44431b5761033ba154dae8d0e2a4dd781f5acc9ea944dd84a99b75a07"
+    },
+    {
+      "path": "assets/resources/art/battle/play-2.png",
+      "beforeSize": [
+        245,
+        74
+      ],
+      "afterSize": [
+        245,
+        74
+      ],
+      "beforeBytes": 23806,
+      "afterBytes": 23806,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "6d7cc7193b3ec5c009501e29d18be3f0c2c70f6015c840b4cae81ac944c9c246"
+    },
+    {
+      "path": "assets/resources/art/battle/play-3.png",
+      "beforeSize": [
+        251,
+        74
+      ],
+      "afterSize": [
+        251,
+        74
+      ],
+      "beforeBytes": 25222,
+      "afterBytes": 25222,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "f976f7d462ee1b41e23bb25f07ac739e1f093c51b4ee3122709557680142b294"
+    },
+    {
+      "path": "assets/resources/art/battle/play-4.png",
+      "beforeSize": [
+        259,
+        80
+      ],
+      "afterSize": [
+        259,
+        80
+      ],
+      "beforeBytes": 28203,
+      "afterBytes": 28203,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "c7a3e1a989c3bd836afd7c8cfaa9c7877692dc78e125cfc779936650ed9ca98b"
+    },
+    {
+      "path": "assets/resources/art/battle/play-5.png",
+      "beforeSize": [
+        254,
+        80
+      ],
+      "afterSize": [
+        254,
+        80
+      ],
+      "beforeBytes": 26391,
+      "afterBytes": 26391,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "bf9b595b9e40a41e4dc5c6f9183b1876431a82e2b0eda92406ffc67ec15394d4"
+    },
+    {
+      "path": "assets/resources/art/battle/play-6.png",
+      "beforeSize": [
+        259,
+        80
+      ],
+      "afterSize": [
+        259,
+        80
+      ],
+      "beforeBytes": 28547,
+      "afterBytes": 28547,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "cae46755dced64da0838f6b5b0112637aad7e66f16a4cb4ea311f6d3d1302cfd"
+    },
+    {
+      "path": "assets/resources/art/battle/play-7.png",
+      "beforeSize": [
+        268,
+        82
+      ],
+      "afterSize": [
+        268,
+        82
+      ],
+      "beforeBytes": 29116,
+      "afterBytes": 29116,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "fae426888d59dfe65216e66d6daeb9baffd037290c838187fb1ab721f773a01a"
+    },
+    {
+      "path": "assets/resources/art/battle/play-8.png",
+      "beforeSize": [
+        262,
+        82
+      ],
+      "afterSize": [
+        262,
+        82
+      ],
+      "beforeBytes": 28210,
+      "afterBytes": 28210,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "4584ccee27f86ec16ca9d3fbd054829bca315ef93cafbe80d62b0895aabb10d3"
+    },
+    {
+      "path": "assets/resources/art/battle/play-9.png",
+      "beforeSize": [
+        267,
+        82
+      ],
+      "afterSize": [
+        267,
+        82
+      ],
+      "beforeBytes": 29710,
+      "afterBytes": 29710,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "9d35f07ef6387c9ac870d07d7bc89de81527a4a52747d1a58f43cdc10949f3e0"
+    },
+    {
+      "path": "assets/resources/art/battle/play-action.png",
+      "beforeSize": [
+        284,
+        104
+      ],
+      "afterSize": [
+        284,
+        104
+      ],
+      "beforeBytes": 47920,
+      "afterBytes": 47920,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "d3446ce2ae98c02124f65c1b4bb0f02c4c1e65765f925936dfdf232ece2364b2"
+    },
+    {
+      "path": "assets/resources/art/battle/play-delete.png",
+      "beforeSize": [
+        277,
+        104
+      ],
+      "afterSize": [
+        277,
+        104
+      ],
+      "beforeBytes": 43842,
+      "afterBytes": 43842,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "a955d1f843ffded0cb2b02a414119aa4878dc8e0e70d72c7b9aa79685c89e382"
+    },
+    {
+      "path": "assets/resources/art/battle/play-hand-left.png",
+      "beforeSize": [
+        156,
+        201
+      ],
+      "afterSize": [
+        156,
+        201
+      ],
+      "beforeBytes": 53350,
+      "afterBytes": 53350,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "c153cd1236a223b8cef49c219d0c94e62b27f0cb4f7ccd3b681bc7498302ab06"
+    },
+    {
+      "path": "assets/resources/art/battle/play-hand-right.png",
+      "beforeSize": [
+        331,
+        190
+      ],
+      "afterSize": [
+        331,
+        190
+      ],
+      "beforeBytes": 99674,
+      "afterBytes": 99674,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "8611ece6063d941f0a1f742e351a3ac862e9b33c3515882822d21e3b0ad2b21d"
+    },
+    {
+      "path": "assets/resources/art/battle/play-tray.png",
+      "beforeSize": [
+        1000,
+        453
+      ],
+      "afterSize": [
+        1000,
+        453
+      ],
+      "beforeBytes": 710073,
+      "afterBytes": 710073,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "ec891af4f26210260286738804a81e71aad212c89eae7d81ca4bb37d704392b6"
+    },
+    {
+      "path": "assets/resources/art/battle/prep-0.png",
+      "beforeSize": [
+        212,
+        103
+      ],
+      "afterSize": [
+        212,
+        103
+      ],
+      "beforeBytes": 29166,
+      "afterBytes": 29166,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "376206d071e38408d332b2fd19992fe992795a9efb0bfd522f942df3f26dc51d"
+    },
+    {
+      "path": "assets/resources/art/battle/prep-1.png",
+      "beforeSize": [
+        188,
+        80
+      ],
+      "afterSize": [
+        188,
+        80
+      ],
+      "beforeBytes": 21227,
+      "afterBytes": 21227,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "9b7d5ae8f25d5336f599f4298972e977e57d3f2c739df4704d2d9d3af2eab259"
+    },
+    {
+      "path": "assets/resources/art/battle/prep-2.png",
+      "beforeSize": [
+        188,
+        80
+      ],
+      "afterSize": [
+        188,
+        80
+      ],
+      "beforeBytes": 21576,
+      "afterBytes": 21576,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "2d7deff4369ef075e1724a1cb9a97fd9aee9947086feaaf2dff70be5f2c48d32"
+    },
+    {
+      "path": "assets/resources/art/battle/prep-3.png",
+      "beforeSize": [
+        188,
+        80
+      ],
+      "afterSize": [
+        188,
+        80
+      ],
+      "beforeBytes": 22225,
+      "afterBytes": 22225,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "e156b09fd587ac5d5f40e9e0f7fa5566c807369bfa03d3beba3b293609f495e9"
+    },
+    {
+      "path": "assets/resources/art/battle/prep-4.png",
+      "beforeSize": [
+        202,
+        84
+      ],
+      "afterSize": [
+        202,
+        84
+      ],
+      "beforeBytes": 25424,
+      "afterBytes": 25424,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "e77068ae8213e3cfa827f5828f48e09b7e9e4b2eafe94f73ee43c54df3ecbf60"
+    },
+    {
+      "path": "assets/resources/art/battle/prep-5.png",
+      "beforeSize": [
+        194,
+        84
+      ],
+      "afterSize": [
+        194,
+        84
+      ],
+      "beforeBytes": 22751,
+      "afterBytes": 22751,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "00170d0f0f63a33c202fff2825c2330418e4a7e89a030a2d59001f2ad0fc945b"
+    },
+    {
+      "path": "assets/resources/art/battle/prep-6.png",
+      "beforeSize": [
+        204,
+        84
+      ],
+      "afterSize": [
+        204,
+        84
+      ],
+      "beforeBytes": 25404,
+      "afterBytes": 25404,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "41a6fd16ab3cfeaf3a8da283eb4f0e335869dcd48897af66d93eaa5a4445a75c"
+    },
+    {
+      "path": "assets/resources/art/battle/prep-7.png",
+      "beforeSize": [
+        210,
+        87
+      ],
+      "afterSize": [
+        210,
+        87
+      ],
+      "beforeBytes": 26075,
+      "afterBytes": 26075,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "76b338a74a6350ffe110e9d6a7a511cacb2477bc89e83cecc490b25a527e07ed"
+    },
+    {
+      "path": "assets/resources/art/battle/prep-8.png",
+      "beforeSize": [
+        207,
+        87
+      ],
+      "afterSize": [
+        207,
+        87
+      ],
+      "beforeBytes": 25081,
+      "afterBytes": 25081,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "464950dd99fe3d789b634783728c7a27b18a6f3a46660e454b3ad13f931c51c1"
+    },
+    {
+      "path": "assets/resources/art/battle/prep-9.png",
+      "beforeSize": [
+        213,
+        87
+      ],
+      "afterSize": [
+        213,
+        87
+      ],
+      "beforeBytes": 26862,
+      "afterBytes": 26862,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "f6820450c771689ea25a0ca2de6263b047aa6044eae6d4bac42ab171ca9f8895"
+    },
+    {
+      "path": "assets/resources/art/battle/prep-action.png",
+      "beforeSize": [
+        225,
+        103
+      ],
+      "afterSize": [
+        225,
+        103
+      ],
+      "beforeBytes": 40535,
+      "afterBytes": 40535,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "46aa8583b28f76653dfb941ccc37744fd89bb5e7c0aa1fd7fd31a2f810ea1c8d"
+    },
+    {
+      "path": "assets/resources/art/battle/prep-delete.png",
+      "beforeSize": [
+        228,
+        103
+      ],
+      "afterSize": [
+        228,
+        103
+      ],
+      "beforeBytes": 41948,
+      "afterBytes": 41948,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "ca7b10cf69da1899445a0f50c308d45d6db31e95ad51d3140311482f57e901b6"
+    },
+    {
+      "path": "assets/resources/art/battle/record-row.png",
+      "beforeSize": [
+        656,
+        90
+      ],
+      "afterSize": [
+        656,
+        90
+      ],
+      "beforeBytes": 54600,
+      "afterBytes": 54600,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "7c8fbb34014a19ca6bca60dd5ac5ebfdc9f1f1bd4065bb01ffc2f2dd628a40c1"
+    },
+    {
+      "path": "assets/resources/art/battle/records.png",
+      "beforeSize": [
+        755,
+        407
+      ],
+      "afterSize": [
+        755,
+        407
+      ],
+      "beforeBytes": 215633,
+      "afterBytes": 215633,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "550567bfbcaf9ed3ac8c0e05d6db57ef1407d81cd112702e9871ad08139445c7"
+    },
+    {
+      "path": "assets/resources/art/battle/right-thumb.png",
+      "beforeSize": [
+        179,
+        138
+      ],
+      "afterSize": [
+        179,
+        138
+      ],
+      "beforeBytes": 37225,
+      "afterBytes": 37225,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "2742037e2353c01d9a5a83714b4520ee5360205b95ef576a421da7cec13496b0"
+    },
+    {
+      "path": "assets/resources/art/battle/round.png",
+      "beforeSize": [
+        258,
+        77
+      ],
+      "afterSize": [
+        258,
+        77
+      ],
+      "beforeBytes": 17956,
+      "afterBytes": 17956,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "acf32a5ceeaf2a3bee38ca799eab95224c082f36c2771ffb924ddded5eb25265"
+    },
+    {
+      "path": "assets/resources/art/battle/rules.png",
+      "beforeSize": [
+        360,
+        52
+      ],
+      "afterSize": [
+        360,
+        52
+      ],
+      "beforeBytes": 34746,
+      "afterBytes": 34746,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "2601c0f5b7b6a06522f44d4ed2b071ea200d5ee2d70e6b19897088663a32c8ea"
+    },
+    {
+      "path": "assets/resources/art/battle/status.png",
+      "beforeSize": [
+        191,
+        43
+      ],
+      "afterSize": [
+        191,
+        43
+      ],
+      "beforeBytes": 8360,
+      "afterBytes": 8360,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "31636421b6e51ccc851f587f0e28fd502309becfdb02a0c5261ff7698c0ac97d"
+    },
+    {
+      "path": "assets/resources/art/battle/timer.png",
+      "beforeSize": [
+        216,
+        65
+      ],
+      "afterSize": [
+        216,
+        65
+      ],
+      "beforeBytes": 19740,
+      "afterBytes": 19740,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "51245f7de3921189a63a54cd65e98a8a3a5022a1b949423f4afad0c8238c9e26"
+    },
+    {
+      "path": "assets/resources/art/battle/tray.png",
+      "beforeSize": [
+        1000,
+        782
+      ],
+      "afterSize": [
+        1000,
+        782
+      ],
+      "beforeBytes": 1286255,
+      "afterBytes": 1286255,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "318d214ebc15c15463df066fad92ddc8fd1f304f25bb09c91c7b13cd5f5199a7"
+    },
+    {
+      "path": "assets/resources/art/battle/turn.png",
+      "beforeSize": [
+        400,
+        83
+      ],
+      "afterSize": [
+        400,
+        83
+      ],
+      "beforeBytes": 35640,
+      "afterBytes": 35640,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "5208d3fcefe7de4d0a59c351fad968dfc9ffac5c4a7624b3ea6422124877d325"
+    },
+    {
+      "path": "assets/resources/art/feedback/cancel-0.png",
+      "beforeSize": [
+        565,
+        515
+      ],
+      "afterSize": [
+        565,
+        515
+      ],
+      "beforeBytes": 142201,
+      "afterBytes": 142201,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "cd9b1d3dff6275faf29de9d0fd1cff3d94de2aa32d5b5143bd4baef17850827b"
+    },
+    {
+      "path": "assets/resources/art/feedback/cancel-1.png",
+      "beforeSize": [
+        565,
+        515
+      ],
+      "afterSize": [
+        565,
+        515
+      ],
+      "beforeBytes": 142882,
+      "afterBytes": 142882,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "1f321d518296618ea47c4a317b106b6ac8942e341e0f45ee9f0570a23345edde"
+    },
+    {
+      "path": "assets/resources/art/feedback/cancel-2.png",
+      "beforeSize": [
+        565,
+        515
+      ],
+      "afterSize": [
+        565,
+        515
+      ],
+      "beforeBytes": 143671,
+      "afterBytes": 143671,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "596154fa7d95265363492b0766b945332f1c6105da23222a5bd4bce2bbd0e2fa"
+    },
+    {
+      "path": "assets/resources/art/feedback/cancel-3.png",
+      "beforeSize": [
+        565,
+        515
+      ],
+      "afterSize": [
+        565,
+        515
+      ],
+      "beforeBytes": 139034,
+      "afterBytes": 139034,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "f614657137b03f5461a2929a7c1c9c6f2bea91dbe0fbe5c680e086eb4c213525"
+    },
+    {
+      "path": "assets/resources/art/feedback/connection-0.png",
+      "beforeSize": [
+        467,
+        479
+      ],
+      "afterSize": [
+        467,
+        479
+      ],
+      "beforeBytes": 106844,
+      "afterBytes": 106844,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "0c74a03589adb26ea84e612e19fac9e1a762b5d854f56bc1b11add495f331be2"
+    },
+    {
+      "path": "assets/resources/art/feedback/connection-1.png",
+      "beforeSize": [
+        467,
+        479
+      ],
+      "afterSize": [
+        467,
+        479
+      ],
+      "beforeBytes": 105817,
+      "afterBytes": 105817,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "2ca503538edf63ec29a56d732ea252b8cb6e1bf1a734b9365c8ef80a3843d8a2"
+    },
+    {
+      "path": "assets/resources/art/feedback/connection-2.png",
+      "beforeSize": [
+        467,
+        479
+      ],
+      "afterSize": [
+        467,
+        479
+      ],
+      "beforeBytes": 104480,
+      "afterBytes": 104480,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "77b65bb459865cf73baeb0ed493e76b90b8406d19957bc9025f201dfe9dc1ab7"
+    },
+    {
+      "path": "assets/resources/art/feedback/connection-3.png",
+      "beforeSize": [
+        467,
+        479
+      ],
+      "afterSize": [
+        467,
+        479
+      ],
+      "beforeBytes": 102147,
+      "afterBytes": 102147,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "3f3185c3be0ad99b5541574bc1e31eda5ffbd75824c9218253289d46c56cf338"
+    },
+    {
+      "path": "assets/resources/art/feedback/defeat-title.png",
+      "beforeSize": [
+        777,
+        304
+      ],
+      "afterSize": [
+        777,
+        304
+      ],
+      "beforeBytes": 98452,
+      "afterBytes": 98452,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "40115f2d4a74f8ce53c93a186acce47514ef466de48c9244669b1b0ae0392730"
+    },
+    {
+      "path": "assets/resources/art/feedback/draw-title.png",
+      "beforeSize": [
+        650,
+        412
+      ],
+      "afterSize": [
+        650,
+        412
+      ],
+      "beforeBytes": 120698,
+      "afterBytes": 120698,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "a36500d00ba209de2c8db625fda6bb314aa3beea85e8d72ba66dbb8dee847c34"
+    },
+    {
+      "path": "assets/resources/art/feedback/empty-ledger.png",
+      "beforeSize": [
+        253,
+        245
+      ],
+      "afterSize": [
+        253,
+        245
+      ],
+      "beforeBytes": 46970,
+      "afterBytes": 46970,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "636f228eab4bfa080c5bff8257c54c481d2a3a3c9206ea92c1dd58f9c49bea88"
+    },
+    {
+      "path": "assets/resources/art/feedback/end-0.png",
+      "beforeSize": [
+        565,
+        466
+      ],
+      "afterSize": [
+        565,
+        466
+      ],
+      "beforeBytes": 136180,
+      "afterBytes": 136180,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "0e3c1e7a3be6ed526faa5f3cb5ce2b4385e27ff6f33e1f7d793ab01e82cfe2c3"
+    },
+    {
+      "path": "assets/resources/art/feedback/end-1.png",
+      "beforeSize": [
+        565,
+        466
+      ],
+      "afterSize": [
+        565,
+        466
+      ],
+      "beforeBytes": 128267,
+      "afterBytes": 128267,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "f9c55d0c84153f89c04fd5de2402a81ce59757efa3505836121151844840cc8b"
+    },
+    {
+      "path": "assets/resources/art/feedback/end-2.png",
+      "beforeSize": [
+        565,
+        466
+      ],
+      "afterSize": [
+        565,
+        466
+      ],
+      "beforeBytes": 132918,
+      "afterBytes": 132918,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "b2912b803c0424aabeff339825114248658e5bf24d5e809e8f44a568a74b26b0"
+    },
+    {
+      "path": "assets/resources/art/feedback/end-3.png",
+      "beforeSize": [
+        565,
+        466
+      ],
+      "afterSize": [
+        565,
+        466
+      ],
+      "beforeBytes": 133257,
+      "afterBytes": 133257,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "9b0f5439ac3f71b2193e839eca9b518730e3828b59791c01e0d5f0a8590fa425"
+    },
+    {
+      "path": "assets/resources/art/feedback/home.png",
+      "beforeSize": [
+        352,
+        119
+      ],
+      "afterSize": [
+        352,
+        119
+      ],
+      "beforeBytes": 20755,
+      "afterBytes": 20755,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "07a3c1e5dd1e47b1fb15f5c9868bf3cd3b04dd94e99bf9ed8b3439f9695e4234"
+    },
+    {
+      "path": "assets/resources/art/feedback/match.png",
+      "beforeSize": [
+        368,
+        110
+      ],
+      "afterSize": [
+        368,
+        110
+      ],
+      "beforeBytes": 27318,
+      "afterBytes": 27318,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "136d50d8bf32202762c8f58d2ebd1545cafb089c3ef4d874c992857b8cf69b71"
+    },
+    {
+      "path": "assets/resources/art/feedback/opponent-0.png",
+      "beforeSize": [
+        665,
+        263
+      ],
+      "afterSize": [
+        665,
+        263
+      ],
+      "beforeBytes": 97590,
+      "afterBytes": 97590,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "b64da14edb7328799cbaafbd0eb4f2c529987922bf76e417bf5c0c80e0597478"
+    },
+    {
+      "path": "assets/resources/art/feedback/opponent-1.png",
+      "beforeSize": [
+        665,
+        263
+      ],
+      "afterSize": [
+        665,
+        263
+      ],
+      "beforeBytes": 99386,
+      "afterBytes": 99386,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "8df8c7fd76d50b96061443dca1276c204049f62aa43aab6c57c9ecdb81670e99"
+    },
+    {
+      "path": "assets/resources/art/feedback/opponent-2.png",
+      "beforeSize": [
+        665,
+        263
+      ],
+      "afterSize": [
+        665,
+        263
+      ],
+      "beforeBytes": 92865,
+      "afterBytes": 92865,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "338c42b40b0bf12bb37895171fc36d93880a0122afc28386ee2030e835160831"
+    },
+    {
+      "path": "assets/resources/art/feedback/opponent-3.png",
+      "beforeSize": [
+        665,
+        263
+      ],
+      "afterSize": [
+        665,
+        263
+      ],
+      "beforeBytes": 95238,
+      "afterBytes": 95238,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "97253b68b27f1fd3005be0ec6c91c70590d611b3972233e80f5f610c0bfda67a"
+    },
+    {
+      "path": "assets/resources/art/feedback/opponent-4.png",
+      "beforeSize": [
+        665,
+        263
+      ],
+      "afterSize": [
+        665,
+        263
+      ],
+      "beforeBytes": 90472,
+      "afterBytes": 90472,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "71844f2ea62f05454e11b4304a3d06e8ee153d221f575dc308ee2d5922865a48"
+    },
+    {
+      "path": "assets/resources/art/feedback/opponent-5.png",
+      "beforeSize": [
+        665,
+        263
+      ],
+      "afterSize": [
+        665,
+        263
+      ],
+      "beforeBytes": 98366,
+      "afterBytes": 98366,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "90034d609a351e1b7ff65e08d1e404c803aeb5ba42da6cce6b6bebf80c5fbafa"
+    },
+    {
+      "path": "assets/resources/art/feedback/own-gold.png",
+      "beforeSize": [
+        460,
+        454
+      ],
+      "afterSize": [
+        460,
+        454
+      ],
+      "beforeBytes": 101667,
+      "afterBytes": 101667,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "64025a3a17f894c396e7f3e17be3d02b6f01d656e6ff0de11f020bb06f40a047"
+    },
+    {
+      "path": "assets/resources/art/feedback/own.png",
+      "beforeSize": [
+        460,
+        454
+      ],
+      "afterSize": [
+        460,
+        454
+      ],
+      "beforeBytes": 104226,
+      "afterBytes": 104226,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "15563b886c4af136176ab0072521901af249f1fd89d5f5206166db6e8366be84"
+    },
+    {
+      "path": "assets/resources/art/feedback/records.png",
+      "beforeSize": [
+        380,
+        100
+      ],
+      "afterSize": [
+        380,
+        100
+      ],
+      "beforeBytes": 25215,
+      "afterBytes": 25215,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "e168a9462acc00c2e5bcbd776a97ecfcdb2031e18bcc83d0a69f3fe66e69e9f7"
+    },
+    {
+      "path": "assets/resources/art/feedback/rematch-0.png",
+      "beforeSize": [
+        506,
+        687
+      ],
+      "afterSize": [
+        506,
+        687
+      ],
+      "beforeBytes": 170004,
+      "afterBytes": 170004,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "7e69cbf0a2d221015fa1b1a781083722fff8e69b77d5f6789eecd3ef4ec55e00"
+    },
+    {
+      "path": "assets/resources/art/feedback/rematch-1.png",
+      "beforeSize": [
+        511,
+        687
+      ],
+      "afterSize": [
+        511,
+        687
+      ],
+      "beforeBytes": 171293,
+      "afterBytes": 171293,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "a46c85dd016248141497e3568b22755c8029b2c146e0700dcf214a61092e01d5"
+    },
+    {
+      "path": "assets/resources/art/feedback/rematch-2.png",
+      "beforeSize": [
+        502,
+        687
+      ],
+      "afterSize": [
+        502,
+        687
+      ],
+      "beforeBytes": 169614,
+      "afterBytes": 169614,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "34088a76f90080f4aefc3dd596ebbbd1013244a5b1fee95647e19f5290fe5570"
+    },
+    {
+      "path": "assets/resources/art/feedback/rematch.png",
+      "beforeSize": [
+        767,
+        149
+      ],
+      "afterSize": [
+        767,
+        149
+      ],
+      "beforeBytes": 58397,
+      "afterBytes": 58397,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "dab2ed146f5ebf2559cc0686fe01e67eb4bdba55ea7e98c5a47249864786827e"
+    },
+    {
+      "path": "assets/resources/art/feedback/result-home.png",
+      "beforeSize": [
+        362,
+        110
+      ],
+      "afterSize": [
+        362,
+        110
+      ],
+      "beforeBytes": 23332,
+      "afterBytes": 23332,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "f7a7e5129033312742bf8d30e2201126a270b0c48847232c3246e8c0c5330cdb"
+    },
+    {
+      "path": "assets/resources/art/feedback/result-paper.png",
+      "beforeSize": [
+        840,
+        807
+      ],
+      "afterSize": [
+        840,
+        807
+      ],
+      "beforeBytes": 187214,
+      "afterBytes": 187214,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "49aaaf639f789d09bbd0ea3297d5319586b772483188b47a94c9a07f9a664a52"
+    },
+    {
+      "path": "assets/resources/art/feedback/result-reason.png",
+      "beforeSize": [
+        739,
+        99
+      ],
+      "afterSize": [
+        739,
+        99
+      ],
+      "beforeBytes": 27147,
+      "afterBytes": 27147,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "411a2cbbef5ce7651371a8e71461516bd1f839bafdf8178f9448e9cf0b2d400b"
+    },
+    {
+      "path": "assets/resources/art/feedback/retry.png",
+      "beforeSize": [
+        307,
+        105
+      ],
+      "afterSize": [
+        307,
+        105
+      ],
+      "beforeBytes": 19541,
+      "afterBytes": 19541,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "e501a2e7627df8f192d219b9428d67922f6f6b34394467f869d69dec103dd6d8"
+    },
+    {
+      "path": "assets/resources/art/feedback/timeout-0.png",
+      "beforeSize": [
+        498,
+        241
+      ],
+      "afterSize": [
+        498,
+        241
+      ],
+      "beforeBytes": 67532,
+      "afterBytes": 67532,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "3744b1aaae30bc530035fb2d077329ce70f8c68c5e889f23bd06f041e1aa95bd"
+    },
+    {
+      "path": "assets/resources/art/feedback/timeout-1.png",
+      "beforeSize": [
+        458,
+        241
+      ],
+      "afterSize": [
+        458,
+        241
+      ],
+      "beforeBytes": 62046,
+      "afterBytes": 62046,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "5695b47286ba0cb17884e39b873b50ac7059d33b0a78deb630be8424e1dd90c3"
+    },
+    {
+      "path": "assets/resources/art/feedback/timeout-2.png",
+      "beforeSize": [
+        492,
+        241
+      ],
+      "afterSize": [
+        492,
+        241
+      ],
+      "beforeBytes": 65654,
+      "afterBytes": 65654,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "a283ef86f18fd55ab3146497616e431ce2444b8173c5e09a0624f4d191b8d1c2"
+    },
+    {
+      "path": "assets/resources/art/feedback/timeout-end-0.png",
+      "beforeSize": [
+        496,
+        548
+      ],
+      "afterSize": [
+        496,
+        548
+      ],
+      "beforeBytes": 133994,
+      "afterBytes": 133994,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "5c048d803523ba242ee209ee1cfaaa6bd83af7ea833c5537eb4d613b22b39547"
+    },
+    {
+      "path": "assets/resources/art/feedback/timeout-end-1.png",
+      "beforeSize": [
+        458,
+        548
+      ],
+      "afterSize": [
+        458,
+        548
+      ],
+      "beforeBytes": 128022,
+      "afterBytes": 128022,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "3e630bdf300d2ecaf1853cd2ae348caa7c56d8cd7738ee8486e12f8872e27e72"
+    },
+    {
+      "path": "assets/resources/art/feedback/timeout-end-2.png",
+      "beforeSize": [
+        493,
+        548
+      ],
+      "afterSize": [
+        493,
+        548
+      ],
+      "beforeBytes": 133453,
+      "afterBytes": 133453,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "69698c5d61c8efb8e91087f420c825991ee6f0be3cd95f792b92d549e3add48d"
+    },
+    {
+      "path": "assets/resources/art/feedback/toast.png",
+      "beforeSize": [
+        720,
+        189
+      ],
+      "afterSize": [
+        720,
+        189
+      ],
+      "beforeBytes": 58770,
+      "afterBytes": 58770,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "e94f6c101f2803a1953d0abbdfb386ed6e2de68ae14ffe2f7472b85d1e49463b"
+    },
+    {
+      "path": "assets/resources/art/feedback/turn.png",
+      "beforeSize": [
+        720,
+        186
+      ],
+      "afterSize": [
+        720,
+        186
+      ],
+      "beforeBytes": 60144,
+      "afterBytes": 60144,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "e412b02cba1ce9211104bb3fbc5e2f90d343e02888e004cb3b99911456a87d5b"
+    },
+    {
+      "path": "assets/resources/art/feedback/victory-title.png",
+      "beforeSize": [
+        552,
+        345
+      ],
+      "afterSize": [
+        552,
+        345
+      ],
+      "beforeBytes": 102634,
+      "afterBytes": 102634,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "bb7cfc5fc9a2c6dcf8f48033b26b6d134203fe281e210cbf105a72324af4b417"
+    },
+    {
+      "path": "assets/resources/art/feedback/warning.png",
+      "beforeSize": [
+        721,
+        189
+      ],
+      "afterSize": [
+        721,
+        189
+      ],
+      "beforeBytes": 59496,
+      "afterBytes": 59496,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "66ddb960b76335c48c235de81adf429570451d04b5beeb60e399ae53761b05e6"
+    },
+    {
+      "path": "assets/resources/art/friend/back.png",
+      "beforeSize": [
+        199,
+        84
+      ],
+      "afterSize": [
+        199,
+        84
+      ],
+      "beforeBytes": 27585,
+      "afterBytes": 27585,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "4884e14b66501eadf45909990d80c21a646b5a8d49b0347092a6b5effc50166c"
+    },
+    {
+      "path": "assets/resources/art/friend/close.png",
+      "beforeSize": [
+        447,
+        111
+      ],
+      "afterSize": [
+        447,
+        111
+      ],
+      "beforeBytes": 76353,
+      "afterBytes": 76353,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "d5f4b425acfe7f64ceef782e1675f25f091d160ca8301c6eae9463347c7bd72b"
+    },
+    {
+      "path": "assets/resources/art/friend/copy.png",
+      "beforeSize": [
+        397,
+        105
+      ],
+      "afterSize": [
+        397,
+        105
+      ],
+      "beforeBytes": 70011,
+      "afterBytes": 70011,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "be6ba0bb3d3b607da4de23f7f4bd25a2aa64379a282d634264f60e1e387b7c2e"
+    },
+    {
+      "path": "assets/resources/art/friend/count.png",
+      "beforeSize": [
+        187,
+        76
+      ],
+      "afterSize": [
+        187,
+        76
+      ],
+      "beforeBytes": 20399,
+      "afterBytes": 20399,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "75574deceebab2f02da5cbd42d0c2f8182854fd973a2bf4eb9ff23882e9d025f"
+    },
+    {
+      "path": "assets/resources/art/friend/heading.png",
+      "beforeSize": [
+        320,
+        96
+      ],
+      "afterSize": [
+        320,
+        96
+      ],
+      "beforeBytes": 55992,
+      "afterBytes": 55992,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "c70bbd53a4bbc50460270ac259124b893625e7ff9ee607be29a0866d8f205cbb"
+    },
+    {
+      "path": "assets/resources/art/friend/nameplate.png",
+      "beforeSize": [
+        210,
+        51
+      ],
+      "afterSize": [
+        210,
+        51
+      ],
+      "beforeBytes": 11963,
+      "afterBytes": 11963,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "da8e1245e581aae9197e272a9bbcea5be72a2955c8ee0b51205bbd3f09b26e12"
+    },
+    {
+      "path": "assets/resources/art/friend/paper.png",
+      "beforeSize": [
+        807,
+        561
+      ],
+      "afterSize": [
+        807,
+        561
+      ],
+      "beforeBytes": 644609,
+      "afterBytes": 644609,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "3ca0e1cb8e0b24cb3eeaf593b92d433a1f8b8defedfa38e6a28cd51ab3607753"
+    },
+    {
+      "path": "assets/resources/art/friend/seated.png",
+      "beforeSize": [
+        163,
+        36
+      ],
+      "afterSize": [
+        163,
+        36
+      ],
+      "beforeBytes": 10148,
+      "afterBytes": 10148,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "003986b9d1af4bdef5db0f234a0efd0870cfa0dcb547e4c6a4be55471da0ccc6"
+    },
+    {
+      "path": "assets/resources/art/friend/waiting.png",
+      "beforeSize": [
+        158,
+        148
+      ],
+      "afterSize": [
+        158,
+        148
+      ],
+      "beforeBytes": 40202,
+      "afterBytes": 40202,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "a29cf1a61eb1d6a65d6cbb883606c7ffbd47c7acd321a3a0b5f0f091f05fe6a2"
+    },
+    {
+      "path": "assets/resources/art/join/back.png",
+      "beforeSize": [
+        201,
+        76
+      ],
+      "afterSize": [
+        201,
+        76
+      ],
+      "beforeBytes": 28035,
+      "afterBytes": 28035,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "b0e27459cea5a3212b491194bebf304d466adcad69e89efeffef567e79069322"
+    },
+    {
+      "path": "assets/resources/art/join/create.png",
+      "beforeSize": [
+        455,
+        100
+      ],
+      "afterSize": [
+        455,
+        100
+      ],
+      "beforeBytes": 67521,
+      "afterBytes": 67521,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "53bccef38c856e397e0cfe3d47ccee59a96602b8ba2348c6941bdb72f7ca45b5"
+    },
+    {
+      "path": "assets/resources/art/join/heading.png",
+      "beforeSize": [
+        447,
+        191
+      ],
+      "afterSize": [
+        447,
+        191
+      ],
+      "beforeBytes": 146537,
+      "afterBytes": 146537,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "ce6ccb03f6781c08ec42c8d46d7c6b1d7e2b541bfe730c19b5326b36b5be2392"
+    },
+    {
+      "path": "assets/resources/art/join/join.png",
+      "beforeSize": [
+        502,
+        126
+      ],
+      "afterSize": [
+        502,
+        126
+      ],
+      "beforeBytes": 103995,
+      "afterBytes": 103995,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "985c3f1a720937fc8425d5f7bb6f1fcb63b10a8bcd75443ea4fc2f47ea9a9bb4"
+    },
+    {
+      "path": "assets/resources/art/join/key-0.png",
+      "beforeSize": [
+        261,
+        129
+      ],
+      "afterSize": [
+        261,
+        129
+      ],
+      "beforeBytes": 41798,
+      "afterBytes": 41798,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "061fef474b170698d7122c1029e211caf4983fec61238a41e0e3f79b79c47cf7"
+    },
+    {
+      "path": "assets/resources/art/join/key-1.png",
+      "beforeSize": [
+        238,
+        100
+      ],
+      "afterSize": [
+        238,
+        100
+      ],
+      "beforeBytes": 33331,
+      "afterBytes": 33331,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "92b22ce7b19a75264bbcea0ecf24316d639f10a0ce3f40fdd72bf7a0daa87eb0"
+    },
+    {
+      "path": "assets/resources/art/join/key-2.png",
+      "beforeSize": [
+        238,
+        100
+      ],
+      "afterSize": [
+        238,
+        100
+      ],
+      "beforeBytes": 33612,
+      "afterBytes": 33612,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "45476e0fa9739ee7171f8d24e2e41b7689fdaedd1ae909abef167fb1b66806db"
+    },
+    {
+      "path": "assets/resources/art/join/key-3.png",
+      "beforeSize": [
+        238,
+        100
+      ],
+      "afterSize": [
+        238,
+        100
+      ],
+      "beforeBytes": 33767,
+      "afterBytes": 33767,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "380c13445aad1be14d1c7cceec9517edcb41e693561d66de0324d50cadcbc7b5"
+    },
+    {
+      "path": "assets/resources/art/join/key-4.png",
+      "beforeSize": [
+        247,
+        104
+      ],
+      "afterSize": [
+        247,
+        104
+      ],
+      "beforeBytes": 37220,
+      "afterBytes": 37220,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "ae7de175da74a05ef6e3027fcdfbb5e795c0961e589fbc2681327c95d4c2b1d2"
+    },
+    {
+      "path": "assets/resources/art/join/key-5.png",
+      "beforeSize": [
+        244,
+        104
+      ],
+      "afterSize": [
+        244,
+        104
+      ],
+      "beforeBytes": 34473,
+      "afterBytes": 34473,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "16c661c70ee5c0da9270a264fe819373bbf6007a6b9ed17aeb98df5de7dd3e77"
+    },
+    {
+      "path": "assets/resources/art/join/key-6.png",
+      "beforeSize": [
+        247,
+        104
+      ],
+      "afterSize": [
+        247,
+        104
+      ],
+      "beforeBytes": 36795,
+      "afterBytes": 36795,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "f18a195149024a12b63fe5db7f3ee58f74e4e832dd215c78861ec6ea59c92c89"
+    },
+    {
+      "path": "assets/resources/art/join/key-7.png",
+      "beforeSize": [
+        255,
+        107
+      ],
+      "afterSize": [
+        255,
+        107
+      ],
+      "beforeBytes": 37602,
+      "afterBytes": 37602,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "d0bbf664ac83a4fe4e0546b82599a04d26620784a4cf03fadf06d960434f5205"
+    },
+    {
+      "path": "assets/resources/art/join/key-8.png",
+      "beforeSize": [
+        251,
+        107
+      ],
+      "afterSize": [
+        251,
+        107
+      ],
+      "beforeBytes": 36397,
+      "afterBytes": 36397,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "2c6059728aac3dfbf8e2e4ddf59e686c6046faa853f2f99c7ff34d6bc88cebd3"
+    },
+    {
+      "path": "assets/resources/art/join/key-9.png",
+      "beforeSize": [
+        256,
+        107
+      ],
+      "afterSize": [
+        256,
+        107
+      ],
+      "beforeBytes": 37286,
+      "afterBytes": 37286,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "3001fcacb376a95ff3cdd8e1f3f922ed9c8868607389361dbc28cf0dbeca23bf"
+    },
+    {
+      "path": "assets/resources/art/join/key-clear.png",
+      "beforeSize": [
+        269,
+        129
+      ],
+      "afterSize": [
+        269,
+        129
+      ],
+      "beforeBytes": 56412,
+      "afterBytes": 56412,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "e3803949da2db80dd39275e607d3b8a0b5d7e632e1d986a73eda79ec43ae5b34"
+    },
+    {
+      "path": "assets/resources/art/join/key-delete.png",
+      "beforeSize": [
+        270,
+        129
+      ],
+      "afterSize": [
+        270,
+        129
+      ],
+      "beforeBytes": 54245,
+      "afterBytes": 54245,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "00e7a6d4a48440ef929f6265623455f0dce227645ce1025acf74bd08537e16f5"
+    },
+    {
+      "path": "assets/resources/art/join/keyboard.png",
+      "beforeSize": [
+        941,
+        585
+      ],
+      "afterSize": [
+        941,
+        585
+      ],
+      "beforeBytes": 368805,
+      "afterBytes": 368805,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "3a90e445c3e4662b81ca8e583e8bb3428ce6db0e4f3e12d1436adaa3ac8414b7"
+    },
+    {
+      "path": "assets/resources/art/join/paper.png",
+      "beforeSize": [
+        703,
+        706
+      ],
+      "afterSize": [
+        703,
+        706
+      ],
+      "beforeBytes": 577595,
+      "afterBytes": 577595,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "05138969e31ae1d62ad59eb811e204fdd3ed4af60b435b98d605c736be82a42b"
+    },
+    {
+      "path": "assets/resources/art/lobby/avatar-frame.png",
+      "beforeSize": [
+        156,
+        154
+      ],
+      "afterSize": [
+        156,
+        154
+      ],
+      "beforeBytes": 55933,
+      "afterBytes": 55933,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "93383ff0e01e7c8f9e88a78fdc00a157f1c59d71b5fc0ce4562ced826ebc03c7"
+    },
+    {
+      "path": "assets/resources/art/lobby/background.png",
+      "beforeSize": [
+        941,
+        1672
+      ],
+      "afterSize": [
+        941,
+        1672
+      ],
+      "beforeBytes": 2152592,
+      "afterBytes": 2003909,
+      "action": "lossless",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "dde5ddc3f99551c02aaa6edb814daf8ce0ed8f7930c87a3124c0bc766452d4b6"
+    },
+    {
+      "path": "assets/resources/art/lobby/friend-full.png",
+      "beforeSize": [
+        712,
+        207
+      ],
+      "afterSize": [
+        712,
+        207
+      ],
+      "beforeBytes": 231672,
+      "afterBytes": 231672,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "8e9f0d04a963241a81c626a2dcc1de5ee5bc428fd270661d0c0c84766780a83d"
+    },
+    {
+      "path": "assets/resources/art/lobby/help-full.png",
+      "beforeSize": [
+        341,
+        145
+      ],
+      "afterSize": [
+        341,
+        145
+      ],
+      "beforeBytes": 88421,
+      "afterBytes": 88421,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "b4ec75e865e90b25eb09c6bf8052cd7d06965ec35513f6b67f26c7aa98070835"
+    },
+    {
+      "path": "assets/resources/art/lobby/help.png",
+      "beforeSize": [
+        588,
+        231
+      ],
+      "afterSize": [
+        588,
+        231
+      ],
+      "beforeBytes": 259631,
+      "afterBytes": 259631,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "09fd1af3e9781d5afb537c861da31c6c8f57fb50c0842013487ae1f2d2bb2792"
+    },
+    {
+      "path": "assets/resources/art/lobby/machine.png",
+      "beforeSize": [
+        719,
+        358
+      ],
+      "afterSize": [
+        719,
+        358
+      ],
+      "beforeBytes": 432547,
+      "afterBytes": 432547,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "bdf902b617496bab573472ca851bc9cdb34b7d4dc2734ea0b015993e997571f8"
+    },
+    {
+      "path": "assets/resources/art/lobby/match-full.png",
+      "beforeSize": [
+        690,
+        198
+      ],
+      "afterSize": [
+        690,
+        198
+      ],
+      "beforeBytes": 235574,
+      "afterBytes": 235574,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "7528cd655b7e789c4d0689fad06674c1a2d6f3950fa694e1355ea5b390ee46f4"
+    },
+    {
+      "path": "assets/resources/art/lobby/nickname-frame.png",
+      "beforeSize": [
+        229,
+        67
+      ],
+      "afterSize": [
+        229,
+        67
+      ],
+      "beforeBytes": 29713,
+      "afterBytes": 29713,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "18391c0aa4dc612e341dfd321b2604376d27ff9e71dc3df9cccac984a6b2efff"
+    },
+    {
+      "path": "assets/resources/art/lobby/primary.png",
+      "beforeSize": [
+        726,
+        221
+      ],
+      "afterSize": [
+        726,
+        221
+      ],
+      "beforeBytes": 256746,
+      "afterBytes": 256746,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "f06e24733447afff4b7953ffa262170f7603ab3f3b94a678504b6dd61b6e5f06"
+    },
+    {
+      "path": "assets/resources/art/lobby/secondary.png",
+      "beforeSize": [
+        716,
+        221
+      ],
+      "afterSize": [
+        716,
+        221
+      ],
+      "beforeBytes": 249867,
+      "afterBytes": 249867,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "eb42f599624871e1f8b50e059b95762972f9921107732cbe054fe6d0408d3c12"
+    },
+    {
+      "path": "assets/resources/art/lobby/settings-full.png",
+      "beforeSize": [
+        98,
+        102
+      ],
+      "afterSize": [
+        98,
+        102
+      ],
+      "beforeBytes": 20200,
+      "afterBytes": 20200,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "356ca36cad7df43176c86de15074fc976c4f346af7f9add16f21af3b5a61c756"
+    },
+    {
+      "path": "assets/resources/art/lobby/sound-full.png",
+      "beforeSize": [
+        101,
+        98
+      ],
+      "afterSize": [
+        101,
+        98
+      ],
+      "beforeBytes": 18823,
+      "afterBytes": 18823,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "c527fd73cd7ce296c8643466333493ca7aaca4cd67ca929524fb5b02572a2f13"
+    },
+    {
+      "path": "assets/resources/art/lobby/title.png",
+      "beforeSize": [
+        770,
+        425
+      ],
+      "afterSize": [
+        770,
+        425
+      ],
+      "beforeBytes": 565647,
+      "afterBytes": 565647,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "b227bbbae54d49de8b09208802b4caa1f9e36aa521e52d192a092fd08f1c0aee"
+    },
+    {
+      "path": "assets/resources/art/lobby/utility.png",
+      "beforeSize": [
+        239,
+        242
+      ],
+      "afterSize": [
+        239,
+        242
+      ],
+      "beforeBytes": 101777,
+      "afterBytes": 101777,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "e841f1a2d1cef8a4107aade8229b5880b6f0f139893f3136f3a4ec6a59395bfb"
+    },
+    {
+      "path": "assets/resources/art/matching/base.png",
+      "beforeSize": [
+        657,
+        306
+      ],
+      "afterSize": [
+        657,
+        306
+      ],
+      "beforeBytes": 331197,
+      "afterBytes": 331197,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "a842e4e8d3a369e8e8e6177dd6794a4aa0df66977ea5c2e42d85bc634c9cb7d6"
+    },
+    {
+      "path": "assets/resources/art/matching/cancel.png",
+      "beforeSize": [
+        527,
+        155
+      ],
+      "afterSize": [
+        527,
+        155
+      ],
+      "beforeBytes": 121623,
+      "afterBytes": 121623,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "c91910003eb8ceb900028ee708a2ecb23ea25ba01a82159a1cb70cbe7e846904"
+    },
+    {
+      "path": "assets/resources/art/matching/glass.png",
+      "beforeSize": [
+        214,
+        292
+      ],
+      "afterSize": [
+        214,
+        292
+      ],
+      "beforeBytes": 132977,
+      "afterBytes": 132977,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "efca62f7e8ec877fd21382ca8f3822acd652481966e4ef57b52ed8857e6f7886"
+    },
+    {
+      "path": "assets/resources/art/matching/heading.png",
+      "beforeSize": [
+        487,
+        206
+      ],
+      "afterSize": [
+        487,
+        206
+      ],
+      "beforeBytes": 165472,
+      "afterBytes": 165472,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "7514f20e2fc2c871a469827fc49c0d1f997bdc718f293aaff9fe661540e4dbeb"
+    },
+    {
+      "path": "assets/resources/art/matching/hourglass-sheet.png",
+      "beforeSize": [
+        1280,
+        1280
+      ],
+      "afterSize": [
+        1280,
+        1280
+      ],
+      "beforeBytes": 1734563,
+      "afterBytes": 1734563,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "6a51aa99c344ee1ce0dbf21e98196c9bcd83a9880e4eff15a6c5a286b3961eca"
+    },
+    {
+      "path": "assets/resources/art/matching/nameplate.png",
+      "beforeSize": [
+        266,
+        60
+      ],
+      "afterSize": [
+        266,
+        60
+      ],
+      "beforeBytes": 17664,
+      "afterBytes": 17664,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "fbb5df38237cd0c2b8f8eb6c6d91faf64e737cdf68bf48ad79434b81db91716f"
+    },
+    {
+      "path": "assets/resources/art/matching/opponent.png",
+      "beforeSize": [
+        172,
+        172
+      ],
+      "afterSize": [
+        172,
+        172
+      ],
+      "beforeBytes": 40531,
+      "afterBytes": 40531,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "1ce466222f86be82d2745e93632d3134f22b9e85f8a4c05ae3afb460c5fbc990"
+    },
+    {
+      "path": "assets/resources/art/matching/portrait-rim.png",
+      "beforeSize": [
+        311,
+        200
+      ],
+      "afterSize": [
+        311,
+        200
+      ],
+      "beforeBytes": 134567,
+      "afterBytes": 134567,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "ac983f2a1032a08c7027199c4642c7e450a086962ff71a412629d6b1e0fc864f"
+    },
+    {
+      "path": "assets/resources/art/matching/sand-bottom.png",
+      "beforeSize": [
+        102,
+        48
+      ],
+      "afterSize": [
+        102,
+        48
+      ],
+      "beforeBytes": 11821,
+      "afterBytes": 11821,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "dec3d2e3909842e0027e4efccbe282d47cb2ede946e0d5658e7605c82d7c868b"
+    },
+    {
+      "path": "assets/resources/art/matching/sand-top.png",
+      "beforeSize": [
+        99,
+        58
+      ],
+      "afterSize": [
+        99,
+        58
+      ],
+      "beforeBytes": 13500,
+      "afterBytes": 13500,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "7ce4fc92190f8980168c1fb28345e048b0c72967f6782b5b553ce8b108423627"
+    },
+    {
+      "path": "assets/resources/art/modals/close-back.png",
+      "beforeSize": [
+        103,
+        108
+      ],
+      "afterSize": [
+        103,
+        108
+      ],
+      "beforeBytes": 8609,
+      "afterBytes": 8609,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "39aa010cf69a4c310caa86d405aa0cb01a87f9bc6ffea7898a8d3c2cdce957d7"
+    },
+    {
+      "path": "assets/resources/art/modals/close-body.png",
+      "beforeSize": [
+        740,
+        1062
+      ],
+      "afterSize": [
+        740,
+        1062
+      ],
+      "beforeBytes": 407948,
+      "afterBytes": 407948,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "dcdc365c54ebbf577d9ede0258912b299ccc4b75970b7ecac80134cf63af3b3f"
+    },
+    {
+      "path": "assets/resources/art/modals/close-cancel.png",
+      "beforeSize": [
+        586,
+        153
+      ],
+      "afterSize": [
+        586,
+        153
+      ],
+      "beforeBytes": 50985,
+      "afterBytes": 50985,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "3d5d9ae8304e1e43df0cdb0e8dc8d82702ebac9d2eede7e13b3b5c0eb80a8b62"
+    },
+    {
+      "path": "assets/resources/art/modals/close-confirm.png",
+      "beforeSize": [
+        563,
+        132
+      ],
+      "afterSize": [
+        563,
+        132
+      ],
+      "beforeBytes": 49673,
+      "afterBytes": 49673,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "59d9eb0dece86e94d77926062ceacbc6a0d7da78ab2e0c357b6a851b912d45cd"
+    },
+    {
+      "path": "assets/resources/art/modals/leave-back.png",
+      "beforeSize": [
+        95,
+        95
+      ],
+      "afterSize": [
+        95,
+        95
+      ],
+      "beforeBytes": 7445,
+      "afterBytes": 7445,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "784c29c8d2218bd66ce254e16b35c6aef73083c1ee94c40e684890a169afe7d7"
+    },
+    {
+      "path": "assets/resources/art/modals/leave-body.png",
+      "beforeSize": [
+        759,
+        1038
+      ],
+      "afterSize": [
+        759,
+        1038
+      ],
+      "beforeBytes": 400247,
+      "afterBytes": 400247,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "3da0de3f0dc0df0c46d7d8f743929b58b21a8f4e4b76e509266691ae9efe25cc"
+    },
+    {
+      "path": "assets/resources/art/modals/leave-cancel.png",
+      "beforeSize": [
+        575,
+        149
+      ],
+      "afterSize": [
+        575,
+        149
+      ],
+      "beforeBytes": 48772,
+      "afterBytes": 48772,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "844af3b6be3beb30e4d498b18ff71e2a14d791d362be9716ce395b4c90e55667"
+    },
+    {
+      "path": "assets/resources/art/modals/leave-confirm.png",
+      "beforeSize": [
+        564,
+        129
+      ],
+      "afterSize": [
+        564,
+        129
+      ],
+      "beforeBytes": 47907,
+      "afterBytes": 47907,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "cd4754fdc025c273c962b56fe139047d9d0d923b2e93e71213cd41f7def54cff"
+    },
+    {
+      "path": "assets/resources/art/modals/live-back.png",
+      "beforeSize": [
+        208,
+        96
+      ],
+      "afterSize": [
+        208,
+        96
+      ],
+      "beforeBytes": 15538,
+      "afterBytes": 15538,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "dcc52e315bcddf90d37a541105b7942d4eb4a56301795880bfd6d7ed7a92685f"
+    },
+    {
+      "path": "assets/resources/art/modals/live-body.png",
+      "beforeSize": [
+        783,
+        1454
+      ],
+      "afterSize": [
+        783,
+        1454
+      ],
+      "beforeBytes": 551377,
+      "afterBytes": 551377,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "0a516a7a394240229d9f5fc7298380fed511c90a60e2e7fe63d063c3c83c1a31"
+    },
+    {
+      "path": "assets/resources/art/modals/live-done.png",
+      "beforeSize": [
+        556,
+        131
+      ],
+      "afterSize": [
+        556,
+        131
+      ],
+      "beforeBytes": 43611,
+      "afterBytes": 43611,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "e85373b798a21b6326e2d94724564081d584f9bb9de1f488b35f335f332975f0"
+    },
+    {
+      "path": "assets/resources/art/modals/live-latest.png",
+      "beforeSize": [
+        195,
+        64
+      ],
+      "afterSize": [
+        195,
+        64
+      ],
+      "beforeBytes": 10200,
+      "afterBytes": 10200,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "5669fccc977ddd0c720118b8058d2ad57d9affc25128af7c824d6afffb7a5da7"
+    },
+    {
+      "path": "assets/resources/art/modals/lock-back.png",
+      "beforeSize": [
+        108,
+        106
+      ],
+      "afterSize": [
+        108,
+        106
+      ],
+      "beforeBytes": 8878,
+      "afterBytes": 8878,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "3c37a13c230e3e5231f5b759fd9e54ca93fb8538b2b57bf1a0641363d9c5411c"
+    },
+    {
+      "path": "assets/resources/art/modals/lock-body.png",
+      "beforeSize": [
+        795,
+        957
+      ],
+      "afterSize": [
+        795,
+        957
+      ],
+      "beforeBytes": 372713,
+      "afterBytes": 372713,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "48a18a689e29ade295c8ae03dcdce78a1b15b62154e3633f921c85d9b38dce79"
+    },
+    {
+      "path": "assets/resources/art/modals/lock-cancel.png",
+      "beforeSize": [
+        318,
+        148
+      ],
+      "afterSize": [
+        318,
+        148
+      ],
+      "beforeBytes": 30404,
+      "afterBytes": 30404,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "711c3aaeef3ef9869904534c35c20dc4967f56167729eb0624c45022870f64a8"
+    },
+    {
+      "path": "assets/resources/art/modals/lock-confirm.png",
+      "beforeSize": [
+        355,
+        148
+      ],
+      "afterSize": [
+        355,
+        148
+      ],
+      "beforeBytes": 31497,
+      "afterBytes": 31497,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "e0ea720882ee86074b4959d69fd584488f7a3a27500914be95aa2bc998adc29c"
+    },
+    {
+      "path": "assets/resources/art/modals/menu-back.png",
+      "beforeSize": [
+        100,
+        101
+      ],
+      "afterSize": [
+        100,
+        101
+      ],
+      "beforeBytes": 7962,
+      "afterBytes": 7962,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "06dc7e48760a581fedeee834f4fb5b132b27946dd739864d5df99cd601e1a512"
+    },
+    {
+      "path": "assets/resources/art/modals/menu-body.png",
+      "beforeSize": [
+        760,
+        1007
+      ],
+      "afterSize": [
+        760,
+        1007
+      ],
+      "beforeBytes": 389688,
+      "afterBytes": 389688,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "8dad1e4efd047673712f09b2bee0de9d39730784ac50877e8239bce69ae82ac3"
+    },
+    {
+      "path": "assets/resources/art/modals/menu-continue.png",
+      "beforeSize": [
+        626,
+        213
+      ],
+      "afterSize": [
+        626,
+        213
+      ],
+      "beforeBytes": 74608,
+      "afterBytes": 74608,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "01aa58cc362e03bb87ba63186960fa246b2d211809fe347c1352a447abdef6dc"
+    },
+    {
+      "path": "assets/resources/art/modals/menu-resign.png",
+      "beforeSize": [
+        604,
+        167
+      ],
+      "afterSize": [
+        604,
+        167
+      ],
+      "beforeBytes": 56427,
+      "afterBytes": 56427,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "9b07743272922033a1290180bce53ace47f6d1c013f3065f5f0eddfe13c45d32"
+    },
+    {
+      "path": "assets/resources/art/modals/reconnect-body.png",
+      "beforeSize": [
+        705,
+        985
+      ],
+      "afterSize": [
+        705,
+        985
+      ],
+      "beforeBytes": 385436,
+      "afterBytes": 385436,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "8098e6e8d8e76f383d2a79ddf8e95e98d191fe6efed4dc4c1851c82b399b2a29"
+    },
+    {
+      "path": "assets/resources/art/modals/reconnect-retry.png",
+      "beforeSize": [
+        560,
+        143
+      ],
+      "afterSize": [
+        560,
+        143
+      ],
+      "beforeBytes": 44064,
+      "afterBytes": 44064,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "20a4c92c712e463d18fcef6d246969b385d1ef43f870bb587f63a3066205067f"
+    },
+    {
+      "path": "assets/resources/art/modals/record-header.png",
+      "beforeSize": [
+        658,
+        64
+      ],
+      "afterSize": [
+        658,
+        64
+      ],
+      "beforeBytes": 24236,
+      "afterBytes": 24236,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "5396f9f26be548f21e4cd554ade2715e3601343ac8fcb68996635968f56630ef"
+    },
+    {
+      "path": "assets/resources/art/modals/record-latest-row.png",
+      "beforeSize": [
+        637,
+        76
+      ],
+      "afterSize": [
+        637,
+        76
+      ],
+      "beforeBytes": 28166,
+      "afterBytes": 28166,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "4bfd6ca1c8aa51a3a2827aa53bb0ae7f84b06cd677c5f192a27bcea37528bea4"
+    },
+    {
+      "path": "assets/resources/art/modals/record-row.png",
+      "beforeSize": [
+        637,
+        71
+      ],
+      "afterSize": [
+        637,
+        71
+      ],
+      "beforeBytes": 21362,
+      "afterBytes": 21362,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "b985c8f7ad96a18394bf9c70155d227324a77c633b2e9ec76d2fb7717e5f13fe"
+    },
+    {
+      "path": "assets/resources/art/modals/record-thumb.png",
+      "beforeSize": [
+        15,
+        129
+      ],
+      "afterSize": [
+        15,
+        129
+      ],
+      "beforeBytes": 2221,
+      "afterBytes": 2221,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "e322d2103ce2de8bd631065d1c139eb0c02b2c95a6b241b2afbef73b2628109b"
+    },
+    {
+      "path": "assets/resources/art/modals/record-track.png",
+      "beforeSize": [
+        15,
+        587
+      ],
+      "afterSize": [
+        15,
+        587
+      ],
+      "beforeBytes": 5776,
+      "afterBytes": 5776,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "4fc948305395083db04bbc44f2d6e591a159090eefde6a6b63033ee8bd24b392"
+    },
+    {
+      "path": "assets/resources/art/modals/repeat-back.png",
+      "beforeSize": [
+        222,
+        88
+      ],
+      "afterSize": [
+        222,
+        88
+      ],
+      "beforeBytes": 14539,
+      "afterBytes": 14539,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "e7241e3668df8ffd72be2492c3d558e5ab296c8fea47ef059caf543e948466fc"
+    },
+    {
+      "path": "assets/resources/art/modals/repeat-body.png",
+      "beforeSize": [
+        806,
+        966
+      ],
+      "afterSize": [
+        806,
+        966
+      ],
+      "beforeBytes": 361268,
+      "afterBytes": 361268,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "983b02162c12c1e397f43077e68473c78a5d632411f4ec47975554705798e604"
+    },
+    {
+      "path": "assets/resources/art/modals/repeat-cancel.png",
+      "beforeSize": [
+        326,
+        145
+      ],
+      "afterSize": [
+        326,
+        145
+      ],
+      "beforeBytes": 31568,
+      "afterBytes": 31568,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "04c6fc7a33d1000ab5b1982b372a35196c36e9b061b8aa90976991499c40c636"
+    },
+    {
+      "path": "assets/resources/art/modals/repeat-confirm.png",
+      "beforeSize": [
+        330,
+        145
+      ],
+      "afterSize": [
+        330,
+        145
+      ],
+      "beforeBytes": 29510,
+      "afterBytes": 29510,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "c0b0054ab1accef5920e9ff5e8c0e8cbb3c9d03d3e4aa96c06baa183940303f6"
+    },
+    {
+      "path": "assets/resources/art/modals/resign-back.png",
+      "beforeSize": [
+        89,
+        88
+      ],
+      "afterSize": [
+        89,
+        88
+      ],
+      "beforeBytes": 6941,
+      "afterBytes": 6941,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "3d7eccdbb129c3c3ed51a7c4c02d9b5e4aa0ad2e04975195097fc4652fbb9226"
+    },
+    {
+      "path": "assets/resources/art/modals/resign-body.png",
+      "beforeSize": [
+        776,
+        1104
+      ],
+      "afterSize": [
+        776,
+        1104
+      ],
+      "beforeBytes": 453931,
+      "afterBytes": 453931,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "e4dd7041c2b7939d78203086612861cf6f8acd671ad42a74f86ae7037084b6ea"
+    },
+    {
+      "path": "assets/resources/art/modals/resign-cancel.png",
+      "beforeSize": [
+        585,
+        159
+      ],
+      "afterSize": [
+        585,
+        159
+      ],
+      "beforeBytes": 50101,
+      "afterBytes": 50101,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "3598d9b36679444c797f65ed4b205d5669171e3069f7328a494d656c3a5c9a90"
+    },
+    {
+      "path": "assets/resources/art/modals/resign-confirm.png",
+      "beforeSize": [
+        486,
+        125
+      ],
+      "afterSize": [
+        486,
+        125
+      ],
+      "beforeBytes": 37945,
+      "afterBytes": 37945,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "8a39937c21547b13a5c746224babddc6f239ab10d3c8313907ed7824f7b01432"
+    },
+    {
+      "path": "assets/resources/art/modals/result-back.png",
+      "beforeSize": [
+        182,
+        84
+      ],
+      "afterSize": [
+        182,
+        84
+      ],
+      "beforeBytes": 11980,
+      "afterBytes": 11980,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "e54f79998ac954e045caa069d2eed94810c22be12438b06b8a3612255830cb3f"
+    },
+    {
+      "path": "assets/resources/art/modals/result-body.png",
+      "beforeSize": [
+        808,
+        1379
+      ],
+      "afterSize": [
+        808,
+        1379
+      ],
+      "beforeBytes": 266114,
+      "afterBytes": 266114,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "9522d433ec46d7762990d507bc68a0801692301d9e31d9f29c719c7629cf4c63"
+    },
+    {
+      "path": "assets/resources/art/modals/result-done.png",
+      "beforeSize": [
+        504,
+        127
+      ],
+      "afterSize": [
+        504,
+        127
+      ],
+      "beforeBytes": 38477,
+      "afterBytes": 38477,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "8a66e97c6850b2a03a062072aff2b7b7e16bc65baf5ce767e1d4d83236926ee6"
+    },
+    {
+      "path": "assets/resources/art/modals/rules-back.png",
+      "beforeSize": [
+        93,
+        90
+      ],
+      "afterSize": [
+        93,
+        90
+      ],
+      "beforeBytes": 6829,
+      "afterBytes": 6829,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "863f8a3ca9ce504d9e3b470a612d50161afa240d8474a3e83310083ee8e1b7b3"
+    },
+    {
+      "path": "assets/resources/art/modals/rules-body.png",
+      "beforeSize": [
+        836,
+        1442
+      ],
+      "afterSize": [
+        836,
+        1442
+      ],
+      "beforeBytes": 695439,
+      "afterBytes": 695439,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "0576a646db41898d2e8ea8946164c862c301729b8f3e99d71ff726bd868d7f61"
+    },
+    {
+      "path": "assets/resources/art/modals/rules-done.png",
+      "beforeSize": [
+        509,
+        133
+      ],
+      "afterSize": [
+        509,
+        133
+      ],
+      "beforeBytes": 39318,
+      "afterBytes": 39318,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "b13b91936e3426ec02b029573b85ad4463ba596b48b22066a3d32d6fe58795ec"
+    },
+    {
+      "path": "assets/resources/art/modals/settings-back.png",
+      "beforeSize": [
+        102,
+        104
+      ],
+      "afterSize": [
+        102,
+        104
+      ],
+      "beforeBytes": 8393,
+      "afterBytes": 8393,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "2b3fa1c2073a64be4e73a8a70282e0c9d7d31d106f8ec832e4207c54a5594b0c"
+    },
+    {
+      "path": "assets/resources/art/modals/settings-body.png",
+      "beforeSize": [
+        786,
+        1364
+      ],
+      "afterSize": [
+        786,
+        1364
+      ],
+      "beforeBytes": 605279,
+      "afterBytes": 605279,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "98c490fd29b102f9509ff810ec0972c66d87ac780dcec6e356ffdc23748b69c9"
+    },
+    {
+      "path": "assets/resources/art/modals/settings-done.png",
+      "beforeSize": [
+        589,
+        153
+      ],
+      "afterSize": [
+        589,
+        153
+      ],
+      "beforeBytes": 52958,
+      "afterBytes": 52958,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "726eba3dba9b173889277caca3092b279c95ae9f0b25f11529f1a39ee477b1ef"
+    },
+    {
+      "path": "assets/resources/art/modals/tab-off.png",
+      "beforeSize": [
+        330,
+        76
+      ],
+      "afterSize": [
+        330,
+        76
+      ],
+      "beforeBytes": 13781,
+      "afterBytes": 13781,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "b95eafc35af6f1fb19ea7eaac5d9d798d8a157083922a65e812afe697d35916c"
+    },
+    {
+      "path": "assets/resources/art/modals/tab-on.png",
+      "beforeSize": [
+        351,
+        83
+      ],
+      "afterSize": [
+        351,
+        83
+      ],
+      "beforeBytes": 17879,
+      "afterBytes": 17879,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "4ce18e2bc33fe8d20a23fd369ad8b98f003690302d013a0642842e4b33f42b87"
+    },
+    {
+      "path": "assets/resources/art/modals/toggle-off.png",
+      "beforeSize": [
+        164,
+        88
+      ],
+      "afterSize": [
+        164,
+        88
+      ],
+      "beforeBytes": 10512,
+      "afterBytes": 10512,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "4bd51398ea469b1ffd4d9224d8e34c2ecdcef35fc2b18d1e197b933881ca1f3a"
+    },
+    {
+      "path": "assets/resources/art/modals/toggle-on.png",
+      "beforeSize": [
+        164,
+        88
+      ],
+      "afterSize": [
+        164,
+        88
+      ],
+      "beforeBytes": 9822,
+      "afterBytes": 9822,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "bc702dad0c3e8dc373f69229b1cd89ee0d3c9da75c000c43b5a45c65859fa9fd"
+    },
+    {
+      "path": "assets/resources/art/opponent.png",
+      "beforeSize": [
+        1024,
+        1536
+      ],
+      "afterSize": [
+        320,
+        480
+      ],
+      "beforeBytes": 2438195,
+      "afterBytes": 204956,
+      "action": "resize",
+      "reason": "Fallback actor renders at 153x230 design units; retain >2x pixels.",
+      "metaSHA256": "30c74f9de63d4183a9f97a3e4bea35dac3914ab4f4648a9ccf13c194b29b1e51"
+    },
+    {
+      "path": "assets/resources/art/profile/avatar-0.png",
+      "beforeSize": [
+        242,
+        242
+      ],
+      "afterSize": [
+        242,
+        242
+      ],
+      "beforeBytes": 123728,
+      "afterBytes": 123728,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "9e3755bc3d0a9f0c859d88ef72dea79bc75e47143044e457f74f2d52d1348b2f"
+    },
+    {
+      "path": "assets/resources/art/profile/avatar-1.png",
+      "beforeSize": [
+        159,
+        159
+      ],
+      "afterSize": [
+        159,
+        159
+      ],
+      "beforeBytes": 56884,
+      "afterBytes": 56884,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "49ab7336e8ccc21958c51baab18ecfc8604048b2e1ab445db4ef49dac3319703"
+    },
+    {
+      "path": "assets/resources/art/profile/avatar-2.png",
+      "beforeSize": [
+        159,
+        159
+      ],
+      "afterSize": [
+        159,
+        159
+      ],
+      "beforeBytes": 54426,
+      "afterBytes": 54426,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "8e39b4805296d680522513d6f20d9959f50e349742a8d41694474a0cb2b3dbbc"
+    },
+    {
+      "path": "assets/resources/art/profile/avatar-3.png",
+      "beforeSize": [
+        159,
+        159
+      ],
+      "afterSize": [
+        159,
+        159
+      ],
+      "beforeBytes": 55791,
+      "afterBytes": 55791,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "550bc3a20fb215f576b88af9d7fb7920296d197eb8a785e13931c2feaaec8237"
+    },
+    {
+      "path": "assets/resources/art/profile/avatar-selected.png",
+      "beforeSize": [
+        128,
+        128
+      ],
+      "afterSize": [
+        96,
+        96
+      ],
+      "beforeBytes": 27570,
+      "afterBytes": 15320,
+      "action": "resize",
+      "reason": "Selection badge renders at 58x58 design units; retain >1.6x pixels.",
+      "metaSHA256": "180dd560a44acf6797a6b51f8e132fca94f837ade9439633b98bdd4b4f5ade08"
+    },
+    {
+      "path": "assets/resources/art/profile/back.png",
+      "beforeSize": [
+        208,
+        78
+      ],
+      "afterSize": [
+        208,
+        78
+      ],
+      "beforeBytes": 27148,
+      "afterBytes": 27148,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "772af2e976fcc9be1c832abf31862d4e681405478efced4d23b056aa6262d650"
+    },
+    {
+      "path": "assets/resources/art/profile/cancel.png",
+      "beforeSize": [
+        321,
+        124
+      ],
+      "afterSize": [
+        321,
+        124
+      ],
+      "beforeBytes": 57684,
+      "afterBytes": 57684,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "e0689d9d9017561d3131683296c2636729470e68f5cc12e511b701b0661355c6"
+    },
+    {
+      "path": "assets/resources/art/profile/change-avatar.png",
+      "beforeSize": [
+        302,
+        79
+      ],
+      "afterSize": [
+        302,
+        79
+      ],
+      "beforeBytes": 43996,
+      "afterBytes": 43996,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "d3c8e9c6987bbc56b0cc8ab3f35b7bb267007045d37745019cbad15b4893ccd0"
+    },
+    {
+      "path": "assets/resources/art/profile/heading.png",
+      "beforeSize": [
+        374,
+        111
+      ],
+      "afterSize": [
+        374,
+        111
+      ],
+      "beforeBytes": 64241,
+      "afterBytes": 64241,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "b573475df99c522f3f0b96fd6c7665816eff1bfcda1a3360648627a69f75f570"
+    },
+    {
+      "path": "assets/resources/art/profile/input.png",
+      "beforeSize": [
+        486,
+        84
+      ],
+      "afterSize": [
+        486,
+        84
+      ],
+      "beforeBytes": 49996,
+      "afterBytes": 49996,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "427e976ad28a63fb4297829935514abf05f5c7e9d9fe2f12e490b8f935d35a55"
+    },
+    {
+      "path": "assets/resources/art/profile/paper.png",
+      "beforeSize": [
+        1166,
+        1349
+      ],
+      "afterSize": [
+        1166,
+        1349
+      ],
+      "beforeBytes": 2492856,
+      "afterBytes": 2222996,
+      "action": "lossless",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "728ce1b3ed95e1de730e9cfb8606254e04ad0f59414c111d46c65a14e2007bab"
+    },
+    {
+      "path": "assets/resources/art/profile/portrait-background.png",
+      "beforeSize": [
+        512,
+        512
+      ],
+      "afterSize": [
+        512,
+        512
+      ],
+      "beforeBytes": 227459,
+      "afterBytes": 192835,
+      "action": "lossless",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "6d2133f2bf09755832e7369c0e5b06b4acd7690627298beffc02f47604c4f60e"
+    },
+    {
+      "path": "assets/resources/art/profile/portrait-frame.png",
+      "beforeSize": [
+        512,
+        512
+      ],
+      "afterSize": [
+        352,
+        352
+      ],
+      "beforeBytes": 117742,
+      "afterBytes": 55979,
+      "action": "resize",
+      "reason": "Largest frame is 234x234 design units; retain 1.5x pixels.",
+      "metaSHA256": "c3e9957beb018b3dab1c79b0be3bdc1dfb3fdd50bfd4ddc44648a4798c59bcbf"
+    },
+    {
+      "path": "assets/resources/art/profile/save.png",
+      "beforeSize": [
+        372,
+        124
+      ],
+      "afterSize": [
+        372,
+        124
+      ],
+      "beforeBytes": 75554,
+      "afterBytes": 75554,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "763c9b6852d42f6bcb6c89b4a93d9a320f03706660bdbc9fbf5d1babc6147bb9"
+    },
+    {
+      "path": "assets/resources/art/profile/wechat.png",
+      "beforeSize": [
+        537,
+        109
+      ],
+      "afterSize": [
+        537,
+        109
+      ],
+      "beforeBytes": 82829,
+      "afterBytes": 82829,
+      "action": "keep",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "2129620471a247b0695cd2d42677b948c56dd8c4f35c603203e28863e8474a64"
+    },
+    {
+      "path": "assets/resources/art/scene/near-left.png",
+      "beforeSize": [
+        512,
+        1024
+      ],
+      "afterSize": [
+        512,
+        1024
+      ],
+      "beforeBytes": 344678,
+      "afterBytes": 286717,
+      "action": "lossless",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "ccda26c7ee45b80b88a11c91bf076efb38e5cade4be3cd7c48b1aea477bd72bd"
+    },
+    {
+      "path": "assets/resources/art/scene/near-right.png",
+      "beforeSize": [
+        512,
+        1024
+      ],
+      "afterSize": [
+        512,
+        1024
+      ],
+      "beforeBytes": 444090,
+      "afterBytes": 384651,
+      "action": "lossless",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "d450318e2d8821e48a0d45b155006195bbe679a0f5d2d7eac175ad07eaad398e"
+    },
+    {
+      "path": "assets/resources/art/scene/room.png",
+      "beforeSize": [
+        864,
+        1536
+      ],
+      "afterSize": [
+        864,
+        1536
+      ],
+      "beforeBytes": 2102960,
+      "afterBytes": 1841633,
+      "action": "lossless",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "a003a25bcad62a888f82f0c937570808842248e1304900c83a5d9293f76e7b84"
+    },
+    {
+      "path": "assets/resources/art/scene/table.png",
+      "beforeSize": [
+        864,
+        1536
+      ],
+      "afterSize": [
+        864,
+        1536
+      ],
+      "beforeBytes": 1596602,
+      "afterBytes": 1354436,
+      "action": "lossless",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "01e0da99bcbd629877b4ce64393b90d49d4910f4aa5401170ff26346b4c874d9"
+    },
+    {
+      "path": "assets/resources/art/table.png",
+      "beforeSize": [
+        941,
+        1672
+      ],
+      "afterSize": [
+        941,
+        1672
+      ],
+      "beforeBytes": 2274933,
+      "afterBytes": 2049510,
+      "action": "lossless",
+      "reason": "Keep existing pixel dimensions; conservative lossless PNG re-encoding only.",
+      "metaSHA256": "d74bf63f968eb778a42baedb0ac848f85ee4849cf533f122e68cbb88e6a9b845"
+    }
+  ]
+}
