@@ -1,0 +1,47 @@
+[
+  {
+    "resource": "art/lobby/background",
+    "master": "docs/design/opaque-backgrounds/lobby-background.png",
+    "output": "assets/resources/art/lobby/background.jpg",
+    "size": [
+      941,
+      1672
+    ],
+    "pngBytes": 2003909,
+    "jpegBytes": 472654,
+    "quality": 92,
+    "chromaSubsampling": "4:4:4",
+    "psnrDB": 42.93,
+    "uuid": "ca179935-aa16-43f6-ada8-05746ce2c4df"
+  },
+  {
+    "resource": "art/scene/room",
+    "master": "docs/design/opaque-backgrounds/room.png",
+    "output": "assets/resources/art/scene/room.jpg",
+    "size": [
+      864,
+      1536
+    ],
+    "pngBytes": 1841633,
+    "jpegBytes": 526554,
+    "quality": 92,
+    "chromaSubsampling": "4:4:4",
+    "psnrDB": 41.43,
+    "uuid": "dffefd14-fe62-4a89-a4a5-e03432981c02"
+  },
+  {
+    "resource": "art/table",
+    "master": "docs/design/opaque-backgrounds/legacy-table.png",
+    "output": "assets/resources/art/table.jpg",
+    "size": [
+      941,
+      1672
+    ],
+    "pngBytes": 2049510,
+    "jpegBytes": 438863,
+    "quality": 92,
+    "chromaSubsampling": "4:4:4",
+    "psnrDB": 41.94,
+    "uuid": "ef178ff0-87cf-4656-8a15-0877b251f806"
+  }
+]
