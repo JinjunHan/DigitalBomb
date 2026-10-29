@@ -297,20 +297,20 @@ export class GameApp extends Component {
     const available = this.screenHeight - this.layoutTop - bottomSafeInset() - 24;
     const opponent = event.kind === 'opponent', own = event.kind === 'own';
     // Opponent feedback occupies the opponent seat, above the record sheet.
-    const battleScale = Math.min(750 / 941, (available + 8) / 1590);
+    const battleScale = Math.min(750 / 941, (available + 8) / 1750);
     const group = this.feedbackArt.group(this.effects, 'GuessFeedback', this.screenHeight / 2 - this.layoutTop - (opponent ? 160 * battleScale : available * .29), opponent ? battleScale : Math.min(1, available / 1100));
     if(opponent) { group.setPosition(110*battleScale,group.position.y);group.setScale(battleScale*600/650,battleScale*600/650,1);this.opponentFeedbackActive=true;this.setOpponentSeatVisible(false); }
     const width = own ? 430 : event.kind === 'end' ? 480 : 650;
     if (this.feedbackArt.ready) {
       this.feedbackArt.image(group, event.art, 0, 0, width);
       if (own) {
-        this.feedbackArt.label(group, event.title, 0, -94, 335, 50, 29);
-        const value = this.feedbackArt.label(group, pending ? '···' : `${event.hits} / 4`, 0, 40, 310, 100, 68);
+        this.feedbackArt.label(group, event.title, 0, -52, 335, 50, 34).isBold=true;
+        const value = this.feedbackArt.label(group, pending ? '···' : `${event.hits} / 4`, 0, 50, 310, 112, 80);
         value.font = this.friendDigitFont ?? null;
-        this.feedbackArt.label(group, event.caption, 0, 126, 354, 58, 22);
+        this.feedbackArt.label(group, event.caption, 0, 158, 330, 38, 22);
       } else if (opponent) {
         const peer = this.net.state?.room?.players.find(p => p.id !== this.net.state?.me.id);
-        if (peer) this.playerPortrait(group, peer, -230, -15, 92);
+        if (peer) this.playerPortrait(group, peer, -210.6, -7.3, 100, false);
         const value = this.feedbackArt.label(group, `${event.hits} / 4`, 24, -8, 285, 96, 68, event.urgent ? '#751F23' : C.ink);value.font = this.friendDigitFont ?? null;
       } else if (event.kind === 'end') {
         // The fixed success/failure heading remains in the artwork. Overlay actual reason below.
@@ -993,8 +993,8 @@ export class GameApp extends Component {
       art('home',0,860,420,home);return;
     }
     const win=r.result?.winner===me, draw=!r.result?.winner;
-    art(draw?'draw-title':win?'victory-title':'defeat-title',0,win||draw?180:200,draw?550:win?500:750);
-    if((!win&&!draw)||(!r.rematch.includes(me)&&!this.rematchNotice))label(resultCaption(r,me),0,!win&&!draw?318:380,650,50,28).color=new Color(!win&&!draw?C.ink:C.cream);
+    art(draw?'draw-title':win?'victory-title':'defeat-title',0,win?200:draw?180:200,draw?550:win?530:750);
+    if(!draw||(!r.rematch.includes(me)&&!this.rematchNotice))label(resultCaption(r,me),0,win?316:!draw?318:380,win?430:650,50,28).color=new Color(!draw?C.ink:C.cream);
     if(r.rematch.includes(me)||this.rematchNotice) {
       const key=this.rematchNotice.includes('离开')?1:this.rematchNotice?2:0;
       art('rematch-'+key,0,850,730);
@@ -1005,12 +1005,12 @@ export class GameApp extends Component {
     art('result-paper',0,810,840);
     const peer=r.players.find(p=>p.id!==me);
     const count=(id:string)=>r.history.filter(h=>h.playerId===id&&h.digits!==null).length;
-    label(`我的猜测      ${count(me)} 次`,0,620,700,70,35);
-    label(`对手猜测      ${count(peer?.id??'')} 次`,0,720,700,70,35);
-    label('我的底牌',-260,870,200,70,30);label('对手密码',-260,1010,200,70,30);
-    for(const [digits,y] of [[r.ownSecret??'',870],[r.revealed?.[peer?.id??'']??'',1010]] as const) {
+    label('我的猜测',-210,596,250,60,32);label(`${count(me)} 次`,235,596,150,60,36);
+    label('对手猜测',-210,688,250,60,32);label(`${count(peer?.id??'')} 次`,235,688,150,60,36);
+    label('我的底牌',-230,830,200,70,30);label('对手密码',-230,998,200,70,30);
+    for(const [digits,y] of [[r.ownSecret??'',830],[r.revealed?.[peer?.id??'']??'',998]] as const) {
       for(let i=0;i<4;i++) {
-        const x=-75+i*116;
+        const x=-62+i*111;
         const n=this.feedbackArt.group(group,'ResultDigit',-y);n.setPosition(x,-y);
         const sprite=n.addComponent(Sprite);sprite.spriteFrame=this.battleArt.get('card-paper')??this.joinArt.get('digit-slot')??null;sprite.sizeMode=Sprite.SizeMode.CUSTOM;n.getComponent(UITransform)!.setContentSize(98,125);
         const digit=label(digits[i]??'—',x,y,90,110,72);digit.font=this.friendDigitFont??null;
@@ -1056,12 +1056,13 @@ export class GameApp extends Component {
     return fallback;
   }
   /** Reuse the same circular identity in the opponent seat and transient feedback. */
-  private playerPortrait(parent: Node, profile: { avatar: number; avatarUrl?: string }, x: number, y: number, size: number) {
+  private playerPortrait(parent: Node, profile: { avatar: number; avatarUrl?: string }, x: number, y: number, size: number, showRim = true) {
     const clip = this.n('PlayerPortrait',375,667,size,size,parent);clip.setPosition(x,y);
     clip.addComponent(Mask).type = Mask.Type.GRAPHICS_ELLIPSE;
     const face = this.n('PlayerPortraitImage',375,667,size,size,clip);face.setPosition(0,0);
     const sprite = face.addComponent(Sprite);sprite.spriteFrame = this.avatarFrame(profile) ?? null;sprite.sizeMode = Sprite.SizeMode.CUSTOM;
     face.getComponent(UITransform)!.setContentSize(size,size);
+    if(!showRim)return;
     const rim = this.n('PlayerPortraitRim',375,667,size*1.1,size*1.1,parent);rim.setPosition(x,y);
     const frame = rim.addComponent(Sprite);frame.spriteFrame=this.profileArt.get('portrait-frame')??null;frame.sizeMode=Sprite.SizeMode.CUSTOM;
     rim.getComponent(UITransform)!.setContentSize(size*1.1,size*1.1);

@@ -5,8 +5,8 @@ export const FEEDBACK_SIZES: Record<string, readonly number[]> = {
     454
   ],
   "own-gold": [
-    460,
-    454
+    475,
+    461
   ],
   "opponent-0": [
     665,
@@ -102,7 +102,7 @@ export const FEEDBACK_SIZES: Record<string, readonly number[]> = {
   ],
   "result-paper": [
     840,
-    807
+    837
   ],
   "records": [
     380,
@@ -137,8 +137,8 @@ export const FEEDBACK_SIZES: Record<string, readonly number[]> = {
     466
   ],
   "victory-title": [
-    552,
-    345
+    590,
+    454
   ],
   "rematch-0": [
     506,

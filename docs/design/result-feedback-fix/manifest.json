@@ -1,0 +1,47 @@
+{
+  "coordinates": "LTRB source pixels; curved masks supersampled 4x; patches use same-art paper samples, not lossless extraction",
+  "assets": {
+    "victory-title": {
+      "source": "12-end-feedback.png",
+      "rect": [
+        22,
+        130,
+        612,
+        584
+      ],
+      "role": "complete crown and victory panel; native reason"
+    },
+    "result-paper": {
+      "source": "06-defeat-result.png",
+      "rect": [
+        48,
+        451,
+        888,
+        1288
+      ],
+      "role": "complete recap with original row frames; native counts/cards; top rail reconstructed from own bottom rail"
+    },
+    "own": {
+      "source": "01-own-feedback.png",
+      "rect": [
+        542,
+        30,
+        1002,
+        484
+      ],
+      "role": "lock panel with cleared title, score and footer"
+    },
+    "own-gold": {
+      "source": "01-own-feedback.png",
+      "rect": [
+        1026,
+        509,
+        1501,
+        970
+      ],
+      "role": "gold lock panel; native title, score and footer"
+    }
+  },
+  "opponent": "Use baked portrait rim only. Insert circular live face at source-relative (117,139), not an extra rim.",
+  "layout": "Own title -52, score 50, footer 158 in 430px panel. Result labels align to original recap rows."
+}
