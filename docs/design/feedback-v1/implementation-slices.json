@@ -741,9 +741,59 @@
       "ornament": null,
       "repairs": [],
       "role": "complete fixed artwork; patches reserve live content",
-      "mask": "supersampled rounded silhouette plus raised ornament",
+      "mask": "local source-crop silhouette at 3x supersampling; draw-title also uses crest ellipse [216,31,436,251] and top finial",
       "order": "background, artwork, live labels, controls",
-      "repairSource": "assets/resources/art/modals/record-row.png, crop [190,12,420,59], mirrored texture tile; reconstructed blank area, not lossless source extraction"
+      "repairSource": "assets/resources/art/modals/record-row.png, crop [190,12,420,59], mirrored texture tile; reconstructed blank area, not lossless source extraction",
+      "contour": [
+        [
+          16,
+          25
+        ],
+        [
+          24,
+          17
+        ],
+        [
+          31,
+          6
+        ],
+        [
+          320,
+          6
+        ],
+        [
+          330,
+          16
+        ],
+        [
+          338,
+          22
+        ],
+        [
+          338,
+          96
+        ],
+        [
+          328,
+          102
+        ],
+        [
+          320,
+          111
+        ],
+        [
+          31,
+          111
+        ],
+        [
+          23,
+          101
+        ],
+        [
+          16,
+          95
+        ]
+      ]
     },
     {
       "name": "toast",
@@ -921,9 +971,127 @@
       ],
       "repairs": [],
       "role": "complete fixed artwork; patches reserve live content",
-      "mask": "supersampled rounded silhouette plus raised ornament",
+      "mask": "local source-crop silhouette at 3x supersampling; draw-title also uses crest ellipse [216,31,436,251] and top finial",
       "order": "background, artwork, live labels, controls",
-      "repairSource": "assets/resources/art/modals/record-row.png, crop [190,12,420,59], mirrored texture tile; reconstructed blank area, not lossless source extraction"
+      "repairSource": "assets/resources/art/modals/record-row.png, crop [190,12,420,59], mirrored texture tile; reconstructed blank area, not lossless source extraction",
+      "contour": [
+        [
+          0,
+          204
+        ],
+        [
+          10,
+          184
+        ],
+        [
+          24,
+          177
+        ],
+        [
+          87,
+          177
+        ],
+        [
+          104,
+          165
+        ],
+        [
+          126,
+          157
+        ],
+        [
+          181,
+          155
+        ],
+        [
+          210,
+          172
+        ],
+        [
+          222,
+          195
+        ],
+        [
+          429,
+          195
+        ],
+        [
+          445,
+          163
+        ],
+        [
+          472,
+          155
+        ],
+        [
+          515,
+          156
+        ],
+        [
+          549,
+          177
+        ],
+        [
+          627,
+          177
+        ],
+        [
+          645,
+          190
+        ],
+        [
+          650,
+          209
+        ],
+        [
+          650,
+          348
+        ],
+        [
+          642,
+          370
+        ],
+        [
+          623,
+          381
+        ],
+        [
+          441,
+          381
+        ],
+        [
+          427,
+          400
+        ],
+        [
+          402,
+          410
+        ],
+        [
+          247,
+          410
+        ],
+        [
+          220,
+          399
+        ],
+        [
+          205,
+          382
+        ],
+        [
+          27,
+          382
+        ],
+        [
+          9,
+          373
+        ],
+        [
+          0,
+          351
+        ]
+      ]
     },
     {
       "name": "result-reason",
@@ -1097,9 +1265,63 @@
       "ornament": null,
       "repairs": [],
       "role": "complete fixed artwork; patches reserve live content",
-      "mask": "supersampled rounded silhouette plus raised ornament",
+      "mask": "local source-crop silhouette at 3x supersampling; draw-title also uses crest ellipse [216,31,436,251] and top finial",
       "order": "background, artwork, live labels, controls",
-      "repairSource": "assets/resources/art/modals/record-row.png, crop [190,12,420,59], mirrored texture tile; reconstructed blank area, not lossless source extraction"
+      "repairSource": "assets/resources/art/modals/record-row.png, crop [190,12,420,59], mirrored texture tile; reconstructed blank area, not lossless source extraction",
+      "contour": [
+        [
+          0,
+          23
+        ],
+        [
+          11,
+          13
+        ],
+        [
+          17,
+          3
+        ],
+        [
+          316,
+          3
+        ],
+        [
+          325,
+          13
+        ],
+        [
+          336,
+          23
+        ],
+        [
+          339,
+          29
+        ],
+        [
+          339,
+          81
+        ],
+        [
+          329,
+          91
+        ],
+        [
+          321,
+          103
+        ],
+        [
+          17,
+          103
+        ],
+        [
+          8,
+          92
+        ],
+        [
+          0,
+          84
+        ]
+      ]
     },
     {
       "name": "end-0",

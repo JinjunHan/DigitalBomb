@@ -37,6 +37,7 @@ export class GameApp extends Component {
   private roundNew?: Node;
   private feedbackArt!: FeedbackArt;
   private suppressFeedback = false;
+  private opponentFeedbackActive = false;
   private rematchNotice = '';
   private loginFailed = false;
   private endFeedbackUntil = 0;
@@ -274,7 +275,14 @@ export class GameApp extends Component {
     }
     return n;
   }
+  private setOpponentSeatVisible(visible: boolean) {
+    const room=this.root?.getChildByName('BattleRoom');
+    for(const name of ['PlayerPortrait','PlayerPortraitRim','Battle-nameplate','Battle-card-backs','OpponentNickname']) {
+      const node=room?.getChildByName(name);if(node)node.active=visible;
+    }
+  }
   private clearEffects() {
+    this.opponentFeedbackActive=false;this.setOpponentSeatVisible(true);
     if (!this.effects?.isValid) return;
     const stop = (n: Node) => { Tween.stopAllByTarget(n); const opacity = n.getComponent(UIOpacity); if (opacity) Tween.stopAllByTarget(opacity); n.children.forEach(stop); };
     for (const child of [...this.effects.children]) { stop(child); child.removeFromParent(); child.destroy(); }
@@ -285,8 +293,11 @@ export class GameApp extends Component {
   private showFeedback(event: FeedbackEvent, pending = false) {
     this.clearEffects();
     const available = this.screenHeight - this.layoutTop - bottomSafeInset() - 24;
-    const group = this.feedbackArt.group(this.effects, 'GuessFeedback', this.screenHeight / 2 - this.layoutTop - available * .29, Math.min(1, available / 1100));
     const opponent = event.kind === 'opponent', own = event.kind === 'own';
+    // Opponent feedback occupies the opponent seat, above the record sheet.
+    const battleScale = Math.min(750 / 941, (available + 8) / 1590);
+    const group = this.feedbackArt.group(this.effects, 'GuessFeedback', this.screenHeight / 2 - this.layoutTop - (opponent ? 160 * battleScale : available * .29), opponent ? battleScale : Math.min(1, available / 1100));
+    if(opponent) { group.setPosition(110*battleScale,group.position.y);group.setScale(battleScale*600/650,battleScale*600/650,1);this.opponentFeedbackActive=true;this.setOpponentSeatVisible(false); }
     const width = own ? 430 : event.kind === 'end' ? 480 : 650;
     if (this.feedbackArt.ready) {
       this.feedbackArt.image(group, event.art, 0, 0, width);
@@ -296,6 +307,8 @@ export class GameApp extends Component {
         value.font = this.friendDigitFont ?? null;
         this.feedbackArt.label(group, event.caption, 0, 126, 354, 58, 22);
       } else if (opponent) {
+        const peer = this.net.state?.room?.players.find(p => p.id !== this.net.state?.me.id);
+        if (peer) this.playerPortrait(group, peer, -230, -15, 92);
         const value = this.feedbackArt.label(group, `${event.hits} / 4`, 24, -8, 285, 96, 68, event.urgent ? '#751F23' : C.ink);value.font = this.friendDigitFont ?? null;
       } else if (event.kind === 'end') {
         // The fixed success/failure heading remains in the artwork. Overlay actual reason below.
@@ -308,7 +321,7 @@ export class GameApp extends Component {
     const opacity = group.addComponent(UIOpacity), motion = read('motion','1') === '1', scale = group.scale.clone();
     if (motion) { opacity.opacity = 0; group.setScale(scale.x*.92,scale.y*.92,1);tween(opacity).to(.16,{opacity:255}).start();tween(group).to(.2,{scale},{easing:'backOut'}).start(); }
     if (motion && opponent && event.hits === 0) tween(group).by(.07,{position:new Vec3(-6,0,0)}).by(.1,{position:new Vec3(12,0,0)}).by(.07,{position:new Vec3(-6,0,0)}).start();
-    if (!pending) tween(opacity).delay(event.urgent ? 1.8 : 1.5).to(motion ? .18 : 0,{opacity:0}).call(()=>{group.destroy();}).start();
+    if (!pending) tween(opacity).delay(event.urgent ? 1.8 : 1.5).to(motion ? .18 : 0,{opacity:0}).call(()=>{group.destroy();if(opponent){this.opponentFeedbackActive=false;this.setOpponentSeatVisible(true);}}).start();
   }
   private turnCue(message: string) {
     if (Date.now() < this.endFeedbackUntil) return;
@@ -673,10 +686,10 @@ export class GameApp extends Component {
     const group = this.n('FriendRoom', 375, 667, 941, 1672);
     group.setPosition(0, this.screenHeight / 2 - this.layoutTop + 32 * scale);
     group.setScale(scale, scale, 1);
-    // Keep navigation fixed; use tall-screen space below the body, like the reference.
+    // Keep navigation fixed and use only a small share of surplus height above the content.
     const bodyBottom = this.layoutTop + (1495 - 32) * scale;
     const targetBottom = this.screenHeight - bottomSafeInset() - Math.min(120, this.screenHeight * .09);
-    const bodyShift = Math.max(0, targetBottom - bodyBottom) / scale;
+    const bodyShift = Math.max(0, targetBottom - bodyBottom) / scale * .25;
     const place = (node: Node, x: number, y: number) => { node.setPosition(x - 470.5, -y - (y > 128 ? bodyShift : 0)); return node; };
     const art = (name: string, x: number, y: number, w: number, h: number, action?: () => void) => {
       const node = place(this.n('Friend-' + name, 375, 667, w, h, group), x, y);
@@ -737,7 +750,7 @@ export class GameApp extends Component {
     group.setPosition(0, this.screenHeight / 2 - this.layoutTop + 20 * scale); group.setScale(scale, scale, 1);
     const place = (node: Node, x: number, y: number) => { node.setPosition(x - 470.5, -y); return node; };
     const touch = (node: Node, action: () => void, enabled = true) => {
-      if (!enabled) { node.addComponent(UIOpacity).opacity = 170; return; }
+      if (!enabled) { const sprite = node.getComponent(Sprite); if (sprite) sprite.grayscale = true; node.addComponent(UIOpacity).opacity = 145; return; }
       node.on(Node.EventType.TOUCH_START, () => { if (read('motion', '1') === '1') node.setScale(.98, .98, 1); });
       node.on(Node.EventType.TOUCH_CANCEL, () => node.setScale(1, 1, 1));
       node.on(Node.EventType.TOUCH_END, () => { node.setScale(1, 1, 1); this.audio.unlock(); action(); });
@@ -760,10 +773,10 @@ export class GameApp extends Component {
     const shortName = (name: string, limit: number) => Array.from(name).length > limit ? Array.from(name).slice(0,limit-1).join('')+'…' : name;
     // The tray is below all controls and hands; each key remains independently clickable.
     art(prep ? 'tray' : 'play-tray');
-    art('opponent');
-    const nameplate=art('nameplate');
+    this.playerPortrait(group, opponent, 0, -65, 126);
+    const nameplate=art('nameplate',[355,134,586,179]);
     touch(nameplate,()=>this.toast(opponent.name+(opponent.online?'':' · 连接中')));
-    label(shortName(opponent.name,6),472,153,23,134,C.cream,30);
+    label(shortName(opponent.name,7),472,156,29,208,C.cream,38).node.name='OpponentNickname';
     art('card-backs');
     const nav = art('round');
     const navText = (value: string, x: number, width: number, parent = nav) => {
@@ -789,13 +802,13 @@ export class GameApp extends Component {
     touch(nav, () => { if (prep) this.ask('leave',()=>this.act('leave')); else { this.overlay='gameMenu';this.render(); } });
     const editable = !this.busy && this.net.online && (prep ? !r.ownSecret : r.current === me.id && this.net.now() >= r.startAt);
     if (prep) {
-      art('status'); label(opponent.ready ? '对手已准备' : '对手正在设置',470,323,23,170,C.cream);
+      art('status',[355,299,586,344]); label(opponent.ready ? '对手已准备' : '对手正在设置',470,323,28,215,C.cream);
       art('heading'); art('timer');
       this.timerLabel=label('',497,489,42,70,'#FFD978',54);
       if(this.friendDigitFont) this.timerLabel.font=this.friendDigitFont;
       this.timerLabel.lineHeight=46;
       label('s',540,493,29,20,'#FFD978',38);
-      const rules=art('rules'); touch(rules,()=>{this.overlay='rules';this.render();});
+      const rules=art('rules',[243,523,699,589]); touch(rules,()=>{this.overlay='rules';this.render();});
       const value=r.ownSecret ?? this.draft;
       // Palm behind the cards; only the isolated thumb crosses their front edge.
       art('hand-right');
@@ -849,12 +862,13 @@ export class GameApp extends Component {
       const rim=this.profileArt.get('portrait-frame');
       if(rim) art('portrait-frame',[23,995,213,1185],rim);
       art('nameplate',[18,1154,213,1192]);
-      label(shortName(me.name,7),115,1173,24,181,C.cream);
-      const secretStatus=art('status',[315,1106,626,1151]);
+      label(shortName(me.name,6),115,1173,29,181,C.cream);
+      const secretStatus=art('status',[285,1100,656,1155]);
       touch(secretStatus,()=>{this.hideSecret=!this.hideSecret;this.render();});
-      label(this.hideSecret?'底牌已隐藏 · 点击查看':'我的底牌 · 已锁定',470,1128,23,280,C.cream);
+      label(this.hideSecret?'底牌已隐藏 · 点击查看':'我的底牌 · 已锁定',470,1128,28,350,C.cream);
       art('turn');this.timerLabel=label('',470,1190,28,330,C.cream,48);
     }
+    if(this.opponentFeedbackActive)this.setOpponentSeatVisible(false);
     const prefix=prep?'prep-':'play-';
     for(const key of ['1','2','3','4','5','6','7','8','9','delete','0','action']) {
       const node=art(prefix+key);
@@ -992,16 +1006,28 @@ export class GameApp extends Component {
       if(result.confirm&&this.isValid&&!this.net.state?.room&&this.net.state?.queuedAt===null)this.openProfile();
     }});
   }
-  private avatarFrame(profile: { avatarUrl?: string }): SpriteFrame | undefined {
-    const url=avatarUrl(profile.avatarUrl);if(!url)return;
-    if(this.remoteAvatars.has(url))return this.remoteAvatars.get(url)??undefined;
+  private avatarFrame(profile: { avatarUrl?: string; avatar?: number }): SpriteFrame | undefined {
+    const fallback = this.profileArt.get('avatar-' + (((profile.avatar ?? 0) % 4 + 4) % 4));
+    const url=avatarUrl(profile.avatarUrl);if(!url)return fallback;
+    if(this.remoteAvatars.has(url))return this.remoteAvatars.get(url)??fallback;
     this.remoteAvatars.set(url,null);
     assetManager.loadRemote<ImageAsset>(url,{ext:'.png'},(error,image)=>{
       if(error||!this.isValid)return;
       const texture=new Texture2D();texture.image=image;
       const frame=new SpriteFrame();frame.texture=texture;this.remoteAvatars.set(url,frame);this.render();
     });
-    return;
+    return fallback;
+  }
+  /** Reuse the same circular identity in the opponent seat and transient feedback. */
+  private playerPortrait(parent: Node, profile: { avatar: number; avatarUrl?: string }, x: number, y: number, size: number) {
+    const clip = this.n('PlayerPortrait',375,667,size,size,parent);clip.setPosition(x,y);
+    clip.addComponent(Mask).type = Mask.Type.GRAPHICS_ELLIPSE;
+    const face = this.n('PlayerPortraitImage',375,667,size,size,clip);face.setPosition(0,0);
+    const sprite = face.addComponent(Sprite);sprite.spriteFrame = this.avatarFrame(profile) ?? null;sprite.sizeMode = Sprite.SizeMode.CUSTOM;
+    face.getComponent(UITransform)!.setContentSize(size,size);
+    const rim = this.n('PlayerPortraitRim',375,667,size*1.1,size*1.1,parent);rim.setPosition(x,y);
+    const frame = rim.addComponent(Sprite);frame.spriteFrame=this.profileArt.get('portrait-frame')??null;frame.sizeMode=Sprite.SizeMode.CUSTOM;
+    rim.getComponent(UITransform)!.setContentSize(size*1.1,size*1.1);
   }
   private async authorizeProfile() {
     if(this.busy||this.profileMotion)return;
@@ -1034,7 +1060,7 @@ export class GameApp extends Component {
   private async copyRoomCode(code: string) {try{await copy(code);this.toast('口令已复制：'+code);}catch(e){this.toast((e as Error).message);}}
   private openProfile() {
     const me = this.net.state?.me; if (!me || this.profileMotion) return;
-    this.nickname = me.name; this.avatar = me.avatar; this.draftAvatarUrl=me.avatarUrl??''; this.page = 'profile'; this.profileMotionFrom = undefined; this.profileMotionTo = undefined;
+    this.nickname = me.name; this.avatar = ((me.avatar % 4) + 4) % 4; this.draftAvatarUrl=me.avatarUrl??''; this.page = 'profile'; this.profileMotionFrom = undefined; this.profileMotionTo = undefined;
     this.profileMotion = read('motion', '1') === '1' ? 'in' : '';
     this.profileMotionElapsed = 0; this.profileMotionFrames = 0; this.render();
   }
@@ -1119,7 +1145,7 @@ export class GameApp extends Component {
       if (!this.profileSprite('heading', 375, 165, 300, 89)) this.text('个人资料', 375, 165, 40);
       this.profileBack = this.profileButton('back', '返回', 100, 85, 166, 62, () => this.closeProfile());
       this.profileSprite('portrait-background', 375, 365, 320, 320);
-      if (!this.profileSprite('avatar-' + this.avatar, 375, 365, 190, 190, this.avatarFrame({avatarUrl:this.draftAvatarUrl}))) {
+      if (!this.profileSprite('avatar-' + this.avatar, 375, 365, 190, 190, this.avatarFrame({avatarUrl:this.draftAvatarUrl,avatar:this.avatar}))) {
         this.box(375, 365, 180, 180, C.blue, 90); this.text(AVATARS[this.avatar], 375, 365, 72, C.cream, 150, 120);
       }
       this.profileSprite('portrait-frame', 375, 365, 234, 234);
