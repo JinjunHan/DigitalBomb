@@ -40,6 +40,10 @@ export class GameApp extends Component {
   private opponentFeedbackActive = false;
   private rematchNotice = '';
   private loginFailed = false;
+  private startupFrame?: SpriteFrame;
+  private startupTexture?: Texture2D;
+  private startupImage?: ImageAsset;
+  private loginDeadline?: ReturnType<typeof setTimeout>;
   private endFeedbackUntil = 0;
   private net = new Connection(); private root!: Node; private scenery!: SceneBackdrop;
   private noticeLayer!: Node;
@@ -105,6 +109,13 @@ export class GameApp extends Component {
     this.clearEffects(); this.render();
   };
   onLoad() {
+    const startup = globalThis as typeof globalThis & { __digitalBombStartupImage?: HTMLCanvasElement };
+    if (startup.__digitalBombStartupImage) {
+      this.startupImage = new ImageAsset(startup.__digitalBombStartupImage);
+      this.startupTexture = new Texture2D(); this.startupTexture.image = this.startupImage;
+      this.startupFrame = new SpriteFrame(); this.startupFrame.texture = this.startupTexture;
+      delete startup.__digitalBombStartupImage;
+    }
     view.setDesignResolutionSize(750, 1334, ResolutionPolicy.FIXED_WIDTH);
     this.scenery = new SceneBackdrop(this.node);
     this.root = new Node('Interface'); this.node.addChild(this.root); this.root.layer = Layers.Enum.UI_2D; this.root.addComponent(UITransform).setContentSize(750, 1334);
@@ -186,11 +197,32 @@ export class GameApp extends Component {
     this.wxFlow.start();
     this.resizeLayout(); this.connect(); this.schedule(this.updateTimer, 0.2);
   }
-  onDestroy() { this.wxFlow?.destroy(); if (this.feedbackArt) this.feedbackArt.disposed = true; this.friendReturn?.destroy(); this.modals?.destroy(); this.stopJoinMotion(); this.scenery?.destroy(); view.off('canvas-resize', this.resizeLayout, this); this.audio.dispose(); if (this.profilePanel) Tween.stopAllByTarget(this.profilePanel); this.clearEffects(); this.net.stop(); input.off(Input.EventType.KEY_DOWN, this.onKey, this); game.off(Game.EVENT_SHOW, this.onShow, this); game.off(Game.EVENT_HIDE, this.onHide, this); }
+  onDestroy() { clearTimeout(this.loginDeadline); this.releaseStartup(); this.wxFlow?.destroy(); if (this.feedbackArt) this.feedbackArt.disposed = true; this.friendReturn?.destroy(); this.modals?.destroy(); this.stopJoinMotion(); this.scenery?.destroy(); view.off('canvas-resize', this.resizeLayout, this); this.audio.dispose(); if (this.profilePanel) Tween.stopAllByTarget(this.profilePanel); this.clearEffects(); this.net.stop(); input.off(Input.EventType.KEY_DOWN, this.onKey, this); game.off(Game.EVENT_SHOW, this.onShow, this); game.off(Game.EVENT_HIDE, this.onHide, this); }
   private onHide() { this.wxFlow?.clearButton();this.audio.background(true); }
   private onShow() { this.audio.background(false); if (this.net.online) this.net.command('sync').catch(() => {}); }
-  private async connect() { this.loginFailed = false; try { await this.net.start(); } catch (e) { this.loginFailed = true; this.toast((e as Error).message); } }
+  private releaseStartup() {
+    this.startupFrame?.destroy(); this.startupTexture?.destroy(); this.startupImage?.destroy();
+    this.startupFrame = undefined; this.startupTexture = undefined; this.startupImage = undefined;
+  }
+  private async connect() {
+    this.loginFailed = false;
+    const connection = this.net;
+    clearTimeout(this.loginDeadline);
+    // start() initiates the socket; authentication finishes with its first state.
+    this.loginDeadline = setTimeout(() => {
+      if (!this.isValid || this.net !== connection || connection.state) return;
+      this.loginFailed = true;
+      this.toast('连接时间较长，请检查网络后重试');
+    }, 15000);
+    this.render();
+    try { await connection.start(); }
+    catch (e) {
+      if (!this.isValid || this.net !== connection) return;
+      clearTimeout(this.loginDeadline); this.loginFailed = true; this.toast((e as Error).message);
+    }
+  }
   private stateChanged() {
+    clearTimeout(this.loginDeadline);
     const s = this.net.state!, r = s.room;
     this.consumeInvitation();
     if(wechat()&&!this.profilePrompted){this.profilePrompted=true;this.scheduleOnce(()=>this.offerWechatProfile(),.6);}
@@ -389,6 +421,7 @@ export class GameApp extends Component {
       : state?.queuedAt != null ? 'matching' : this.page === 'join' ? 'friend' : 'lobby';
     this.scenery.setView(sceneView, read('motion', '1') === '1');
     const s = this.net.state;
+    if (s && this.startupFrame) this.releaseStartup();
     this.lobbyShuffle.show(this.lobbyDigitFrames.length === 10 && this.lobbyArt.has('machine') && !!s && !s.room && s.queuedAt === null && this.page === 'lobby');
     if (!s) this.loading();
     else if (s.room) this.room(s.room);
@@ -419,6 +452,15 @@ export class GameApp extends Component {
     this.updateTimer();
   }
   private loading() {
+    if (this.startupFrame && !this.loginFailed) {
+      const cover = this.n('Startup', 375, 667, 750, this.screenHeight);
+      cover.setPosition(0, 0);
+      const sprite = cover.addComponent(Sprite); sprite.spriteFrame = this.startupFrame;
+      sprite.sizeMode = Sprite.SizeMode.CUSTOM;
+      cover.getComponent(UITransform)!.setContentSize(750, this.screenHeight);
+      cover.addComponent(BlockInputEvents);
+      return;
+    }
     if(this.feedbackArt.ready) {
       const group=this.feedbackArt.group(this.root,'LoginStatus',0,Math.min(1,(this.screenHeight-this.layoutTop-bottomSafeInset())/720));
       this.feedbackArt.image(group,this.loginFailed?'connection-1':'connection-0',0,0,620);
