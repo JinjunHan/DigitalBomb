@@ -359,14 +359,18 @@ export class GameApp extends Component {
     if (modalKey) this.artModal(modalKey);
     if (this.notice && Date.now() < this.noticeUntil) {
       if (this.feedbackArt.ready) {
-        const group=this.feedbackArt.group(this.root,'Notice',-this.screenHeight/2+bottomSafeInset()+70);
+        const group=this.feedbackArt.group(this.root,'Notice',0);
+        let noticeArt: Node;
         if(this.notice.startsWith('确认超时')) {
-          this.feedbackArt.image(group,'timeout-2',0,0,520);
+          noticeArt=this.feedbackArt.image(group,'timeout-2',0,0,520);
           this.toastLabel=this.feedbackArt.label(group,'',0,0,1,1,1);
         } else {
-          this.feedbackArt.image(group,/复制/.test(this.notice)?'toast':'warning',0,0,690);
+          noticeArt=this.feedbackArt.image(group,/复制/.test(this.notice)?'toast':'warning',0,0,690);
           this.toastLabel=this.feedbackArt.label(group,this.notice,75,10,470,92,24);
         }
+        // New artwork is taller than the original text-only toast. Keep its whole frame above the safe area.
+        const height=noticeArt.getComponent(UITransform)!.height;
+        group.setPosition(0,-this.screenHeight/2+bottomSafeInset()+16+height/2);
       } else { this.box(375,1278,700,62,C.dark);this.toastLabel=this.text(this.notice,375,1278,22,C.cream,670,58); }
     }
     this.updateTimer();

@@ -19,3 +19,9 @@
 - `feedback-motion.gif`：连续运行截图构成，无插帧；预览按约 220ms/帧播放，不代表游戏实际帧率。原始采样帧在忽略目录 `temp/feedback-motion/`。
 
 最终有效微信包：主包 1,954.4 KB，资源分包 37,803.4 KB；主包体积检查和完整性检查均通过。
+
+## 覆盖复查（2026-10-28）
+
+补测双方命中 0～4 位、player_left/both_offline 取消、round_limit/disconnect/resigned/reply_timeout 结算及短屏错误提示。夹具通过；42 项单元测试和两套类型检查通过。修复底部提示按实际素材高度定位，相关截图为 feedback-notice.png 与 feedback-audit-short-notice.png。新增结果截图为 feedback-audit-*.png。
+
+本轮微信导出及完整性检查通过，主包 1956.5 KB，资源分包 37803.4 KB。完整覆盖清单见 ../design/COVERAGE.md；未进行微信真机验收。

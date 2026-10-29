@@ -47,5 +47,25 @@ const assert=require('node:assert/strict'),fs=require('node:fs');
  const opacities=[];for(let i=0;i<12;i++){opacities.push(await page.evaluate(()=>app.effects.getChildByName('GuessFeedback')?.components.find(c=>typeof c.opacity==='number')?.opacity??0));await page.screenshot({path:`temp/feedback-motion/${String(i).padStart(2,'0')}.png`});await page.waitForTimeout(170);}
  await page.waitForTimeout(400);assert.ok(opacities.some(v=>v>200),JSON.stringify(opacities));assert.equal(await page.evaluate(()=>app.effects.children.length),0);
  await page.evaluate(()=>{localStorage.setItem('db-motion','0');fixture();app.showFeedback({kind:'opponent',hits:0,title:'',caption:'',art:'opponent-0'});});assert.equal(await page.evaluate(()=>app.effects.children[0].components.find(c=>typeof c.opacity==='number').opacity),255);
+
+ // Audit coverage: score variants, cancellation causes, result reasons and short-screen notices.
+ for(const own of [false,true])for(let hits=0;hits<=4;hits++){
+  await page.evaluate(({own,hits})=>{fixture(hits===4?'reply':'playing');app.net.state.room.history=[{playerId:own?base.me.id:'peer',turn:6,digits:'1234',hits}];app.stateChanged();},{own,hits});
+  assert.equal(await page.evaluate(()=>app.effects.getChildByName('GuessFeedback')?.children.some(n=>n.name.startsWith('FeedbackArt-'))),true);
+ }
+ for(const [reason,art] of [['player_left','cancel-2'],['both_offline','cancel-3']]){
+  await page.evaluate(reason=>fixture('cancelled',reason,null),reason);
+  assert.equal(await page.evaluate(art=>{let found=false;const visit=n=>{if(n.name==='FeedbackArt-'+art)found=true;n.children.forEach(visit);};visit(app.root);return found;},art),true);
+ }
+ for(const reason of ['round_limit','disconnect','resigned','reply_timeout']){
+  await page.evaluate(reason=>fixture('finished',reason,reason==='round_limit'?null:'peer'),reason);
+  await shot('audit-'+reason);
+ }
+ for(const message of ['确认超时，请查看同步后的状态','房间暂不可加入','昵称需为 2–12 个中文、字母或数字']){
+  await page.evaluate(message=>{fixture();app.toast(message);},message);
+  const bottom=await page.evaluate(()=>{const group=app.root.getChildByName('Notice'),art=group.children.find(n=>n.name.startsWith('FeedbackArt-'));const size=art.components.find(c=>typeof c.height==='number');return group.position.y-size.height/2+app.screenHeight/2;});
+  assert.ok(bottom>=36,'notice must clear bottom safe inset: '+bottom);
+ }
+ await shot('audit-short-notice');
  assert.deepEqual(errors,[]);console.log('PASS: opponent input remains usable; reply, timeout, terminal, cancellation, empty records, rematch, toast; buttons; reconnect suppression; tall/short screens; real motion frames; motion disabled.');
 }finally{await browser.close();}})().catch(e=>{console.error(e);process.exit(1);});
