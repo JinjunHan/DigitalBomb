@@ -1,4 +1,4 @@
-/** Source rectangles: docs/design/battle/slices.json; generated layers: generated/packing.json. */
+/** Source rectangles: battle/slices.json and ui-repairs-v2/manifest.json. */
 export const BATTLE_RECTS: Record<string, readonly number[]> = {
   "opponent": [
     330,
@@ -287,5 +287,23 @@ export const BATTLE_RECTS: Record<string, readonly number[]> = {
     1190,
     961,
     1650
+  ],
+  "left-thumb": [
+    0,
+    736,
+    941,
+    1165
+  ],
+  "play-left-thumb": [
+    184,
+    991,
+    340,
+    1192
+  ],
+  "play-right-thumb": [
+    610,
+    1004,
+    941,
+    1194
   ]
 };

@@ -89,8 +89,8 @@ export const FEEDBACK_SIZES: Record<string, readonly number[]> = {
     186
   ],
   "defeat-title": [
-    777,
-    304
+    815,
+    365
   ],
   "draw-title": [
     650,

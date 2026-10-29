@@ -42,6 +42,7 @@ export class GameApp extends Component {
   private loginFailed = false;
   private endFeedbackUntil = 0;
   private net = new Connection(); private root!: Node; private scenery!: SceneBackdrop;
+  private noticeLayer!: Node;
   private effects!: Node; private seenGuesses = 0; private submitting = false;
   private modals!: ModalLayer;
   private friendReturn!: FriendReturnLayer;
@@ -109,6 +110,7 @@ export class GameApp extends Component {
     this.effects = new Node('FeedbackLayer'); this.effects.layer = Layers.Enum.UI_2D; this.node.addChild(this.effects); this.effects.addComponent(UITransform).setContentSize(750, 1334);
     this.friendReturn = new FriendReturnLayer(this.node);
     this.modals = new ModalLayer(this.node);
+    this.noticeLayer = this.n('NoticeLayer',375,667,750,this.screenHeight,this.node);this.noticeLayer.setPosition(0,0);
     this.audio = new GameAudio(this.node);
     this.feedbackArt = new FeedbackArt(() => { if (this.isValid) this.render(); });
     this.net.onState = () => this.stateChanged(); this.net.onStatus = () => { if (!this.net.online) this.suppressFeedback = true; this.render(); }; this.net.onError = s => this.toast(s);
@@ -375,6 +377,7 @@ export class GameApp extends Component {
     this.recordScrolls = [];
     const noticePage=this.noticeContext();
     if(this.noticePage!==noticePage){this.dismissNotice();this.noticePage=noticePage;}
+    if(this.noticeNode?.isValid){this.noticeNode.removeFromParent();this.noticeNode.destroy();}
     this.noticeNode=undefined;
     this.stopJoinMotion(); this.joinDigits = []; this.joinGlows = []; this.joinButton = undefined;
     this.hourglass = undefined; this.roundOld = undefined; this.roundNew = undefined;
@@ -397,7 +400,7 @@ export class GameApp extends Component {
     if (modalKey) this.artModal(modalKey);
     if (this.notice && Date.now() < this.noticeUntil) {
       if (this.feedbackArt.ready) {
-        const group=this.feedbackArt.group(this.root,'Notice',0);this.noticeNode=group;
+        const group=this.feedbackArt.group(this.noticeLayer,'Notice',0);this.noticeNode=group;
         let noticeArt: Node;
         if(this.notice.startsWith('确认超时')) {
           noticeArt=this.feedbackArt.image(group,'timeout-2',0,0,520);
@@ -410,7 +413,7 @@ export class GameApp extends Component {
         noticeArt.on(Node.EventType.TOUCH_END,()=>this.dismissNotice());
         const height=noticeArt.getComponent(UITransform)!.height;
         group.setPosition(0,-this.screenHeight/2+bottomSafeInset()+16+height/2);
-      } else { const panel=this.box(375,1278,700,62,C.dark);this.noticeNode=panel;panel.on(Node.EventType.TOUCH_END,()=>this.dismissNotice());this.toastLabel=this.text(this.notice,375,667,22,C.cream,670,58,panel);this.toastLabel.node.setPosition(0,0); }
+      } else { const panel=this.box(375,667,700,62,C.dark,16,this.noticeLayer);panel.setPosition(0,-this.screenHeight/2+bottomSafeInset()+47);this.noticeNode=panel;panel.on(Node.EventType.TOUCH_END,()=>this.dismissNotice());this.toastLabel=this.text(this.notice,375,667,22,C.cream,670,58,panel);this.toastLabel.node.setPosition(0,0); }
     }
     this.updateTimer();
   }
@@ -755,17 +758,17 @@ export class GameApp extends Component {
       node.on(Node.EventType.TOUCH_CANCEL, () => node.setScale(1, 1, 1));
       node.on(Node.EventType.TOUCH_END, () => { node.setScale(1, 1, 1); this.audio.unlock(); action(); });
     };
-    const art = (name: string, rect = BATTLE_RECTS[name], frame = this.battleArt.get(name)!) => {
+    const art = (name: string, rect = BATTLE_RECTS[name], frame = this.battleArt.get(name)!, parent = group) => {
       const [l,t,r,b] = rect;
-      const node = place(this.n('Battle-' + name,375,667,r-l,b-t,group),(l+r)/2,(t+b)/2);
+      const node = place(this.n('Battle-' + name,375,667,r-l,b-t,parent),(l+r)/2,(t+b)/2);
       const sprite = node.addComponent(Sprite); sprite.spriteFrame = frame; sprite.sizeMode = Sprite.SizeMode.CUSTOM;
       node.getComponent(UITransform)!.setContentSize(r-l,b-t); return node;
     };
-    const label = (value: string, x: number, y: number, size: number, w: number, color = C.ink, h = size * 1.5) => {
-      const l = this.text(value,375,667,size,color,w,h,group); place(l.node,x,y); l.enableWrapText = false; return l;
+    const label = (value: string, x: number, y: number, size: number, w: number, color = C.ink, h = size * 1.5, parent = group) => {
+      const l = this.text(value,375,667,size,color,w,h,parent); place(l.node,x,y); l.enableWrapText = false; return l;
     };
-    const number = (value: string, x: number, y: number, size: number, w: number, h = size * 1.5) => {
-      const l = label(value,x,y,size,w,C.ink,h);
+    const number = (value: string, x: number, y: number, size: number, w: number, h = size * 1.5, parent = group) => {
+      const l = label(value,x,y,size,w,C.ink,h,parent);
       if (this.friendDigitFont && /^[0-9—]+$/.test(value)) { l.font=this.friendDigitFont; l.lineHeight=size*1.1; }
       else l.isBold=true;
       return l;
@@ -810,46 +813,65 @@ export class GameApp extends Component {
       label('s',540,493,29,20,'#FFD978',38);
       const rules=art('rules',[243,523,699,589]); touch(rules,()=>{this.overlay='rules';this.render();});
       const value=r.ownSecret ?? this.draft;
-      // Palm behind the cards; only the isolated thumb crosses their front edge.
-      art('hand-right');
-      for(let i=0;i<4;i++) {
-        const active=editable && (this.selected===i || this.selected<0 && value.length===i);
-        const x=248+i*149, y=752+(i===0||i===3?25:0)-(active?14:0);
-        const card=art('card-paper',[x-96,y-132,x+96,y+132]);card.angle=[14,5,-5,-14][i];
-        if(active) { const edge=art('card-selected',[x-100,y-137,x+100,y+137]);edge.angle=card.angle; }
-        const digit=number(value[i] ?? '',x,y,132,155,172);digit.node.angle=card.angle;
-        if(editable) { touch(card,()=>{this.selected=i;this.render();});touch(digit.node,()=>{this.selected=i;this.render();}); }
-
+      // Palms behind the fan; only isolated thumbs cross card fronts.
+      art('hands');art('hand-right');
+      const selected=editable ? (this.selected>=0 ? this.selected : value.length<4 ? value.length : -1) : -1;
+      const order=[0,1,2,3].sort((a,b)=>Number(a===selected)-Number(b===selected));
+      const paper=this.battleArt.get('card-paper')!,ratio=paper.originalSize.height/paper.originalSize.width;
+      for(const i of order) {
+        const active=i===selected,x=248+i*149,y=752+(i===0||i===3?25:0)-(active?18:0);
+        const cardGroup=this.n('SecretCard-'+i,375,667,202,202*ratio,group);cardGroup.setPosition(0,0);
+        if(active){const edge=art('card-selected',[x-102,y-102*ratio,x+102,y+102*ratio],undefined,cardGroup);edge.angle=[14,5,-5,-14][i];}
+        const card=art('card-paper',[x-96,y-96*ratio,x+96,y+96*ratio],paper,cardGroup);card.angle=[14,5,-5,-14][i];
+        const digit=number(value[i]??'',x,y,132,155,172,cardGroup);digit.node.angle=card.angle;
+        if(editable){touch(card,()=>{this.selected=i;this.render();});touch(digit.node,()=>{this.selected=i;this.render();});}
       }
-      art('hands');art('right-thumb');
+      art('left-thumb');art('right-thumb');
       const lock=art('lock');touch(lock,()=>this.lockSecret(),editable&&this.draft.length===4);
       art('status',[230,1546,711,1603]);
       label(r.ownSecret ? '底牌已锁定，等待对手' : 'ⓘ 锁定后本局不可修改',470,1572,29,650,C.gold);
     } else {
       art('records');
       const records=art('all-records');touch(records,()=>{this.recordsOpponent=false;this.overlay='guessRecords';this.render();});
-      const rows=r.history.filter(h=>h.playerId===me.id).slice(-3);
-      if(!rows.length) label('暂无记录，输入四位数字开始猜测',470,532,27,620);
+      const rows=r.history.filter(h=>h.playerId===me.id),rowHeight=94,height=282,width=680;
+      const viewport=place(this.n('BattleRecordsViewport',375,667,width,height,group),470.5,397+height/2);
+      viewport.addComponent(Mask).type=Mask.Type.GRAPHICS_RECT;
+      const content=this.n('BattleRecordsContent',375,667,width,Math.max(height,rows.length*rowHeight),viewport);
+      content.getComponent(UITransform)!.setAnchorPoint(.5,1);content.setPosition(0,height/2);
+      const scroll=viewport.addComponent(ScrollView);scroll.content=content;scroll.horizontal=false;scroll.vertical=true;scroll.inertia=true;scroll.elastic=false;scroll.cancelInnerEvents=true;
+      if(!rows.length)label('暂无记录，输入四位数字开始猜测',470,532,27,620);
       rows.forEach((h,i)=>{
-        const y=443+i*94;
-        art('record-row',[149,y-46,805,y+44]);
-        label(`第${Math.floor(h.turn/2)+1}轮`,231,y,30,145);
-        if(h.digits) for(let j=0;j<4;j++) number(h.digits[j],349+j*88,y,45,67);
-        else label('本次超时',481,y,30,350);
-        label(h.hits===null?'—':`${h.hits}/4`,727,y,35,110,'#FFD978');
+        const y=i*rowHeight+45;
+        art('record-row',[149,y-45,805,y+45],undefined,content);
+        label(`第${Math.floor(h.turn/2)+1}轮`,231,y,30,145,C.ink,45,content);
+        if(h.digits)for(let j=0;j<4;j++)number(h.digits[j],349+j*88,y,45,67,68,content);
+        else label('本次超时',481,y,30,350,C.ink,45,content);
+        label(h.hits===null?'—':`${h.hits}/4`,727,y,35,110,'#FFD978',52,content);
       });
+      const scrollKey=`battle:${r.id}:${me.id}`,position=this.recordPositions.get(scrollKey),max=Math.max(0,rows.length*rowHeight-height);
+      scroll.scrollToOffset(new Vec2(0,position&&!position.bottom?Math.min(max,position.offset):max));
+      this.recordScrolls.push({view:scroll,key:scrollKey});
+      if(rows.length)label(`共 ${rows.length} 条${max>0?' · 可滑动':''}`,244,363,20,190,C.ink,28);
+      if(max>0&&this.modalArtReady){
+        art('record-track',[816,397,828,397+height],this.modalArt.get('record-track'));
+        const thumbHeight=Math.max(32,height*height/(rows.length*rowHeight));
+        const thumb=art('record-thumb',[816,397,828,397+thumbHeight],this.modalArt.get('record-thumb'));
+        const update=()=>place(thumb,822,397+thumbHeight/2+Math.max(0,Math.min(1,scroll.getScrollOffset().y/max))*(height-thumbHeight));
+        viewport.on(ScrollView.EventType.SCROLLING,update);update();
+      }
       art('guess');
       for(let i=0;i<4;i++) {
         const digit=number(this.draft[i] ?? '',298+i*116,840,77,95,106);
         touch(digit.node,()=>{this.selected=i;this.render();},editable);
       }
+      art('play-hand-left');art('play-hand-right');
       for(let i=0;i<4;i++) {
         const x=306+i*105,y=1030+(i===0||i===3?15:0);
         const card=art('card-paper',[x-69,y-95,x+69,y+95]);card.angle=[16,6,-6,-16][i];
         const digit=number(this.hideSecret?'?':r.ownSecret?.[i] ?? '',x,y,83,100,115);digit.node.angle=card.angle;
         touch(card,()=>{this.hideSecret=!this.hideSecret;this.render();});touch(digit.node,()=>{this.hideSecret=!this.hideSecret;this.render();});
       }
-      art('play-hand-left'); art('play-hand-right');
+      art('play-left-thumb');art('play-right-thumb');
       const portraitRect=[28,1000,208,1180];
       const portrait=this.avatarFrame(me)??this.profileArt.get('avatar-'+me.avatar);
       const portraitBg=this.profileArt.get('portrait-background');
@@ -957,7 +979,7 @@ export class GameApp extends Component {
     }
     const win=r.result?.winner===me, draw=!r.result?.winner;
     art(draw?'draw-title':win?'victory-title':'defeat-title',0,win||draw?180:200,draw?550:win?500:750);
-    if(!r.rematch.includes(me)&&!this.rematchNotice)label(resultCaption(r,me),0,380,650,50,28).color=new Color(C.cream);
+    if((!win&&!draw)||(!r.rematch.includes(me)&&!this.rematchNotice))label(resultCaption(r,me),0,!win&&!draw?318:380,650,50,28).color=new Color(!win&&!draw?C.ink:C.cream);
     if(r.rematch.includes(me)||this.rematchNotice) {
       const key=this.rematchNotice.includes('离开')?1:this.rematchNotice?2:0;
       art('rematch-'+key,0,850,730);

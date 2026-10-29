@@ -63,7 +63,7 @@ const assert=require('node:assert/strict'),fs=require('node:fs');
  }
  for(const message of ['确认超时，请查看同步后的状态','房间暂不可加入','昵称需为 2–12 个中文、字母或数字']){
   await page.evaluate(message=>{fixture();app.toast(message);},message);
-  const bottom=await page.evaluate(()=>{const group=app.root.getChildByName('Notice'),art=group.children.find(n=>n.name.startsWith('FeedbackArt-'));const size=art.components.find(c=>typeof c.height==='number');return group.position.y-size.height/2+app.screenHeight/2;});
+  const bottom=await page.evaluate(()=>{const group=app.noticeLayer.getChildByName('Notice'),art=group.children.find(n=>n.name.startsWith('FeedbackArt-'));const size=art.components.find(c=>typeof c.height==='number');return group.position.y-size.height/2+app.screenHeight/2;});
   assert.ok(bottom>=36,'notice must clear bottom safe inset: '+bottom);
  }
  await shot('audit-short-notice');
