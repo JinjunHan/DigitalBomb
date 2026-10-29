@@ -4,21 +4,25 @@ import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 
 function fixture(height = 1334) {
-  const texts: string[] = [], clips: number[][] = [];
+  const texts: string[] = [], clips: number[][] = [], scales: number[][] = [];
   const ctx = new Proxy({}, { get: (_, key) => key === 'fillText' ? (value: string) => texts.push(value)
-    : key === 'rect' ? (...values: number[]) => clips.push(values) : () => {}, set: () => true });
+    : key === 'scale' ? (...values: number[]) => scales.push(values) : key === 'rect' ? (...values: number[]) => clips.push(values) : () => {}, set: () => true });
   const surface = { width: 0, height: 0, getContext: () => ctx };
   const context = vm.createContext({ module: { exports: {} }, canvas: { width: 750, height },
     wx: { createCanvas: () => surface }, cancelAnimationFrame() {},
     mockGL: new Proxy({}, { get: () => () => {} }) });
   vm.runInContext(readFileSync('build-templates/wechatgame/first-screen.js', 'utf8'), context);
-  return { context, surface, texts, clips };
+  return { context, surface, texts, clips, scales };
 }
 
-test('startup contains art and retry region on short and tall screens', () => {
+test('startup fills short and tall screens while keeping the retry region reachable', () => {
   for (const height of [1000, 1334, 1624]) {
-    const { context, surface } = fixture(height);
+    const { context, surface, scales } = fixture(height);
     const screen = vm.runInContext('createScreen({}, {})', context);
+    screen.draw(.5, '正在准备牌桌…');
+    assert.ok(941 * scales[0][0] >= surface.width - .01);
+    assert.ok(1672 * scales[0][1] >= surface.height - .01);
+    assert.equal(scales[0][0], scales[0][1], 'artwork must not stretch');
     const rect = screen.retryRect;
     assert.equal(surface.height, height);
     assert.ok(rect.x >= 0 && rect.y >= 0);

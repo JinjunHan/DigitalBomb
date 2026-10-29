@@ -20,7 +20,8 @@ function createScreen(background, fill) {
     surface.width = 750;
     surface.height = Math.round(750 * canvas.height / canvas.width);
     const ctx = surface.getContext('2d');
-    const scale = Math.min(surface.width / DESIGN_WIDTH, surface.height / DESIGN_HEIGHT);
+    // Fill the viewport without stretching. Crop only the decorative outer edges.
+    const scale = Math.max(surface.width / DESIGN_WIDTH, surface.height / DESIGN_HEIGHT);
     const x = (surface.width - DESIGN_WIDTH * scale) / 2;
     const y = (surface.height - DESIGN_HEIGHT * scale) / 2;
     return {

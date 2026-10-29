@@ -1,5 +1,6 @@
 import { WechatFlow, avatarUrl, type Invitation } from './shared/wechat-flow';
 import { _decorator, Component, Node, UITransform, Label, Graphics, Color, Layers, view, ResolutionPolicy, resources, SpriteFrame, Sprite, Texture2D, profiler, tween, Tween, UIOpacity, Vec3, EditBox, input, Input, EventKeyboard, KeyCode, game, Game, BlockInputEvents, ScrollView, Mask, Vec2, Font, Rect, assetManager, ImageAsset } from 'cc';
+import { StartupAssets } from './shared/startup-assets';
 import { RoundRoll } from './shared/round-roll';
 import { FeedbackArt } from './FeedbackArt';
 import { feedbackEvent, cancellationArt, resultCaption, type FeedbackEvent } from './shared/feedback-state';
@@ -47,6 +48,8 @@ export class GameApp extends Component {
   private loginFailed = false;
   private startupScreen?: StartupScreen;
   private startupStatus = '';
+  private startupEntered = false;
+  private startupAssets = new StartupAssets(() => { if (this.isValid) this.render(); });
   private startupFrame?: SpriteFrame;
   private startupTexture?: Texture2D;
   private startupImage?: ImageAsset;
@@ -125,7 +128,7 @@ export class GameApp extends Component {
       delete startup.__digitalBombStartup;
     }
     view.setDesignResolutionSize(750, 1334, ResolutionPolicy.FIXED_WIDTH);
-    this.scenery = new SceneBackdrop(this.node);
+    this.scenery = new SceneBackdrop(this.node, (path, loaded) => this.loadStartupTexture(path, loaded));
     this.root = new Node('Interface'); this.node.addChild(this.root); this.root.layer = Layers.Enum.UI_2D; this.root.addComponent(UITransform).setContentSize(750, 1334);
     this.effects = new Node('FeedbackLayer'); this.effects.layer = Layers.Enum.UI_2D; this.node.addChild(this.effects); this.effects.addComponent(UITransform).setContentSize(750, 1334);
     this.friendReturn = new FriendReturnLayer(this.node);
@@ -136,16 +139,17 @@ export class GameApp extends Component {
     this.net.onState = () => this.stateChanged(); this.net.onStatus = () => { if (!this.net.online) this.suppressFeedback = true; this.render(); }; this.net.onError = s => this.toast(s);
     resources.load('art/opponent/texture', Texture2D, (err, texture) => { if (!err) { const sf = new SpriteFrame(); sf.texture = texture; this.opponentArt = sf; this.render(); } });
     for (const name of ['title', 'machine', 'match-full', 'friend-full', 'help-full', 'settings-full', 'sound-full', 'avatar-frame', 'nickname-frame']) {
-      resources.load('art/lobby/' + name + '/texture', Texture2D, (err, texture) => {
-        if (err || !this.isValid) return;
+      this.loadStartupTexture('art/lobby/' + name + '/texture', texture => {
         const sf = new SpriteFrame(); sf.texture = texture; this.lobbyArt.set(name, sf); this.render();
       });
     }
     for (const name of ['portrait-frame', 'portrait-background', 'avatar-selected', 'paper', 'back', 'heading', 'change-avatar', 'wechat', 'cancel', 'save', 'input', 'avatar-0', 'avatar-1', 'avatar-2', 'avatar-3']) {
-      resources.load('art/profile/' + name + '/texture', Texture2D, (err, texture) => {
-        if (err || !this.isValid) return;
+      const loaded = (texture: Texture2D) => {
         const sf = new SpriteFrame(); sf.texture = texture; this.profileArt.set(name, sf); this.render();
-      });
+      };
+      const path = 'art/profile/' + name + '/texture';
+      if (/^avatar-[0-3]$/.test(name)) this.loadStartupTexture(path, loaded);
+      else resources.load(path, Texture2D, (err, texture) => { if (!err && this.isValid) loaded(texture); });
     }
     resources.load('fonts/friend-digits/FriendDigits', Font, (err, font) => {
       if (err || !this.isValid) return;
@@ -175,8 +179,7 @@ export class GameApp extends Component {
         if (battleNames.every(key => this.battleArt.has(key))) { this.battleArtReady = true; this.render(); }
       });
     }
-    resources.load('art/lobby/digits/texture', Texture2D, (err, texture) => {
-      if (err || !this.isValid) return;
+    this.loadStartupTexture('art/lobby/digits/texture', texture => {
       this.lobbyDigitFrames = Array.from({length:10},(_,i)=>{const f=new SpriteFrame();f.texture=texture;f.rect=new Rect(i*64,0,64,80);return f;});
       this.render();
     });
@@ -198,6 +201,7 @@ export class GameApp extends Component {
         if (modalNames.every(key => this.modalArt.has(key))) { this.modalArtReady = true; this.render(); }
       });
     }
+    this.startupAssets.seal();
     profiler.hideStats();
     input.on(Input.EventType.KEY_DOWN, this.onKey, this); game.on(Game.EVENT_SHOW, this.onShow, this); game.on(Game.EVENT_HIDE, this.onHide, this);
     view.on('canvas-resize', this.resizeLayout, this);
@@ -208,6 +212,19 @@ export class GameApp extends Component {
   onDestroy() { clearTimeout(this.loginDeadline); this.releaseStartup(); this.wxFlow?.destroy(); if (this.feedbackArt) this.feedbackArt.disposed = true; this.friendReturn?.destroy(); this.modals?.destroy(); this.stopJoinMotion(); this.scenery?.destroy(); view.off('canvas-resize', this.resizeLayout, this); this.audio.dispose(); if (this.profilePanel) Tween.stopAllByTarget(this.profilePanel); this.clearEffects(); this.net.stop(); input.off(Input.EventType.KEY_DOWN, this.onKey, this); game.off(Game.EVENT_SHOW, this.onShow, this); game.off(Game.EVENT_HIDE, this.onHide, this); }
   private onHide() { this.wxFlow?.clearButton();this.audio.background(true); }
   private onShow() { this.audio.background(false); if (this.net.online) this.net.command('sync').catch(() => {}); }
+  private loadStartupTexture(path: string, loaded: (texture: Texture2D) => void) {
+    this.startupAssets.add(path, () => new Promise<void>((resolve, reject) => {
+      resources.load(path, Texture2D, (error, texture) => {
+        if (error) { reject(error); return; }
+        if (this.isValid) loaded(texture);
+        resolve();
+      });
+    }));
+  }
+  private retryStartup() {
+    this.startupAssets.retry();
+    if (!this.net.online) void this.retryConnection();
+  }
   private releaseStartup() {
     this.startupFrame?.destroy(); this.startupTexture?.destroy(); this.startupImage?.destroy();
     this.startupFrame = undefined; this.startupTexture = undefined; this.startupImage = undefined;
@@ -235,7 +252,6 @@ export class GameApp extends Component {
     clearTimeout(this.loginDeadline);
     const s = this.net.state!, r = s.room;
     this.consumeInvitation();
-    if(wechat()&&!this.profilePrompted){this.profilePrompted=true;this.scheduleOnce(()=>this.offerWechatProfile(),.6);}
     const event = r ? feedbackEvent(r, s.me.id, { roomId: this.lastRoom, phase: this.lastPhase, guesses: this.seenGuesses }, this.suppressFeedback) : undefined;
     if (r && this.suppressFeedback) this.roundRoll.sync(r.id, r.round, false, true);
     this.suppressFeedback = false;
@@ -431,15 +447,22 @@ export class GameApp extends Component {
       : state?.queuedAt != null ? 'matching' : this.page === 'join' ? 'friend' : 'lobby';
     this.scenery.setView(sceneView, read('motion', '1') === '1');
     const s = this.net.state;
-    if (s && this.startupFrame) this.releaseStartup();
-    this.lobbyShuffle.show(this.lobbyDigitFrames.length === 10 && this.lobbyArt.has('machine') && !!s && !s.room && s.queuedAt === null && this.page === 'lobby');
-    if (!s) this.startup();
+    const starting = !this.startupEntered && (!s || !this.net.online || !this.startupAssets.ready);
+    if (!starting && !this.startupEntered) {
+      this.startupEntered = true;
+      this.releaseStartup();
+      if (wechat() && !this.profilePrompted) {
+        this.profilePrompted = true; this.scheduleOnce(() => this.offerWechatProfile(), .6);
+      }
+    }
+    this.lobbyShuffle.show(this.lobbyDigitFrames.length === 10 && this.lobbyArt.has('machine') && !starting && !!s && !s.room && s.queuedAt === null && this.page === 'lobby');
+    if (starting || !s) this.startup();
     else if (s.room) this.room(s.room);
     else if (s.queuedAt !== null) this.matching();
     else if (this.page === 'join') this.join();
     else if (this.page === 'profile') this.profile();
     else this.lobby();
-    const modalKey = s && !this.net.online ? 'reconnect' : this.modalKey();
+    const modalKey = starting ? undefined : s && !this.net.online ? 'reconnect' : this.modalKey();
     this.modals.begin(this.modalArtReady ? modalKey : undefined, read('motion', '1') === '1');
     if (modalKey) this.artModal(modalKey);
     if (this.notice && Date.now() < this.noticeUntil) {
@@ -462,8 +485,11 @@ export class GameApp extends Component {
     this.updateTimer();
   }
   private startup() {
+    const failed = this.loginFailed || this.startupAssets.failed || (!!this.net.state && !this.net.online);
+    const status = this.startupAssets.failed ? '画面加载失败，点击这里重试'
+      : failed ? '连接未完成，点击这里重试'
+      : !this.net.state ? '正在连接牌桌…' : '正在准备首页…';
     if (this.startupFrame && this.startupScreen) {
-      const status = this.loginFailed ? '连接未完成，点击这里重试' : '正在连接牌桌…';
       if (status !== this.startupStatus) {
         this.startupScreen.draw(0.9, status);
         this.startupTexture!.uploadData(this.startupScreen.surface);
@@ -475,20 +501,20 @@ export class GameApp extends Component {
       sprite.sizeMode = Sprite.SizeMode.CUSTOM;
       cover.getComponent(UITransform)!.setContentSize(750, this.screenHeight);
       cover.addComponent(BlockInputEvents);
-      if (this.loginFailed) {
+      if (failed) {
         const rect = this.startupScreen.retryRect;
         const scale = 750 / this.startupScreen.surface.width;
         const retry = this.n('StartupRetry', 375, 667, rect.width * scale, rect.height * scale);
         retry.setPosition((rect.x + rect.width / 2) * scale - 375, this.screenHeight / 2 - (rect.y + rect.height / 2) * scale);
-        retry.on(Node.EventType.TOUCH_END, () => this.retryConnection());
+        retry.on(Node.EventType.TOUCH_END, () => this.retryStartup());
       }
     } else {
       // Web preview (or missing native splash): use the same startup state.
       this.header('猜数字暗号');
-      this.text('正在准备牌桌…', 375, 540, 36);
+      this.text(status, 375, 540, 30);
     }
-    if (this.loginFailed && !this.startupScreen) {
-      this.button('重新连接', 375, 960, 360, 84, () => this.retryConnection(), true, !this.reconnecting);
+    if (failed && !this.startupScreen) {
+      this.button('重新加载', 375, 960, 360, 84, () => this.retryStartup(), true, !this.reconnecting);
     }
   }
   /** Whole-control artwork includes lettering and icons; hit targets stay in Cocos. */

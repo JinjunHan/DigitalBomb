@@ -1,9 +1,38 @@
 {
   "coordinates": "source pixels, top-left origin, LTRB; 941x1672",
   "layers": [
-    {"name":"background","source":"startup-runtime-source.png","rect":[0,0,941,1672],"output":"build-templates/wechatgame/startup/background.jpg","purpose":"Fixed illustration, title, subtitle, footer and empty ornate loading frame. Imagegen reconstructed only the filled track and status text areas."},
-    {"name":"progress","source":"startup-v1.png","rect":[220,1303,450,1326],"output":"build-templates/wechatgame/startup/progress.png","purpose":"Original gold fill texture; scaled and clipped inside track [202,1298,739,1330]."},
-    {"name":"status","position":[470.5,1382],"purpose":"Live status text; failed state is a retry hit target, no baked text."}
+    {
+      "name": "background",
+      "source": "startup-runtime-source.png",
+      "rect": [
+        0,
+        0,
+        941,
+        1672
+      ],
+      "output": "build-templates/wechatgame/startup/background.jpg",
+      "purpose": "Fixed illustration, title, subtitle, footer and empty ornate loading frame. Imagegen reconstructed only the filled track and status text areas."
+    },
+    {
+      "name": "progress",
+      "source": "startup-v1.png",
+      "rect": [
+        220,
+        1303,
+        450,
+        1326
+      ],
+      "output": "build-templates/wechatgame/startup/progress.png",
+      "purpose": "Original gold fill texture; scaled and clipped inside track [202,1298,739,1330]."
+    },
+    {
+      "name": "status",
+      "position": [
+        470.5,
+        1382
+      ],
+      "purpose": "Live status text; failed state is a retry hit target, no baked text."
+    }
   ],
-  "layout":"Uniform contain scale, centered on deep teal; no distortion or cropping of title/footer."
+  "layout": "Uniform cover scale, centered; fills the entire viewport without stretching, cropping peripheral decoration. Dynamic progress and retry hit target share the same transform."
 }

@@ -9,13 +9,13 @@
 - `build-templates/wechatgame/startup/background.jpg`：主包内压缩背景，约 306 KB。
 - `build-templates/wechatgame/startup/progress.png`：从原稿金色进度区裁切的纹理，约 8 KB。
 - 原生启动层按引擎加载阶段更新进度；90% 表示等待连接，非网络传输百分比。
-- 首次收到服务器状态后进入首页（有恢复对局/邀请时遵循原有路由），销毁启动纹理。失败/15 秒等待后在原画面显示可点击重试文字。
-- 背景按比例完整显示，长短屏余量用深绿色填充。动态状态和重试热区使用同一源坐标。
+- 服务器连接和首页必需素材全部就绪后进入首页（有恢复对局/邀请时遵循原有路由），销毁启动纹理。必需素材包括背景四层、首页九个美术控件、四张默认头像和数字滚轮。加载期间显示“正在准备首页…”，不暴露临时文字/方框界面；素材失败可在启动页重试，仅重载失败素材。连接失败/15 秒等待后提供连接重试。
+- 背景采用等比 cover 铺满全屏，按屏幕比例裁去外围装饰，不拉伸、不留上下色带。动态状态和重试热区使用同一源坐标。
 - 素材位于微信构建模板，不由 Cocos 资源库导入，因此无 `.meta`；导出脚本复制到主包，在引擎和分包加载前可用。
 
 ## 验证
 
-`npm test`、两项类型检查、`npm run build:wechat`。`scripts/verify-startup.cjs` 在浏览器运行原生 WebGL 渲染器，验证三种比例及交接画面。`scripts/verify-startup-cocos.cjs` 在 Web 构建注入原生交接数据，验证真实 Cocos 节点、首次登录失败、点击重试、成功进入首页及纹理释放。截图保存在 `docs/verification/startup/`。这些验证不等同于微信开发者工具真机测试。
+`npm test`、两项类型检查、`npm run build:wechat`。`scripts/verify-startup.cjs` 在浏览器运行原生 WebGL 渲染器，验证三种比例及交接画面。`scripts/verify-startup-cocos.cjs` 在 Web 构建注入原生交接数据，验证真实 Cocos 节点、首次登录失败、点击重试，并故意延迟图片下载，确认登录完成后仍保留启动画面、没有首页备用节点，素材齐备后才进入首页并释放纹理。截图保存在 `docs/verification/startup/`。这些验证不等同于微信开发者工具真机测试。
 
 ## 背景清理提示词
 

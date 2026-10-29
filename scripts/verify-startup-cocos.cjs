@@ -27,6 +27,13 @@ const { tmpdir } = require('node:os');
       window.startupRetryRect = window.__digitalBombStartup.retryRect;
       window.startupSurfaceHeight = window.__digitalBombStartup.surface.height;
     }, { source, background: data('build-templates/wechatgame/startup/background.jpg'), fill: data('build-templates/wechatgame/startup/progress.png') });
+    let releaseArt;
+    const artGate = new Promise(resolve => { releaseArt = resolve; });
+    let delayedTextures = 0;
+    await page.route('**/assets/resources/native/**', async route => {
+      if (/\.(png|jpe?g|webp)(\?|$)/i.test(route.request().url())) { delayedTextures++; await artGate; }
+      await route.continue();
+    });
     let failFirst;
     const gate = new Promise(resolve => { failFirst = resolve; });
     let requests = 0;
@@ -34,8 +41,8 @@ const { tmpdir } = require('node:os');
       if (++requests === 1) { await gate; await route.fulfill({ status: 503, body: '{}' }); }
       else await route.continue();
     });
-    const errors = []; page.on('pageerror', e => errors.push(e.message));
-    await page.goto('http://127.0.0.1:8080/?api=http://127.0.0.1:18789');
+    const errors = []; page.on('pageerror', e => errors.push(e.stack));
+    await page.goto('http://127.0.0.1:8080/?api=http://127.0.0.1:18789', { waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => window.cc?.director.getScene()?.getChildByName('Canvas')?.components.some(c => c.startupFrame && c.root?.getChildByName('Startup')));
     await page.waitForTimeout(500);
     fs.mkdirSync('docs/verification/startup', { recursive: true });
@@ -46,11 +53,22 @@ const { tmpdir } = require('node:os');
     await page.screenshot({ path: 'docs/verification/startup/cocos-retry.png' });
     const point = await page.evaluate(() => ({ x: (startupRetryRect.x + startupRetryRect.width / 2) * innerWidth / 750, y: (startupRetryRect.y + startupRetryRect.height / 2) * innerHeight / startupSurfaceHeight }));
     await page.mouse.click(point.x, point.y);
-    await page.waitForFunction(() => cc.director.getScene().getChildByName('Canvas').components.some(c => c.net?.state && !c.startupFrame));
+    await page.waitForTimeout(800);
+    await page.waitForFunction(() => cc.director.getScene().getChildByName('Canvas').components.some(c => c.net?.state));
+    assert.ok(delayedTextures > 0, 'test must actually delay native textures');
+    const waiting = await page.evaluate(() => {
+      const app = cc.director.getScene().getChildByName('Canvas').components.find(c => c.net);
+      return { retained: !!app.startupFrame, entered: app.startupEntered, names: app.root.children.map(n => n.name), status: app.startupStatus };
+    });
+    assert.equal(waiting.retained, true); assert.equal(waiting.entered, false);
+    assert.deepEqual(waiting.names, ['Startup']); assert.equal(waiting.status, '正在准备首页…');
+    await page.screenshot({ path: 'docs/verification/startup/cocos-waiting-art.png' });
+    releaseArt();
+    await page.waitForFunction(() => cc.director.getScene().getChildByName('Canvas').components.some(c => c.net?.state && !c.startupFrame && c.startupAssets.ready));
     await page.waitForTimeout(500);
     await page.screenshot({ path: 'docs/verification/startup/cocos-lobby.png' });
     assert.equal(requests, 2); assert.deepEqual(errors, []);
-    console.log('PASS: Cocos canvas texture handoff, failed login, real retry click, successful login, startup resource release and lobby. Native handoff simulated in Web; no device claim.');
+    console.log('PASS: Cocos canvas texture handoff, failed login, real retry click, successful login held behind startup while textures are delayed, complete artwork release and lobby. Native handoff simulated in Web; no device claim.');
   } finally {
     await browser.close(); server.kill('SIGTERM');
     await new Promise(done => { if (server.exitCode !== null) done(); else server.on('exit', done); });

@@ -13,7 +13,7 @@ export class SceneBackdrop {
   private motion = true;
   private disposed = false;
   private view: SceneView = 'lobby';
-  constructor(parent: Node) {
+  constructor(parent: Node, loadRequired?: (path: string, loaded: (texture: Texture2D) => void) => void) {
     this.root = new Node('PersistentStudy'); this.root.layer = Layers.Enum.UI_2D;
     parent.addChild(this.root); this.root.setSiblingIndex(0);
     this.fallback = this.makeNode('SceneFallback', this.root, 750, this.height);
@@ -26,15 +26,18 @@ export class SceneBackdrop {
     const names = ['room', 'table', 'near-left', 'near-right'];
     for (const name of names) {
       const n = this.makeNode(name, this.root, 750, this.height); n.active = false; this.layers.set(name, n);
-      resources.load('art/scene/' + name + '/texture', Texture2D, (err, texture) => {
-        if (err || this.disposed) return; // A missing layer keeps the complete fallback visible.
+      const loaded = (texture: Texture2D) => {
+        if (this.disposed) return;
         this.setTexture(n, texture);
         if (names.every(key => this.layers.get(key)!.getComponent(Sprite)?.spriteFrame)) {
           this.ready = true; this.fallback.active = false;
           for (const layer of this.layers.values()) layer.active = true;
           this.apply();
         }
-      });
+      };
+      const path = 'art/scene/' + name + '/texture';
+      if (loadRequired) loadRequired(path, loaded);
+      else resources.load(path, Texture2D, (err, texture) => { if (!err) loaded(texture); });
     }
   }
   private makeNode(name: string, parent: Node, w: number, h: number) {
