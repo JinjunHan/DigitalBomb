@@ -542,7 +542,9 @@ export class GameApp extends Component {
       if(!reel.current.isValid)return;
       const pose=this.lobbyShuffle.pose(i);
       reel.current.spriteFrame=this.lobbyDigitFrames[pose.digit];reel.next.spriteFrame=this.lobbyDigitFrames[pose.next];
-      reel.current.node.setPosition(0,pose.offset*reel.height);
+      reel.current.node.setPosition(0,pose.offset*reel.height-pose.bounce*reel.height*.08);
+      reel.current.node.setScale(1+pose.bounce*.035,1-pose.bounce*.07,1);
+      reel.next.node.active=pose.active;
       reel.next.node.setPosition(0,(pose.offset-1)*reel.height);
     });
   }
@@ -1268,7 +1270,9 @@ export class GameApp extends Component {
     if(this.roundNew?.isValid)this.roundNew.setPosition(0,pose.newY);
   }
   update(dt: number) {
-    this.lobbyShuffle.advance(dt,read('motion','1')==='1');this.applyLobbyShuffle();
+    const reelStops=this.lobbyShuffle.advance(dt,read('motion','1')==='1');
+    if(reelStops.length && !this.overlay && this.net.online)this.audio.play('tap');
+    this.applyLobbyShuffle();
     this.roundRoll.advance(dt,read('motion','1')==='1');this.applyRoundRoll();
     this.scenery?.update(dt);
     this.modals?.update(dt, read('motion', '1') === '1');

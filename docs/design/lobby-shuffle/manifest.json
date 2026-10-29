@@ -10,5 +10,5 @@
     "existing machine and blank paper slots",
     "clipped current/next numeral sprites"
   ],
-  "animation": "Immediate first roll; four reels staggered; 5s hold after all stop; no new audio."
+  "animation": "Immediate first roll; four reels stop 240ms apart, 180ms landing bounce and one existing tap cue each; 5s hold after all stop; no new audio."
 }
