@@ -1,0 +1,14 @@
+{
+  "source": "assets/resources/art/join/key-{0..9}.png",
+  "output": "assets/resources/art/lobby/digits.png",
+  "cell": [
+    64,
+    80
+  ],
+  "extraction": "Central glyph only; luminance matte excludes light paper, preserves dark glyph antialiasing. Fixed 56px glyph height; centered in each cell.",
+  "layers": [
+    "existing machine and blank paper slots",
+    "clipped current/next numeral sprites"
+  ],
+  "animation": "Immediate first roll; four reels staggered; 5s hold after all stop; no new audio."
+}

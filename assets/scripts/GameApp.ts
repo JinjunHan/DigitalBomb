@@ -10,7 +10,7 @@ import type { ModalKind } from './shared/modal-motion';
 import { MODAL_RECTS } from './shared/modal-art';
 import { confirmationValid, type ConfirmationContext, type ConfirmationKind } from './shared/modal-state';
 import { BATTLE_RECTS } from './shared/battle-art';
-import { matchingHourglass } from './shared/matching-hourglass';
+import { LobbyShuffle } from './shared/lobby-shuffle';
 import { SceneBackdrop } from './SceneBackdrop';
 import { InputEditSession } from './shared/input-edit-session';
 import { profileTransition } from './shared/profile-transition';
@@ -61,8 +61,9 @@ export class GameApp extends Component {
   private battleArtReady = false;
   private matchingArt = new Map<string, SpriteFrame>();
   private matchingArtReady = false;
-  private hourglass?: Sprite;
-  private hourglassFrames: SpriteFrame[] = [];
+  private lobbyShuffle = new LobbyShuffle();
+  private lobbyDigitFrames: SpriteFrame[] = [];
+  private lobbyReels: { current: Sprite; next: Sprite; height: number }[] = [];
   private joinDigits: Label[] = [];
   private joinGlows: UIOpacity[] = [];
   private joinButton?: Node;
@@ -155,18 +156,17 @@ export class GameApp extends Component {
         if (battleNames.every(key => this.battleArt.has(key))) { this.battleArtReady = true; this.render(); }
       });
     }
+    resources.load('art/lobby/digits/texture', Texture2D, (err, texture) => {
+      if (err || !this.isValid) return;
+      this.lobbyDigitFrames = Array.from({length:10},(_,i)=>{const f=new SpriteFrame();f.texture=texture;f.rect=new Rect(i*64,0,64,80);return f;});
+      this.render();
+    });
     const matchingNames = ['opponent', 'heading', 'base', 'hourglass-sheet', 'portrait-rim', 'nameplate', 'cancel'];
     for (const name of matchingNames) {
       resources.load('art/matching/' + name + '/texture', Texture2D, (err, texture) => {
         if (err || !this.isValid) return;
         const frame = new SpriteFrame(); frame.texture = texture; this.matchingArt.set(name, frame);
-        if (name === 'hourglass-sheet') {
-          this.hourglassFrames = Array.from({ length: 16 }, (_, index) => {
-            const cell = new SpriteFrame(); cell.texture = texture;
-            cell.rect = new Rect(index % 4 * 320, Math.floor(index / 4) * 320, 320, 320);
-            return cell;
-          });
-        }
+        if (name === 'hourglass-sheet') frame.rect = new Rect(0,0,320,320);
         if (matchingNames.every(key => this.matchingArt.has(key))) { this.matchingArtReady = true; this.render(); }
       });
     }
@@ -380,7 +380,7 @@ export class GameApp extends Component {
     if(this.noticeNode?.isValid){this.noticeNode.removeFromParent();this.noticeNode.destroy();}
     this.noticeNode=undefined;
     this.stopJoinMotion(); this.joinDigits = []; this.joinGlows = []; this.joinButton = undefined;
-    this.hourglass = undefined; this.roundOld = undefined; this.roundNew = undefined;
+    this.lobbyReels = []; this.roundOld = undefined; this.roundNew = undefined;
     this.profilePanel = undefined; this.profileBack = undefined; this.transitionLobby = undefined;
     for (const child of [...this.root.children]) { child.removeFromParent(); child.destroy(); }
     this.timerLabel = undefined; this.toastLabel = undefined;
@@ -389,6 +389,7 @@ export class GameApp extends Component {
       : state?.queuedAt != null ? 'matching' : this.page === 'join' ? 'friend' : 'lobby';
     this.scenery.setView(sceneView, read('motion', '1') === '1');
     const s = this.net.state;
+    this.lobbyShuffle.show(this.lobbyDigitFrames.length === 10 && this.lobbyArt.has('machine') && !!s && !s.room && s.queuedAt === null && this.page === 'lobby');
     if (!s) this.loading();
     else if (s.room) this.room(s.room);
     else if (s.queuedAt !== null) this.matching();
@@ -465,7 +466,13 @@ export class GameApp extends Component {
     if (!this.lobbySprite('title', 375, 330, 635 * fit, 350 * fit)) this.text('猜数字暗号', 375, 355, 72, C.cream, 660, 110);
     this.text('— 四位密码，一场智力对决 —', 375, 535, 25, C.cream, 630, 48);
     if (this.lobbySprite('machine', 375, 695, 565 * fit, 281 * fit)) {
-      for (let i = 0; i < 4; i++) this.text(String(i), 375 + (i - 1.5) * 84 * fit, 703, 62 * fit, C.ink, 66 * fit, 95 * fit);
+      if(this.lobbyDigitFrames.length)for(let i=0;i<4;i++) {
+        const clip=this.n('LobbyReel-'+i,375+(i-1.5)*84*fit,703,66*fit,95*fit);
+        clip.addComponent(Mask).type=Mask.Type.GRAPHICS_RECT;
+        const make=(name:string)=>{const n=this.n(name,375,667,64*fit,80*fit,clip);n.setPosition(0,0);const sprite=n.addComponent(Sprite);sprite.sizeMode=Sprite.SizeMode.CUSTOM;return sprite;};
+        this.lobbyReels.push({current:make('CurrentDigit'),next:make('NextDigit'),height:95*fit});
+      }
+      this.applyLobbyShuffle();
     } else this.cards('0123', 695, 88);
     this.lobbyButton('match-full', '在线匹配  ›', 375, 920, 610 * fit, 175 * fit, () => this.act('queue'), !this.busy);
     this.lobbyButton('friend-full', '好友对战  ›', 375, 1100, 610 * fit, 170 * fit, () => { this.page = 'join'; this.code = ''; this.render(); });
@@ -506,9 +513,8 @@ export class GameApp extends Component {
     };
     sprite('opponent', [383,157,555,329]); sprite('heading', [229,344,716,550]);
     sprite('base', [142,704,799,1010]);
-    // Uniform square cells keep the art pivot fixed, including tilted frames.
-    const hourglass = sprite('hourglass-sheet', [302.5,537,638.5,873], group, this.hourglassFrames[0]);
-    this.hourglass = hourglass.getComponent(Sprite)!;
+    // Use the upright first cell only; matching hourglass is intentionally static.
+    sprite('hourglass-sheet', [302.5,537,638.5,873]);
     this.timerLabel = this.text('',375,667,57,'#FFD978',225,72,group);
     this.timerLabel.fontFamily = 'Times New Roman'; this.timerLabel.isBold = true;
     this.timerLabel.node.setPosition(0,-913);
@@ -530,13 +536,15 @@ export class GameApp extends Component {
       cancel.on(Node.EventType.TOUCH_CANCEL,()=>cancel.setScale(1,1,1));
       cancel.on(Node.EventType.TOUCH_END,()=>{cancel.setScale(1,1,1);this.audio.unlock();this.audio.play('tap');this.act('cancelQueue');});
     }
-    this.applyMatchingMotion();
   }
-  private applyMatchingMotion() {
-    const queuedAt=this.net.state?.queuedAt;
-    if(!this.hourglass?.isValid || queuedAt == null || this.net.state?.room) return;
-    const frame=this.hourglassFrames[matchingHourglass((this.net.now()-queuedAt)/1000,read('motion','1')==='1')];
-    if(this.hourglass.spriteFrame !== frame) this.hourglass.spriteFrame=frame;
+  private applyLobbyShuffle() {
+    this.lobbyReels.forEach((reel,i)=>{
+      if(!reel.current.isValid)return;
+      const pose=this.lobbyShuffle.pose(i);
+      reel.current.spriteFrame=this.lobbyDigitFrames[pose.digit];reel.next.spriteFrame=this.lobbyDigitFrames[pose.next];
+      reel.current.node.setPosition(0,pose.offset*reel.height);
+      reel.next.node.setPosition(0,(pose.offset-1)*reel.height);
+    });
   }
   private join() {
     if (this.joinArtReady) { this.joinArtwork(); return; }
@@ -1260,9 +1268,9 @@ export class GameApp extends Component {
     if(this.roundNew?.isValid)this.roundNew.setPosition(0,pose.newY);
   }
   update(dt: number) {
+    this.lobbyShuffle.advance(dt,read('motion','1')==='1');this.applyLobbyShuffle();
     this.roundRoll.advance(dt,read('motion','1')==='1');this.applyRoundRoll();
     this.scenery?.update(dt);
-    this.applyMatchingMotion();
     this.modals?.update(dt, read('motion', '1') === '1');
     this.friendReturn?.update(dt, read('motion', '1') === '1');
     if (!this.profileMotion || !this.profilePanel?.isValid) return;
