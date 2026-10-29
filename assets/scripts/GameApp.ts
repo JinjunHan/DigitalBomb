@@ -893,7 +893,10 @@ export class GameApp extends Component {
     if(this.opponentFeedbackActive)this.setOpponentSeatVisible(false);
     const prefix=prep?'prep-':'play-';
     for(const key of ['1','2','3','4','5','6','7','8','9','delete','0','action']) {
-      const node=art(prefix+key);
+      // Keep gameplay keys inside the leather inset, clear of the tray's metal rim.
+      const rect=BATTLE_RECTS[prefix+key];
+      const keyRect=prep?rect:rect.map((v,i)=>i%2===0?470.5+(v-470.5)*.88:1425+(v-1425)*.84);
+      const node=art(prefix+key,keyRect);
       touch(node,()=>{if(key==='action') {if(prep)this.digit('随机','secret');else this.submitGuess();}
         else this.digit(key==='delete'?'删除':key,prep?'secret':'guess');}, editable && (key!=='action'||prep||this.draft.length===4));
     }
