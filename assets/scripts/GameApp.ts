@@ -1,4 +1,5 @@
 import { _decorator, Component, Node, UITransform, Label, Graphics, Color, Layers, view, ResolutionPolicy, resources, SpriteFrame, Sprite, Texture2D, profiler, tween, Tween, UIOpacity, Vec3, EditBox, input, Input, EventKeyboard, KeyCode, game, Game, BlockInputEvents, ScrollView, Mask, Vec2, Font, Rect } from 'cc';
+import { RoundRoll } from './shared/round-roll';
 import { FeedbackArt } from './FeedbackArt';
 import { feedbackEvent, cancellationArt, resultCaption, type FeedbackEvent } from './shared/feedback-state';
 import { FriendReturnLayer } from './FriendReturnLayer';
@@ -23,6 +24,9 @@ const reasons: Record<string, string> = { same_round: '同轮破解，旗鼓相�
 @ccclass('GameApp')
 export class GameApp extends Component {
   private audio!: GameAudio;
+  private roundRoll = new RoundRoll();
+  private roundOld?: Node;
+  private roundNew?: Node;
   private feedbackArt!: FeedbackArt;
   private suppressFeedback = false;
   private rematchNotice = '';
@@ -174,6 +178,7 @@ export class GameApp extends Component {
   private stateChanged() {
     const s = this.net.state!, r = s.room;
     const event = r ? feedbackEvent(r, s.me.id, { roomId: this.lastRoom, phase: this.lastPhase, guesses: this.seenGuesses }, this.suppressFeedback) : undefined;
+    if (r && this.suppressFeedback) this.roundRoll.sync(r.id, r.round, false, true);
     this.suppressFeedback = false;
     if (this.confirmation && !confirmationValid(this.confirmation, r, s.me.id)) {
       this.confirmation = undefined; this.confirmAction = undefined;
@@ -334,7 +339,7 @@ export class GameApp extends Component {
     }
     this.recordScrolls = [];
     this.stopJoinMotion(); this.joinDigits = []; this.joinGlows = []; this.joinButton = undefined;
-    this.hourglass = undefined;
+    this.hourglass = undefined; this.roundOld = undefined; this.roundNew = undefined;
     this.profilePanel = undefined; this.profileBack = undefined; this.transitionLobby = undefined;
     for (const child of [...this.root.children]) { child.removeFromParent(); child.destroy(); }
     this.timerLabel = undefined; this.toastLabel = undefined;
@@ -727,7 +732,27 @@ export class GameApp extends Component {
     touch(nameplate,()=>this.toast(opponent.name+(opponent.online?'':' · 连接中')));
     label(shortName(opponent.name,6),472,153,23,134,C.cream,30);
     art('card-backs');
-    const nav = art('round'); label(prep ? '设置底牌  ‹' : `第 ${r.round} 轮 / 20  ‹`,145,61,30,223,C.cream);
+    const nav = art('round');
+    const navText = (value: string, x: number, width: number, parent = nav) => {
+      const item = this.text(value,375,667,30,C.cream,width,44,parent);
+      item.node.setPosition(x,0);item.lineHeight=36;item.enableWrapText=false;
+      return item;
+    };
+    navText('‹',105,22);
+    if (prep) {
+      this.roundRoll.sync(r.id,0,false,true);
+      navText('设置底牌',-9,190);
+    } else {
+      navText('第',-78,32);navText('轮 / 20',32,94);
+      const clip = this.n('RoundDigitViewport',375,667,50,42,nav);clip.setPosition(-40,0);
+      clip.addComponent(Mask).type=Mask.Type.GRAPHICS_RECT;
+      this.roundRoll.sync(r.id,r.round,read('motion','1')==='1');
+      const oldDigit=navText(String(this.roundRoll.previous),0,50,clip);
+      const newDigit=navText(String(r.round),0,50,clip);
+      oldDigit.node.name='RoundPrevious';newDigit.node.name='RoundCurrent';
+      this.roundOld=oldDigit.node;this.roundNew=newDigit.node;
+      this.applyRoundRoll();
+    }
     touch(nav, () => { if (prep) this.ask('leave',()=>this.act('leave')); else { this.overlay='gameMenu';this.render(); } });
     const editable = !this.busy && this.net.online && (prep ? !r.ownSecret : r.current === me.id && this.net.now() >= r.startAt);
     if (prep) {
@@ -1095,7 +1120,13 @@ export class GameApp extends Component {
       this.transitionLobby.getComponent(UIOpacity)!.opacity = Math.round(255 * pose.lobbyOpacity);
     }
   }
+  private applyRoundRoll() {
+    const pose=this.roundRoll.pose;
+    if(this.roundOld?.isValid){this.roundOld.active=pose.active;this.roundOld.setPosition(0,pose.oldY);}
+    if(this.roundNew?.isValid)this.roundNew.setPosition(0,pose.newY);
+  }
   update(dt: number) {
+    this.roundRoll.advance(dt,read('motion','1')==='1');this.applyRoundRoll();
     this.scenery?.update(dt);
     this.applyMatchingMotion();
     this.modals?.update(dt, read('motion', '1') === '1');
