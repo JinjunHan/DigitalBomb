@@ -43,4 +43,4 @@
 
 微信构建已导出到 build/wechatgame/，主包 1974.2 KB，资源分包 37803.4 KB；场景/反馈贴图完整性检查通过。后端部署输入已生成在忽略目录 temp/wechat-service/release.json，可通过 scripts/prepare-wechat-deploy.mjs 重建。
 
-线上仅进行了只读侦察：digital-bomb.service 健康，微信登录密钥配置标志为 true（未读取密钥）。尚未改动线上代码或数据库，正在等待管理员确认备份部署与短暂重启。未经部署，线上旧服务不会保存新增头像字段，也没有邀请房间 ID 校验。
+2026-10-29 用户确认后已备份并部署：digital-bomb.service 重启健康，users.avatar_url 迁移完成，原用户数据保留。线上头像持久化、过期邀请拒绝及有效邀请入房验证通过。备份为 /www/backup/digital-bomb-wechat-20261029/。用户确认后台隐私配置尚未完成，将稍后处理；真实微信资料授权仍待配置及真机验收。未读取或修改 AppSecret。
