@@ -1,0 +1,32 @@
+[
+  {
+    "path": "art/profile/paper.png",
+    "master": "docs/design/package-masters/profile-paper.png",
+    "size": [
+      1166,
+      1349
+    ],
+    "beforeBytes": 2222996,
+    "afterBytes": 1006952,
+    "minQuality": 85,
+    "psnrDarkLight": [
+      46.95,
+      46.72
+    ]
+  },
+  {
+    "path": "art/matching/hourglass-sheet.png",
+    "master": "docs/design/package-masters/hourglass-sheet.png",
+    "size": [
+      1280,
+      1280
+    ],
+    "beforeBytes": 1734563,
+    "afterBytes": 501387,
+    "minQuality": 0,
+    "psnrDarkLight": [
+      40.24,
+      40.28
+    ]
+  }
+]

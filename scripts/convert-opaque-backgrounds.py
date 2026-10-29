@@ -3,7 +3,7 @@ from pathlib import Path
 from PIL import Image, ImageChops, ImageStat
 import json, math, shutil
 ROOT=Path(__file__).resolve().parents[1]
-SOURCES=[('art/lobby/background','lobby-background'),('art/scene/room','room'),('art/table','legacy-table')]
+SOURCES=[('art/lobby/background','lobby-background'),('art/scene/room','room')]
 masters=ROOT/'docs/design/opaque-backgrounds';masters.mkdir(parents=True,exist_ok=True)
 rows=[]
 for resource,name in SOURCES:
