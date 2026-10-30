@@ -19,3 +19,18 @@
 - 已停止连接在异步登录或后端认证返回后，不再发起下一阶段请求、保存 token 或打开 socket。
 
 验证：62 项测试通过；服务端、客户端类型检查通过；微信导出和包体检查通过。没有修改服务器配置、微信账号凭据或权限。尚未进行重新登录后的模拟器验证及真机验证。
+
+## 2026-10-30：开发者工具运行实例 JSON 解析失败
+
+另一次启动出现 `Uncaught SyntaxError: Unexpected end of JSON input`，堆栈为 `new l / 1981 / index.js`。在开发者工具 Sources 中点开对应调用并格式化，实际抛错代码位于工具运行层：
+
+```js
+const t = __global.prompt("GET_RUNTIME_INSTANCE_INFO");
+this.runtimeInstanceInfo = JSON.parse(t);
+```
+
+这是运行实例信息的解析，发生在该层 `loadAppService()` 之前；不是游戏 WebSocket 消息或后端登录响应的 JSON 解析。游戏中的两处 JSON.parse 均已有 try/catch。导出的 project.config.json、game.json 和 src/settings.json 均通过解析检查。
+
+环境为开发者工具 2.02.2609240 Stable / 基础库 3.17.5。重新编译、退出并重启工具、重新打开当前项目均仍复现。此前能进入游戏时为基础库 3.17.4；已确认本地设置下拉列表仍提供 3.17.4，但版本因素尚未得到对照实验验证，不应据此断言 3.17.5 是根因。
+
+本次未修改游戏代码、工具内部 JavaScript、用户存储或安全校验。重新执行微信导出与包体检查成功；本地导出成功不代表当前异常的模拟器已恢复。下一步是经用户确认后切换本地调试基础库做对照。
