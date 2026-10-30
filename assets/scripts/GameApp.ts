@@ -1,3 +1,5 @@
+import { rememberedDigitCount, modePreferenceKey, modeLabel, type MatchMode } from './shared/game-mode';
+import type { DigitCount } from './shared/deduction';
 import { LearningPanel } from './LearningPanel';
 import { STANDARD_ROUNDS } from './shared/deduction';
 import { WechatFlow, avatarUrl, type Invitation } from './shared/wechat-flow';
@@ -28,12 +30,14 @@ interface StartupScreen {
 }
 const { ccclass } = _decorator;
 const C = { ink: '#352719', cream: '#F7E7C8', paper: '#EAD5AC', gold: '#D8AA58', teal: '#173E3C', dark: '#102D2C', muted: '#C3C8B6', orange: '#D96A32', blue: '#2A4656' };
-const reasons: Record<string, string> = { same_round: '同轮破解，旗鼓相当', reply_missed: '后手补猜未命中', reply_timeout: '后手补猜超时', cracked: '四位密码全部破解', round_limit: '本局达到轮数上限', timeout: '连续两次行动超时', disconnect: '对方未能重新连接', resigned: '一方认输', prepare_timeout: '准备超时，本局不计胜负', room_expired: '房间已过期', player_left: '玩家离开，本局已取消', both_offline: '双方掉线，本局不计胜负' };
+const reasons: Record<string, string> = { same_round: '同轮破解，旗鼓相当', reply_missed: '后手补猜未命中', reply_timeout: '后手补猜超时', cracked: '密码全部破解', round_limit: '本局达到轮数上限', timeout: '连续两次行动超时', disconnect: '对方未能重新连接', resigned: '一方认输', prepare_timeout: '准备超时，本局不计胜负', room_expired: '房间已过期', player_left: '玩家离开，本局已取消', both_offline: '双方掉线，本局不计胜负' };
 
 @ccclass('GameApp')
 export class GameApp extends Component {
   private audio!: GameAudio;
   private learning = new LearningPanel();
+  private opponentCard?: SpriteFrame;
+  private digitCount(): DigitCount { return this.net.state?.room?.digitCount ?? 4; }
   private wxFlow!: WechatFlow;
   private profilePrompted = false;
   private pendingInvitation?: Invitation;
@@ -211,7 +215,7 @@ export class GameApp extends Component {
     this.wxFlow.start();
     this.resizeLayout(); this.connect(); this.schedule(this.updateTimer, 0.2);
   }
-  onDestroy() { clearTimeout(this.loginDeadline); this.releaseStartup(); this.wxFlow?.destroy(); if (this.feedbackArt) this.feedbackArt.disposed = true; this.friendReturn?.destroy(); this.modals?.destroy(); this.stopJoinMotion(); this.scenery?.destroy(); view.off('canvas-resize', this.resizeLayout, this); this.audio.dispose(); if (this.profilePanel) Tween.stopAllByTarget(this.profilePanel); this.clearEffects(); this.net.stop(); input.off(Input.EventType.KEY_DOWN, this.onKey, this); game.off(Game.EVENT_SHOW, this.onShow, this); game.off(Game.EVENT_HIDE, this.onHide, this); }
+  onDestroy() { this.opponentCard?.destroy(); clearTimeout(this.loginDeadline); this.releaseStartup(); this.wxFlow?.destroy(); if (this.feedbackArt) this.feedbackArt.disposed = true; this.friendReturn?.destroy(); this.modals?.destroy(); this.stopJoinMotion(); this.scenery?.destroy(); view.off('canvas-resize', this.resizeLayout, this); this.audio.dispose(); if (this.profilePanel) Tween.stopAllByTarget(this.profilePanel); this.clearEffects(); this.net.stop(); input.off(Input.EventType.KEY_DOWN, this.onKey, this); game.off(Game.EVENT_SHOW, this.onShow, this); game.off(Game.EVENT_HIDE, this.onHide, this); }
   private onHide() { this.wxFlow?.clearButton();this.audio.background(true); }
   private onShow() { this.audio.background(false); if (this.net.online) this.net.command('sync').catch(() => {}); }
   private loadStartupTexture(path: string, loaded: (texture: Texture2D) => void) {
@@ -260,6 +264,7 @@ export class GameApp extends Component {
     if (this.confirmation && !confirmationValid(this.confirmation, r, s.me.id)) {
       this.confirmation = undefined; this.confirmAction = undefined;
       if (this.overlay === 'confirm') this.overlay = '';
+      this.learning.close();
     }
     if (this.overlay === 'gameMenu' && (!r || !['playing', 'reply'].includes(r.phase))) this.overlay = '';
     if (this.overlay === 'guessRecords' && r && ['finished', 'cancelled'].includes(r.phase)) this.overlay = 'resultRecords';
@@ -351,7 +356,7 @@ export class GameApp extends Component {
     for (const child of [...this.effects.children]) { stop(child); child.removeFromParent(); child.destroy(); }
   }
   private feedback(title: string, hits: number | null, digits: string, caption: string, pending = false) {
-    this.showFeedback({ kind: 'own', title: pending ? '正在验证' : title, hits: hits ?? undefined, caption, art: hits === 4 ? 'own-gold' : 'own' }, pending);
+    this.showFeedback({ kind: 'own', title: pending ? '正在验证' : title, hits: hits ?? undefined, caption, art: hits === this.digitCount() ? 'own-gold' : 'own' }, pending);
   }
   private showFeedback(event: FeedbackEvent, pending = false) {
     this.clearEffects();
@@ -366,13 +371,13 @@ export class GameApp extends Component {
       this.feedbackArt.image(group, event.art, 0, 0, width);
       if (own) {
         this.feedbackArt.label(group, event.title, 0, -52, 335, 50, 34).isBold=true;
-        const value = this.feedbackArt.label(group, pending ? '···' : `${event.hits} / 4`, 0, 50, 310, 112, 80);
+        const value = this.feedbackArt.label(group, pending ? '···' : `${event.hits} / ${this.digitCount()}`, 0, 50, 310, 112, 80);
         value.font = this.friendDigitFont ?? null;
         this.feedbackArt.label(group, event.caption, 0, 158, 330, 38, 22);
       } else if (opponent) {
         const peer = this.net.state?.room?.players.find(p => p.id !== this.net.state?.me.id);
         if (peer) this.playerPortrait(group, peer, -210.6, -7.3, 100, false);
-        const value = this.feedbackArt.label(group, `${event.hits} / 4`, 24, -8, 285, 96, 68, event.urgent ? '#751F23' : C.ink);value.font = this.friendDigitFont ?? null;
+        const value = this.feedbackArt.label(group, `${event.hits} / ${this.digitCount()}`, 24, -8, 285, 96, 68, event.urgent ? '#751F23' : C.ink);value.font = this.friendDigitFont ?? null;
       } else if (event.kind === 'end') {
         // The fixed success/failure heading remains in the artwork. Overlay actual reason below.
         const label = this.feedbackArt.label(group, event.art.startsWith('timeout-')?'':event.caption, 0, 125, 420, 60, 23, C.ink);
@@ -409,9 +414,9 @@ export class GameApp extends Component {
     this.box(x, y, 64, 64, C.blue, 30); this.text(AVATARS[avatar] ?? '客', x, y, 30, C.cream, 60);
     this.text(name, x, y + 52, 21, C.cream, 240, 35);
   }
-  private cards(digits: string, y: number, size = 90, backs = false, editable = false) {
-    const gap = 12, start = 375 - 1.5 * (size + gap);
-    for (let i = 0; i < 4; i++) {
+  private cards(digits: string, y: number, size = 90, backs = false, editable = false, count = this.digitCount()) {
+    const gap = 12, start = 375 - (count - 1) / 2 * (size + gap);
+    for (let i = 0; i < count; i++) {
       const x = start + i * (size + gap), selected = editable && this.selected === i;
       const n = this.box(x, y - (selected ? 10 : 0), size, size * 1.25, backs ? C.blue : C.cream, 10);
       const g = n.getComponent(Graphics)!; g.strokeColor = new Color(backs ? C.gold : '#B9925A'); g.lineWidth = 1;
@@ -564,7 +569,7 @@ export class GameApp extends Component {
     const avatarFrame = this.lobbySprite('avatar-frame', 80, 120, 124, 123);
     for (const node of [nameplate, avatarBase, avatarFrame]) node?.on(Node.EventType.TOUCH_END, () => { this.audio.unlock(); this.audio.play('tap'); openProfile(); });
     if (!this.lobbySprite('title', 375, 330, 635 * fit, 350 * fit)) this.text('猜数字暗号', 375, 355, 72, C.cream, 660, 110);
-    this.text('— 四位密码，一场智力对决 —', 375, 535, 25, C.cream, 630, 48);
+    this.text('— 选择位数，破解对手的暗号 —', 375, 535, 25, C.cream, 630, 48);
     if (this.lobbySprite('machine', 375, 695, 565 * fit, 281 * fit)) {
       if(this.lobbyDigitFrames.length)for(let i=0;i<4;i++) {
         const clip=this.n('LobbyReel-'+i,375+(i-1.5)*84*fit,703,66*fit,95*fit);
@@ -574,7 +579,7 @@ export class GameApp extends Component {
       }
       this.applyLobbyShuffle();
     } else this.cards('0123', 695, 88);
-    this.lobbyButton('match-full', '在线匹配  ›', 375, 920, 610 * fit, 175 * fit, () => this.act('queue'), !this.busy);
+    this.lobbyButton('match-full', '在线匹配  ›', 375, 920, 610 * fit, 175 * fit, () => this.selectMode('public'), !this.busy);
     this.lobbyButton('friend-full', '好友对战  ›', 375, 1100, 610 * fit, 170 * fit, () => { this.page = 'join'; this.code = ''; this.render(); });
     this.lobbyButton('settings-full', '设置', 115, 1250, 76 * fit, 76 * fit, () => { this.overlay = 'settings'; this.render(); });
     this.lobbyButton('help-full', '怎么玩', 375, 1250, 285 * fit, 121 * fit, () => this.openLearning('menu'));
@@ -593,7 +598,7 @@ export class GameApp extends Component {
   }
   private matching() {
     if (this.matchingArtReady) { this.matchingArtwork(); return; }
-    this.header('在线匹配'); this.text('正在寻找对手', 375, 440, 44); this.text('准备迎接挑战了吗', 375, 505, 23, C.gold);
+    this.header('在线匹配'); this.text('正在寻找对手', 375, 440, 44); this.text(modeLabel(this.net.state?.queuedDigitCount ?? 4), 375, 505, 23, C.gold);
     this.box(375, 695, 260, 220, C.dark, 100); this.timerLabel = this.text('00:00', 375, 695, 54);
     const me = this.net.state!.me; this.portrait(me.name, me.avatar, 375, 925);
     this.button('取消匹配', 375, 1140, 520, 90, () => this.act('cancelQueue'), false, !this.busy);
@@ -618,6 +623,7 @@ export class GameApp extends Component {
     this.timerLabel = this.text('',375,667,57,'#FFD978',225,72,group);
     this.timerLabel.fontFamily = 'Times New Roman'; this.timerLabel.isBold = true;
     this.timerLabel.node.setPosition(0,-913);
+    const mode=this.text(modeLabel(this.net.state?.queuedDigitCount ?? 4),375,667,29,C.cream,520,50,group);mode.node.setPosition(0,-995);
     const me=this.net.state!.me, portrait=this.avatarFrame(me)??this.profileArt.get('avatar-'+me.avatar);
     const portraitBackground=this.profileArt.get('portrait-background');
     const portraitClip=this.n('MatchingPortraitClip',375,667,206,206,group);portraitClip.setPosition(1.5,-1160);
@@ -653,7 +659,7 @@ export class GameApp extends Component {
     this.header('好友对战', () => { this.page = 'lobby'; this.render(); });
     this.text('输入房间口令', 375, 340, 38); this.text('四位口令，加入好友的牌桌', 375, 402, 23, C.gold);
     this.cards(this.code, 520, 100); this.button('加入房间', 375, 680, 560, 85, () => this.act('join', { code: this.code }), true, this.code.length === 4 && !this.busy);
-    this.button('自己创建房间', 375, 782, 560, 70, () => this.act('create'), false, !this.busy); this.keypad(925, 'join');
+    this.button('自己创建房间', 375, 782, 560, 70, () => this.selectMode('friend'), false, !this.busy); this.keypad(925, 'join');
   }
   private joinArtwork() {
     // Fit the complete 941px source composition, including the keyboard, inside safe bounds.
@@ -689,7 +695,7 @@ export class GameApp extends Component {
       const opacity = glow.addComponent(UIOpacity); opacity.opacity = 0; this.joinGlows.push(opacity);
     }
     this.joinButton = art('join', [221, 716, 723, 842], () => this.act('join', { code: this.code }), this.code.length === 4 && !this.busy && this.net.online);
-    art('create', [244, 849, 699, 949], () => this.act('create'), !this.busy && this.net.online);
+    art('create', [244, 849, 699, 949], () => this.selectMode('friend'), !this.busy && this.net.online);
     art('keyboard', [0, 1047, 941, 1632]);
     const keys: [string, number[]][] = [
       ['1', [103,1100,341,1200]], ['2', [353,1100,591,1200]], ['3', [604,1100,842,1200]],
@@ -749,11 +755,12 @@ export class GameApp extends Component {
     if (context === 'join' && (this.friendReturn.active || this.busy || !this.net.online)) return;
     this.audio.play('tap');
     let v = context === 'join' ? this.code : this.draft;
+    const count = context === 'join' ? 4 : this.digitCount();
     if (value === '删除') v = v.slice(0, -1);
     else if (value === '清空') v = '';
-    else if (value === '随机') v = String(Math.floor(Math.random() * 10000)).padStart(4, '0');
-    else if (this.selected >= 0 && context !== 'join' && this.selected < v.length) { v = v.slice(0, this.selected) + value + v.slice(this.selected + 1); this.selected = this.selected < 3 ? this.selected + 1 : -1; }
-    else if (v.length < 4) v += value;
+    else if (value === '随机') v = String(Math.floor(Math.random() * 10 ** count)).padStart(count, '0');
+    else if (this.selected >= 0 && context !== 'join' && this.selected < v.length) { v = v.slice(0, this.selected) + value + v.slice(this.selected + 1); this.selected = this.selected < count - 1 ? this.selected + 1 : -1; }
+    else if (v.length < count) v += value;
     if (context === 'join') {
       const previous = this.code; this.code = v;
       if (this.joinDigits.length === 4 && this.joinDigits.every(label => label.isValid)) {
@@ -795,8 +802,8 @@ export class GameApp extends Component {
   private waiting(r: RoomView) {
     if (this.friendArtReady) { this.friendWaiting(r); return; }
     this.header('好友房', () => this.ask('close', () => this.act('leave')));
-    this.text('等待好友入座', 375, 390, 36); this.text('1 / 2', 375, 455, 24, C.gold);
-    this.box(375, 685, 650, 350, C.dark); this.text('房间口令', 375, 555, 28); this.cards(r.code!, 660, 100);
+    this.text('等待好友入座', 375, 390, 36); this.text(`1 / 2 · ${modeLabel(r.digitCount ?? 4)}`, 375, 455, 24, C.gold);
+    this.box(375, 685, 650, 350, C.dark); this.text('房间口令', 375, 555, 28); this.cards(r.code!, 660, 100, false, false, 4);
     this.button('复制口令', 375, 800, 340, 62, () => { this.copyRoomCode(r.code!); }, true);
     this.timerLabel = this.text('', 375, 930, 24); this.button('关闭房间', 375, 1120, 520, 88, () => this.ask('close', () => this.act('leave')));
   }
@@ -832,6 +839,7 @@ export class GameApp extends Component {
     art('back', 133.5, 81, 199, 84, close);
     art('heading', 471, 80, 320, 96);
     art('waiting', 471, 328, 158, 148);
+    label(modeLabel(r.digitCount ?? 4),471,430,29,C.cream,540,50);
     art('count', 471.5, 488, 187, 76);
     label(`${r.players.length}/2`, 492, 487, 37, C.cream, 78, 50);
     art('paper', 478.5, 814.5, 807, 561);
@@ -863,7 +871,7 @@ export class GameApp extends Component {
   }
   /** Both battle screens use the reference coordinate system and one safe-area transform. */
   private battleArtwork(r: RoomView) {
-    const prep = r.phase === 'preparing', me = this.net.state!.me;
+    const prep = r.phase === 'preparing', me = this.net.state!.me, count = r.digitCount ?? 4;
     const opponent = r.players.find(p => p.id !== me.id)!;
     const scale = Math.min(750 / 941, (this.screenHeight - this.layoutTop - bottomSafeInset() - 16) / (prep ? 1590 : 1750));
     const group = this.n('BattleRoom', 375, 667, 941, 1672);
@@ -899,7 +907,12 @@ export class GameApp extends Component {
     const nameplate=art('nameplate',[355,134,586,179]);
     touch(nameplate,()=>this.toast(opponent.name+(opponent.online?'':' · 连接中')));
     label(shortName(opponent.name,7),472,156,29,208,C.cream,38).node.name='OpponentNickname';
-    art('card-backs');
+    if (count === 4) art('card-backs');
+    else {
+      if (!this.opponentCard) { this.opponentCard = new SpriteFrame(); this.opponentCard.texture = this.battleArt.get('card-backs')!.texture; this.opponentCard.rect = new Rect(214,0,94,128); }
+      const backs=this.n('Battle-card-backs',375,667,1,1,group);backs.setPosition(0,0);
+      for(let i=0;i<count;i++){const x=470+(i-(count-1)/2)*77;art('mode-back',[x-47,175,x+47,303],this.opponentCard,backs);}
+    }
     const nav = art('round');
     const navText = (value: string, x: number, width: number, parent = nav) => {
       const item = this.text(value,375,667,30,C.cream,width,44,parent);
@@ -909,8 +922,9 @@ export class GameApp extends Component {
     navText('‹',105,22);
     if (prep) {
       this.roundRoll.sync(r.id,0,false,true);
-      navText('设置底牌',-9,190);
+      navText(`${count}位·设置底牌`,-9,190);
     } else {
+      label(`${count} 位密码`,150,139,25,240,C.cream,42);
       navText('第',-78,32);navText(`轮 / ${r.roundLimit ?? STANDARD_ROUNDS}`,32,94);
       const clip = this.n('RoundDigitViewport',375,667,50,42,nav);clip.setPosition(-40,0);
       clip.addComponent(Mask).type=Mask.Type.GRAPHICS_RECT;
@@ -925,7 +939,9 @@ export class GameApp extends Component {
     const editable = !this.busy && this.net.online && (prep ? !r.ownSecret : r.current === me.id && this.net.now() >= r.startAt);
     if (prep) {
       art('status',[355,299,586,344]); label(opponent.ready ? '对手已准备' : '对手正在设置',470,323,28,215,C.cream);
-      art('heading'); art('timer');
+      if(count===4)art('heading');
+      else {art('mode-heading',[179,362,762,463],this.modalArt.get('tab-off')??this.profileArt.get('input'));label(`设置你的 ${count} 位密码`,470,411,40,530,C.ink,70);}
+      art('timer');
       this.timerLabel=label('',497,489,42,70,'#FFD978',54);
       if(this.friendDigitFont) this.timerLabel.font=this.friendDigitFont;
       this.timerLabel.lineHeight=46;
@@ -934,19 +950,19 @@ export class GameApp extends Component {
       const value=r.ownSecret ?? this.draft;
       // Palms behind the fan; only isolated thumbs cross card fronts.
       art('hands');art('hand-right');
-      const selected=editable ? (this.selected>=0 ? this.selected : value.length<4 ? value.length : -1) : -1;
-      const order=[0,1,2,3].sort((a,b)=>Number(a===selected)-Number(b===selected));
+      const selected=editable ? (this.selected>=0 ? this.selected : value.length<count ? value.length : -1) : -1;
+      const order=Array.from({length:count},(_,i)=>i).sort((a,b)=>Number(a===selected)-Number(b===selected));
       const paper=this.battleArt.get('card-paper')!,ratio=paper.originalSize.height/paper.originalSize.width;
       for(const i of order) {
-        const active=i===selected,x=248+i*149,y=752+(i===0||i===3?25:0)-(active?18:0);
+        const active=i===selected,x=471.5+(i-(count-1)/2)*149,y=752+(i===0||i===count-1?25:0)-(active?18:0);
         const cardGroup=this.n('SecretCard-'+i,375,667,202,202*ratio,group);cardGroup.setPosition(0,0);
-        if(active){const edge=art('card-selected',[x-102,y-102*ratio,x+102,y+102*ratio],undefined,cardGroup);edge.angle=[14,5,-5,-14][i];}
-        const card=art('card-paper',[x-96,y-96*ratio,x+96,y+96*ratio],paper,cardGroup);card.angle=[14,5,-5,-14][i];
+        if(active){const edge=art('card-selected',[x-102,y-102*ratio,x+102,y+102*ratio],undefined,cardGroup);edge.angle=count===4?[14,5,-5,-14][i]:((count-1)/2-i)*10;}
+        const card=art('card-paper',[x-96,y-96*ratio,x+96,y+96*ratio],paper,cardGroup);card.angle=count===4?[14,5,-5,-14][i]:((count-1)/2-i)*10;
         const digit=number(value[i]??'',x,y,132,155,172,cardGroup);digit.node.angle=card.angle;
         if(editable){touch(card,()=>{this.selected=i;this.render();});touch(digit.node,()=>{this.selected=i;this.render();});}
       }
       art('left-thumb');art('right-thumb');
-      const lock=art('lock');touch(lock,()=>this.lockSecret(),editable&&this.draft.length===4);
+      const lock=art('lock');touch(lock,()=>this.lockSecret(),editable&&this.draft.length===count);
       art('status',[230,1546,711,1603]);
       label(r.ownSecret ? '底牌已锁定，等待对手' : 'ⓘ 锁定后本局不可修改',470,1572,29,650,C.gold);
     } else {
@@ -961,15 +977,15 @@ export class GameApp extends Component {
       const content=this.n('BattleRecordsContent',375,667,width,Math.max(height,rows.length*rowHeight),viewport);
       content.getComponent(UITransform)!.setAnchorPoint(.5,1);content.setPosition(0,height/2);
       const scroll=viewport.addComponent(ScrollView);scroll.content=content;scroll.horizontal=false;scroll.vertical=true;scroll.inertia=true;scroll.elastic=false;scroll.cancelInnerEvents=true;
-      if(!rows.length)label('暂无记录，输入四位数字开始猜测',470,532,27,620);
+      if(!rows.length)label(`暂无记录，输入 ${count} 位数字开始猜测`,470,532,27,620);
       rows.forEach((h,i)=>{
         const y=i*rowHeight+45;
-        const rowNode=art('record-row',[149,y-45,805,y+45],undefined,content);
+        const rowNode=art('record-row',[149,y-45,805,y+45],count===4?undefined:this.modalArt.get('record-row'),content);
         touch(rowNode,()=>{if(h.digits)this.copyGuess(h.digits);},editable&&!!h.digits);
         label(`第${Math.floor(h.turn/2)+1}轮`,231,y,30,145,C.ink,45,content);
-        if(h.digits)for(let j=0;j<4;j++)number(h.digits[j],349+j*88,y,45,67,68,content);
+        if(h.digits)for(let j=0;j<count;j++)number(h.digits[j],481+(j-(count-1)/2)*88,y,45,67,68,content);
         else label('本次超时',481,y,30,350,C.ink,45,content);
-        label(h.hits===null?'—':`${h.hits}/4`,727,y,35,110,'#FFD978',52,content);
+        label(h.hits===null?'—':`${h.hits}/${r.digitCount ?? 4}`,727,y,35,110,count===4?'#FFD978':C.ink,52,content);
       });
       const scrollKey=`battle:${r.id}:${me.id}`,position=this.recordPositions.get(scrollKey),max=Math.max(0,rows.length*rowHeight-height);
       scroll.scrollToOffset(new Vec2(0,position&&!position.bottom?Math.min(max,position.offset):max));
@@ -982,15 +998,17 @@ export class GameApp extends Component {
         const update=()=>place(thumb,822,397+thumbHeight/2+Math.max(0,Math.min(1,scroll.getScrollOffset().y/max))*(height-thumbHeight));
         viewport.on(ScrollView.EventType.SCROLLING,update);update();
       }
-      art('guess');
-      for(let i=0;i<4;i++) {
-        const digit=number(this.draft[i] ?? '',298+i*116,840,77,95,106);
+      if(count===4)art('guess');else label('本次猜测',470,759,33,500,C.cream,55);
+      for(let i=0;i<count;i++) {
+        const x=472+(i-(count-1)/2)*116;
+        if(count!==4)art('mode-slot',[x-49,773,x+49,907],this.battleArt.get('card-paper'));
+        const digit=number(this.draft[i] ?? '',x,840,77,95,106);
         touch(digit.node,()=>{this.selected=i;this.render();},editable);
       }
       art('play-hand-left');art('play-hand-right');
-      for(let i=0;i<4;i++) {
-        const x=306+i*105,y=1030+(i===0||i===3?15:0);
-        const card=art('card-paper',[x-69,y-95,x+69,y+95]);card.angle=[16,6,-6,-16][i];
+      for(let i=0;i<count;i++) {
+        const x=463.5+(i-(count-1)/2)*105,y=1030+(i===0||i===count-1?15:0);
+        const card=art('card-paper',[x-69,y-95,x+69,y+95]);card.angle=count===4?[16,6,-6,-16][i]:((count-1)/2-i)*12;
         const digit=number(this.hideSecret?'?':r.ownSecret?.[i] ?? '',x,y,83,100,115);digit.node.angle=card.angle;
         touch(card,()=>{this.hideSecret=!this.hideSecret;this.render();});touch(digit.node,()=>{this.hideSecret=!this.hideSecret;this.render();});
       }
@@ -1021,17 +1039,17 @@ export class GameApp extends Component {
       const keyRect=prep?rect:rect.map((v,i)=>i%2===0?470.5+(v-470.5)*.88:keyboardY(1425+(v-1425)*.84));
       const node=art(prefix+key,keyRect);
       touch(node,()=>{if(key==='action') {if(prep)this.digit('随机','secret');else this.submitGuess();}
-        else this.digit(key==='delete'?'删除':key,prep?'secret':'guess');}, editable && (key!=='action'||prep||this.draft.length===4));
+        else this.digit(key==='delete'?'删除':key,prep?'secret':'guess');}, editable && (key!=='action'||prep||this.draft.length===count));
     }
   }
   private preparation(r: RoomView) {
     this.text(r.players.find(p => p.id !== this.net.state!.me.id)?.ready ? '对手已准备' : '对手正在设置', 375, 365, 22, C.gold);
-    this.timerLabel = this.text('', 375, 425, 28); this.text(r.ownSecret ? '底牌已锁定，等待对手' : '设置你的四位密码', 375, 485, 34);
+    this.timerLabel = this.text('', 375, 425, 28); this.text(r.ownSecret ? '底牌已锁定，等待对手' : `设置你的 ${r.digitCount ?? 4} 位密码`, 375, 485, 34);
     this.cards(r.ownSecret ?? this.draft, 625, 112, false, !r.ownSecret); this.text('允许重复，允许 0 开头', 375, 730, 22, C.gold);
     this.keypad(835, 'secret', !r.ownSecret && this.net.online);
-    this.button(r.ownSecret ? '已准备' : '锁定并准备', 375, 1195, 610, 84, () => this.lockSecret(), true, !r.ownSecret && this.draft.length === 4 && !this.busy);
+    this.button(r.ownSecret ? '已准备' : '锁定并准备', 375, 1195, 610, 84, () => this.lockSecret(), true, !r.ownSecret && this.draft.length === this.digitCount() && !this.busy);
   }
-  private lockSecret() { const digits = this.draft; if (digits.length === 4) this.ask('lock', () => this.act('lock', { digits })); }
+  private lockSecret() { const digits = this.draft; if (digits.length === this.digitCount()) this.ask('lock', () => this.act('lock', { digits })); }
   private recordTabs(r: RoomView, y: number) {
     const me = this.net.state!.me.id;
     for (const [opponent, x] of [[false, 180], [true, 405]] as const) {
@@ -1060,7 +1078,7 @@ export class GameApp extends Component {
       this.box(375, y, 602, rowHeight - 5, i === rows.length - 1 ? '#E1BE82' : '#EBD6B1', 6, content);
       this.text(`第 ${Math.floor(h.turn / 2) + 1} 轮`, 135, y, 20, C.ink, 115, rowHeight - 8, content);
       this.text(h.digits ? h.digits.split('').join('  ') : '本次超时', 365, y, 29, C.ink, 300, rowHeight - 8, content);
-      this.text(h.hits === null ? '—' : `${h.hits}/4`, 610, y, 26, h.hits === 4 ? C.teal : C.orange, 90, rowHeight - 8, content);
+      this.text(h.hits === null ? '—' : `${h.hits}/${r.digitCount ?? 4}`, 610, y, 26, h.hits === (r.digitCount ?? 4) ? C.teal : C.orange, 90, rowHeight - 8, content);
     });
     if (!rows.length) this.text('暂无记录，提交数字后会显示在这里', 375, top + height / 2, 22, expanded ? C.cream : C.ink, 590);
     const state = this.recordPositions.get(key);
@@ -1084,10 +1102,10 @@ export class GameApp extends Component {
     this.timerLabel = this.text('', 375, 942, 25, C.gold);
     this.keypad(1004, 'guess', mine && this.net.online && this.net.now() >= r.startAt);
     // The last keypad key becomes submit; keeps a complete 0–9 keyboard on one screen.
-    this.button(this.submitting ? '验证中…' : '确认猜测', 585, 1244, 194, 66, () => this.submitGuess(), true, mine && this.draft.length === 4 && this.net.online && !this.busy && this.net.now() >= r.startAt);
+    this.button(this.submitting ? '验证中…' : '确认猜测', 585, 1244, 194, 66, () => this.submitGuess(), true, mine && this.draft.length === this.digitCount() && this.net.online && !this.busy && this.net.now() >= r.startAt);
   }
   private submitGuess() {
-    const r = this.net.state?.room; if (!r || this.draft.length !== 4 || r.current !== this.net.state?.me.id) return;
+    const r = this.net.state?.room; if (!r || this.draft.length !== (r.digitCount ?? 4) || r.current !== this.net.state?.me.id) return;
     const digits = this.draft; const submit = () => this.act('guess', { digits, turn: r.turn });
     if (r.history.some(h => h.playerId === this.net.state!.me.id && h.digits === this.draft)) this.ask('repeat', submit); else submit();
   }
@@ -1113,8 +1131,8 @@ export class GameApp extends Component {
     label('对手猜测',-210,688,250,60,32);label(`${count(peer?.id??'')} 次`,235,688,150,60,36);
     label('我的底牌',-230,830,200,70,30);label('对手密码',-230,998,200,70,30);
     for(const [digits,y] of [[r.ownSecret??'',830],[r.revealed?.[peer?.id??'']??'',998]] as const) {
-      for(let i=0;i<4;i++) {
-        const x=-62+i*111;
+      for(let i=0;i<(r.digitCount??4);i++) {
+        const x=104.5+(i-((r.digitCount??4)-1)/2)*111;
         const n=this.feedbackArt.group(group,'ResultDigit',-y);n.setPosition(x,-y);
         const sprite=n.addComponent(Sprite);sprite.spriteFrame=this.battleArt.get('card-paper')??this.joinArt.get('digit-slot')??null;sprite.sizeMode=Sprite.SizeMode.CUSTOM;n.getComponent(UITransform)!.setContentSize(98,125);
         const digit=label(digits[i]??'—',x,y,90,110,72);digit.font=this.friendDigitFont??null;
@@ -1124,7 +1142,7 @@ export class GameApp extends Component {
     if (r.mode === 'friend') {
       this.button('确认 · 返回房间', 375, 1190, 610, 82, () => this.act('returnToRoom'), true, !this.busy);
     } else {
-      art('match',-200,1300,368,()=>{if(!this.busy)this.act('queue');});
+      art('match',-200,1300,368,()=>{if(!this.busy)this.selectMode('public');});
       art('result-home',200,1300,362,home);
     }
   }
@@ -1139,7 +1157,7 @@ export class GameApp extends Component {
     if (r.phase === 'finished' && r.mode === 'friend') {
       this.button('确认 · 返回房间', 375, 1100, 610, 82, () => this.act('returnToRoom'), true, !this.busy);
     } else {
-      if (r.phase === 'finished') this.button('重新匹配', 375, 1055, 610, 82, () => this.act('queue'), false, !this.busy);
+      if (r.phase === 'finished') this.button('重新匹配', 375, 1055, 610, 82, () => this.selectMode('public'), false, !this.busy);
       this.button('返回大厅', 375, 1160, 610, 82, () => { this.page = 'lobby'; this.act('leave'); });
     }
     this.button('查看本局记录', 375, 1245, 300, 48, () => { this.overlay = 'resultRecords'; this.render(); });
@@ -1403,9 +1421,13 @@ export class GameApp extends Component {
   private ask(kind: ConfirmationKind, action: () => void) {
     const room = this.net.state?.room; if (!room) return;
     this.confirmation = { kind, roomId: room.id, turn: room.turn, digits: this.draft };
-    this.confirmAction = action; this.overlay = 'confirm'; this.render();
+    this.confirmAction = action;
+    if (this.digitCount() !== 4 && (kind === 'lock' || kind === 'repeat')) {
+      this.overlay='';this.learning.openConfirmation(kind,this.draft,this.acceptModal,this.closeModal);
+    } else this.overlay = 'confirm';
+    this.render();
   }
-  private closeModal = () => { this.overlay = ''; this.confirmation = undefined; this.confirmAction = undefined; this.render(); };
+  private closeModal = () => { this.learning.close(); this.overlay = ''; this.confirmation = undefined; this.confirmAction = undefined; this.render(); };
   private acceptModal = () => {
     const pending = this.confirmation, state = this.net.state;
     if (!pending || !state || !this.net.online || this.busy || !confirmationValid(pending, state.room, state.me.id)) { this.closeModal(); return; }
@@ -1420,6 +1442,17 @@ export class GameApp extends Component {
     this.net.onState = () => this.stateChanged(); this.net.onStatus = () => { if (!this.net.online) this.suppressFeedback = true; this.render(); }; this.net.onError = s => this.toast(s);
     this.render();
     try { await this.connect(); } finally { this.reconnecting = false; this.render(); }
+  }
+  private selectMode(mode: MatchMode) {
+    const state=this.net.state;if(!state||!this.net.online||this.busy)return;
+    const key=modePreferenceKey(state.me.id,mode);
+    this.overlay='';
+    this.learning.openMode(mode,rememberedDigitCount(read(key,'')),size=>{
+      if(this.busy||!this.net.online)return;
+      write(key,String(size));this.learning.close();
+      void this.act(mode==='public'?'queue':'create',{digitCount:size});
+    });
+    this.render();
   }
   private openLearning(page: 'menu' | 'rules' | 'clues') {
     this.overlay = ''; this.learning.open(page); this.render();

@@ -13,9 +13,9 @@ export function feedbackEvent(room: RoomView, me: string, previous: { roomId: st
   if (!fresh) return;
   const own = fresh.playerId === me;
   if (fresh.hits === null) return { kind: 'timeout', title: '', caption: '', art: own ? 'timeout-0' : 'timeout-1' };
-  const hits = fresh.hits;
-  if (own) return { kind: 'own', hits, title: hits === 4 ? '全部命中' : '我的猜测', caption: hits === 4 ? '等待对手本轮补猜' : clueCaption(fresh), art: hits === 4 ? 'own-gold' : 'own' };
-  return { kind: 'opponent', hits, title: '', caption: '', art: 'opponent-' + hits, urgent: hits >= 3 };
+  const hits = fresh.hits, size = room.digitCount ?? 4;
+  if (own) return { kind: 'own', hits, title: hits === size ? '全部命中' : '我的猜测', caption: hits === size ? '等待对手本轮补猜' : clueCaption(fresh), art: hits === size ? 'own-gold' : 'own' };
+  return { kind: 'opponent', hits, title: '', caption: '', art: 'opponent-' + (hits === size ? 4 : hits), urgent: hits >= size - 1 };
 }
 export function cancellationArt(reason?: string) {
   return 'cancel-' + ({ prepare_timeout: 0, room_expired: 1, player_left: 2, both_offline: 3 }[reason ?? ''] ?? 2);
@@ -30,6 +30,6 @@ export function resultCaption(room: RoomView, me: string): string {
     case 'same_round': return '同轮破解，默契十足';
     case 'round_limit': return `${room.roundLimit ?? STANDARD_ROUNDS}轮结束，本局平局`;
     case 'reply_missed': return ownLoss ? '本轮补猜未命中' : '对手补猜未命中';
-    default: return ownLoss ? '对手破解了你的暗号' : '四位密码全部破解';
+    default: return ownLoss ? '对手破解了你的暗号' : `${room.digitCount ?? 4} 位密码全部破解`;
   }
 }

@@ -2,6 +2,7 @@ import { BlockInputEvents, Color, Graphics, Label, Layers, Node, Sprite, SpriteF
 import { clueCaption, compareClues, deduce, STANDARD_ROUNDS, STANDARD_TURN_MS, type Clue, type DigitCount } from './shared/deduction';
 import { Practice, Tutorial } from './shared/learning';
 import type { RoomView } from './shared/protocol';
+import { modeLabel, type MatchMode } from './shared/game-mode';
 
 interface Context {
   parent: Node; height: number; top: number; bottom: number;
@@ -9,7 +10,7 @@ interface Context {
   room?: RoomView | null; me: string; now: number;
   redraw: () => void; copy: (digits: string) => void; completed: () => void;
 }
-type Page = 'menu' | 'rules' | 'tutorial' | 'practice' | 'clues';
+type Page = 'menu' | 'rules' | 'tutorial' | 'practice' | 'clues' | 'mode' | 'confirmation';
 /** Local teaching and practice never send guesses to the multiplayer service. */
 export class LearningPanel {
   visible = false;
@@ -29,6 +30,17 @@ export class LearningPanel {
   private group!: Node;
   private timer?: Label;
   private timerRoom?: RoomView;
+  private matchMode: MatchMode = 'public';
+  private selectedMode: DigitCount = 4;
+  private chooseMode?: (size: DigitCount) => void;
+  private confirmation?: { kind: 'lock' | 'repeat'; digits: string; accept: () => void; cancel: () => void };
+
+  openMode(mode: MatchMode, previous: DigitCount, choose: (size: DigitCount) => void) {
+    this.visible = true; this.page = 'mode'; this.matchMode = mode; this.selectedMode = previous; this.chooseMode = choose;
+  }
+  openConfirmation(kind: 'lock' | 'repeat', digits: string, accept: () => void, cancel: () => void) {
+    this.visible = true; this.page = 'confirmation'; this.confirmation = { kind, digits, accept, cancel };
+  }
 
   open(page: 'menu' | 'rules' | 'clues' = 'menu') {
     this.visible = true; this.page = page; this.message = '';
@@ -97,14 +109,18 @@ export class LearningPanel {
     this.group.setScale(scale, scale, 1); this.group.setPosition(0, (context.bottom - context.top) / 2);
     if (context.paper) this.art(context.paper, 375, 450, 750, 750 * context.paper.originalSize.height / context.paper.originalSize.width);
     this.button('返回', 140, 106, 120, () => {
-      if (this.page === 'clues' && this.practice && !context.room) this.go('practice');
+      if (this.page === 'confirmation') this.confirmation?.cancel();
+      else if (this.page === 'mode') { this.close(); this.refresh(); }
+      else if (this.page === 'clues' && this.practice && !context.room) this.go('practice');
       else if (this.page !== 'menu' && !context.room) this.go('menu');
       else { this.close(); this.refresh(); }
     });
     if (!context.paper || !context.button) {
       this.text('学习素材加载中，请稍候或返回重试', 375, 400, 600, 80, 28, '#FFFFFF'); return;
     }
-    if (this.page === 'menu') this.menu();
+    if (this.page === 'mode') this.modeSelection();
+    else if (this.page === 'confirmation') this.confirm();
+    else if (this.page === 'menu') this.menu();
     else if (this.page === 'rules') this.rules();
     else if (this.page === 'tutorial') this.teach();
     else if (this.page === 'practice') this.training();
@@ -112,6 +128,28 @@ export class LearningPanel {
     if (context.room && ['playing', 'reply', 'preparing'].includes(context.room.phase)) {
       this.timer = this.text('', 375, 795, 590, 36, 22, '#8E351D'); this.update(context.now);
     }
+  }
+  private modeSelection() {
+    this.text(this.matchMode === 'public' ? '在线匹配 · 选择位数' : '创建好友房 · 选择位数', 430, 110, 400, 65, 30);
+    this.text('首次默认 4 位，以后记住你的选择', 375, 220, 580, 65, 26);
+    for (const [i, size] of ([2, 3, 4] as const).entries()) {
+      this.button(`${this.selectedMode === size ? '✓ ' : ''}${modeLabel(size)} · ${10 ** size} 种组合`, 375, 330 + i * 105, 550, () => { this.selectedMode = size; this.refresh(); }, true, 84);
+    }
+    this.text(this.matchMode === 'public' ? '只匹配相同位数的对手，自动对手也遵守此规则。' : '加入者遵循房主设置，创建后本房位数不变。\n房间口令始终是四位，和密码位数无关。', 375, 645, 580, 95, 24);
+    this.button(this.matchMode === 'public' ? '开始匹配' : '创建房间', 375, 760, 480, () => this.chooseMode?.(this.selectedMode), true, 80);
+  }
+  private confirm() {
+    const pending = this.confirmation!;
+    this.text(pending.kind === 'lock' ? '确认锁定底牌' : '确认重复猜测', 430, 110, 400, 65, 32);
+    this.text(`本局 ${pending.digits.length} 位密码`, 375, 250, 580, 60, 28);
+    Array.from(pending.digits).forEach((digit, i) => {
+      const x = 375 + (i - (pending.digits.length - 1) / 2) * 130;
+      if (this.context.card) this.art(this.context.card, x, 400, 100, 137);
+      this.text(digit, x, 400, 90, 120, 65);
+    });
+    this.text(pending.kind === 'lock' ? '锁定后本局不可修改。' : '这组数字已经猜过，仍会消耗一次机会。', 375, 565, 580, 90, 27);
+    this.button('取消', 220, 710, 250, pending.cancel);
+    this.button('确认', 530, 710, 250, pending.accept);
   }
   update(now: number) {
     if (!this.timer?.isValid || !this.timerRoom) return;
@@ -135,7 +173,8 @@ export class LearningPanel {
     const rounds = this.context.room?.roundLimit ?? STANDARD_ROUNDS;
     const seconds = (this.context.room?.turnMs ?? STANDARD_TURN_MS) / 1000;
     this.text('对战规则', 410, 110, 350, 60, 36);
-    this.text('① 各自设置四位密码\n每位 0～9，可以重复、可以 0 开头。', 375, 240, 570, 100, 27);
+    const passwordRule = this.context.room ? `① 各自设置 ${this.context.room.digitCount ?? 4} 位密码` : '① 选择 2 / 3 / 4 位密码，默认 4 位';
+    this.text(`${passwordRule}\n每位 0～9，可以重复、可以 0 开头。`, 375, 240, 570, 100, 27);
     this.text('② 轮流猜测对方的密码\n只反馈数字与位置同时正确的数量。\n0 命中不代表这些数字不在密码中。', 375, 400, 570, 135, 27);
     this.text('③ 同一大轮，双方机会相同\n先手猜中，后手仍可补猜一次。\n双方本轮都猜中则平局。', 375, 570, 570, 130, 27);
     this.text(`每回合 ${seconds} 秒，最多 ${rounds} 大轮。\n连续两次自己的行动超时判负。\n低峰时可能匹配自动对手。`, 375, 700, 570, 110, 25);
@@ -198,7 +237,7 @@ export class LearningPanel {
   private clues() {
     const { room, me } = this.context;
     const history: Clue[] = room ? room.history.filter(h => h.playerId === me) : this.practice?.history ?? [];
-    const size: DigitCount = room ? 4 : this.practice?.size ?? 4;
+    const size: DigitCount = room ? room.digitCount ?? 4 : this.practice?.size ?? 4;
     this.text('我的推理笔记', 430, 110, 400, 60, 32);
     this.button('逐位排除', 235, 180, 260, () => { this.tab = 'positions'; this.refresh(); });
     this.button('记录与对比', 515, 180, 260, () => { this.tab = 'history'; this.refresh(); });

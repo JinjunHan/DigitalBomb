@@ -1,9 +1,11 @@
+import { requestedDigitCount } from '../assets/scripts/shared/game-mode';
+import type { DigitCount } from '../assets/scripts/shared/deduction';
 import { avatarUrl } from '../assets/scripts/shared/wechat-flow';
 import { randomInt, randomUUID } from 'node:crypto';
-import { Match, botGuess, secret, type Seat } from './game';
+import { Match, botGuess, secret, DEFAULT_RULES, type Seat } from './game';
 import type { Profile, Command, Snapshot } from '../assets/scripts/shared/protocol';
 
-export interface User { profile: Profile; token: string; roomId?: string; lastSeen: number; offlineAt?: number; queue?: { at: number; fallback: number }; notice?: string }
+export interface User { profile: Profile; token: string; roomId?: string; lastSeen: number; offlineAt?: number; queue?: { at: number; fallback: number; digitCount: DigitCount }; notice?: string }
 const prefixes = ['半杯', '晚风', '山间', '橘子', '薄荷', '雨后', '南山', '小岛', '凌晨', '云边', '青柠', '暮色', '风里', '夏日', '白桃', '海盐', '星河', '落日', '森林', '月下'];
 const suffixes = ['乌龙', '来信', '漫步', '汽水', '小熊', '旅人', '微光', '晴天', '拿铁', '奶糖', '向晚', '松果', '听雨', '花园', '橙子'];
 export const botProfiles = prefixes.flatMap(a => suffixes.map(b => a + b));
@@ -16,7 +18,7 @@ export class Service {
   add(profile: Profile, token: string) { const user: User = { profile, token, lastSeen: this.now() }; this.users.set(profile.id, user); return user; }
   room(user: User) { return user.roomId ? this.rooms.get(user.roomId) : undefined; }
   seat(user: User): Seat { return { profile: { ...user.profile }, online: true, misses: 0, bot: false }; }
-  snapshot(user: User): Snapshot { return { me: { ...user.profile }, room: this.room(user)?.view(user.profile.id) ?? null, queuedAt: user.queue?.at ?? null, serverNow: this.now(), notice: user.notice }; }
+  snapshot(user: User): Snapshot { return { me: { ...user.profile }, room: this.room(user)?.view(user.profile.id) ?? null, queuedAt: user.queue?.at ?? null, queuedDigitCount: user.queue?.digitCount, serverNow: this.now(), notice: user.notice }; }
   heartbeat(user: User) {
     user.lastSeen = this.now(); user.offlineAt = undefined;
     const room = this.room(user); const seat = room?.seats.find(s => s.profile.id === user.profile.id);
@@ -56,14 +58,16 @@ export class Service {
       user.profile = { ...user.profile, name: p.name.trim(), avatar: Number(p.avatar), avatarUrl: p.avatarUrl === undefined ? user.profile.avatarUrl : avatarUrl(p.avatarUrl) }; this.saveProfile(user.profile); return;
     }
     if (action === 'queue') {
-      this.available(user); user.queue = { at: now, fallback: now + randomInt(3000, 8001) }; this.pair(); return;
+      const digitCount = requestedDigitCount(p.digitCount);
+      this.available(user); user.queue = { at: now, fallback: now + randomInt(3000, 8001), digitCount }; this.pair(); return;
     }
     if (action === 'cancelQueue') {
       if (!user.queue && this.room(user) && !['finished', 'cancelled'].includes(this.room(user)!.phase)) throw Error('已找到对手，可以在准备页退出');
       user.queue = undefined; return;
     }
     if (action === 'create') {
-      this.available(user); const code = this.allocateCode(); const room = new Match('friend', [this.seat(user)], now, code); this.codes.set(code, room.id); this.bind(room); return;
+      const digitCount = requestedDigitCount(p.digitCount);
+      this.available(user); const code = this.allocateCode(); const room = new Match('friend', [this.seat(user)], now, code, { ...DEFAULT_RULES, digitCount }); this.codes.set(code, room.id); this.bind(room); return;
     }
     if (action === 'join') {
       this.available(user);
@@ -121,7 +125,12 @@ export class Service {
   }
   pair() {
     const waiting = [...this.users.values()].filter(u => u.queue && !u.offlineAt && this.now() - u.lastSeen < 15000).sort((a, b) => a.queue!.at - b.queue!.at);
-    while (waiting.length >= 2) { const a = waiting.shift()!, b = waiting.shift()!; this.bind(new Match('public', [this.seat(a), this.seat(b)], this.now())); }
+    while (waiting.length >= 2) {
+      const a = waiting.shift()!, index = waiting.findIndex(b => b.queue!.digitCount === a.queue!.digitCount);
+      if (index < 0) continue;
+      const b = waiting.splice(index, 1)[0];
+      this.bind(new Match('public', [this.seat(a), this.seat(b)], this.now(), undefined, { ...DEFAULT_RULES, digitCount: a.queue!.digitCount }));
+    }
   }
   tick() {
     const now = this.now(); this.pair();
@@ -132,16 +141,16 @@ export class Service {
       }
       if (user.queue && now >= user.queue.fallback) {
         const bot: Seat = { profile: { id: 'bot-' + randomUUID(), name: botProfiles[randomInt(botProfiles.length)], avatar: randomInt(8) }, bot: true, online: true, misses: 0 };
-        const room = new Match('public', [this.seat(user), bot], now); room.nextBotAt = now + randomInt(2000, 5001); this.bind(room);
+        const room = new Match('public', [this.seat(user), bot], now, undefined, { ...DEFAULT_RULES, digitCount: user.queue.digitCount }); room.nextBotAt = now + randomInt(2000, 5001); this.bind(room);
       }
     }
     for (const room of this.rooms.values()) {
       room.tick(now);
       const bot = room.seats.find(s => s.bot);
-      if (bot && room.phase === 'preparing' && !bot.secret && now >= (room.nextBotAt || room.deadline - 55000)) room.lock(bot.profile.id, secret(), now);
+      if (bot && room.phase === 'preparing' && !bot.secret && now >= (room.nextBotAt || room.deadline - 55000)) room.lock(bot.profile.id, secret(room.digitCount), now);
       if (bot && ['playing', 'reply'].includes(room.phase) && room.current === bot.profile.id && now >= room.nextBotAt && now >= room.startAt) {
         const history = room.history.filter(h => h.playerId === bot.profile.id);
-        room.guess(bot.profile.id, botGuess(history), room.turn, now);
+        room.guess(bot.profile.id, botGuess(history, Math.random, room.digitCount), room.turn, now);
       }
       if (room.phase === 'waiting' && !room.seats[0].online && now >= (room.seats[0].disconnectedAt ?? now) + 30000) room.finish(null, 'room_expired', now, true);
       if (['finished', 'cancelled'].includes(room.phase)) {
