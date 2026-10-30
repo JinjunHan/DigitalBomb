@@ -9,6 +9,7 @@ const suffixes = ['乌龙', '来信', '漫步', '汽水', '小熊', '旅人', '�
 export const botProfiles = prefixes.flatMap(a => suffixes.map(b => a + b));
 export class Service {
   users = new Map<string, User>(); rooms = new Map<string, Match>(); codes = new Map<string, string>(); cooldown = new Map<string, number>();
+  private returnedRooms = new Map<string, string>();
   receipts = new Map<string, Map<string, string | null>>(); attempts = new Map<string, number[]>();
   changed = () => {}; saveResult: (room: Match) => void = () => {}; saveProfile: (p: Profile) => void = () => {};
   constructor(public now = () => Date.now()) {}
@@ -26,7 +27,7 @@ export class Service {
     const room = this.room(user);
     if (room && !['finished', 'cancelled'].includes(room.phase)) throw Error('请先离开当前房间');
     if (user.queue) throw Error('正在匹配中');
-    if (room) { room.rematch.delete(user.profile.id); room.version++; }
+    if (room) room.version++;
     user.roomId = undefined;
   }
   bind(room: Match) { this.rooms.set(room.id, room); for (const s of room.seats) { const u = this.users.get(s.profile.id); if (u) { u.roomId = room.id; u.queue = undefined; } } }
@@ -71,7 +72,12 @@ export class Service {
       if (typeof p.code !== 'string' || !/^\d{4}$/.test(p.code)) throw Error('请输入四位房间口令');
       const room = this.rooms.get(this.codes.get(p.code) ?? ''); if (!room) throw Error('口令无效或房间已关闭');
       if (p.inviteRoomId !== undefined && p.inviteRoomId !== room.id) throw Error('邀请已过期，请向好友索取新邀请');
-      room.join(this.seat(user), now); user.roomId = room.id; return;
+      const previousId = [...this.returnedRooms].find(([, nextId]) => nextId === room.id)?.[0];
+      const previous = previousId ? this.rooms.get(previousId) : undefined;
+      if (previous?.seats.some(s => this.users.get(s.profile.id)?.roomId === previous.id)) throw Error('好友正在查看结算，请稍后加入');
+      room.join(this.seat(user), now);
+      if (!room.seats.some(s => s.profile.id === room.nextFirst)) room.nextFirst = undefined;
+      user.roomId = room.id; return;
     }
     const room = this.room(user); if (!room) throw Error('房间已关闭');
     if (p.roomId !== room.id) throw Error('房间已经变化，请重试');
@@ -88,20 +94,28 @@ export class Service {
         this.releaseCode(room); room.code = this.allocateCode(); this.codes.set(room.code, room.id);
         room.seats = [room.seats[0]]; room.seats[0].secret = undefined; room.phase = 'waiting'; room.deadline = now + 600000; room.version++;
       } else if (!['finished', 'cancelled'].includes(room.phase)) room.finish(null, 'player_left', now, true);
-      room.rematch.delete(user.profile.id); room.version++; user.roomId = undefined; return;
+      room.version++; user.roomId = undefined; return;
     }
-    if (action === 'rematch') {
-      if (room.phase !== 'finished') throw Error('本局尚未结算');
-      if (room.seats.some(s => !s.bot && this.users.get(s.profile.id)?.roomId !== room.id)) throw Error('对方已离开，请重新匹配');
-      room.rematchUntil ||= now + 30000;
-      if (now >= room.rematchUntil) throw Error('再战邀请已过期，请重新匹配');
-      room.rematch.add(user.profile.id); room.version++;
-      if (room.seats.every(s => s.bot || room.rematch.has(s.profile.id))) {
-        this.releaseCode(room);
-        const seats = room.seats.map(s => ({ ...s, profile: { ...s.profile }, secret: undefined, misses: 0 }));
-        const next = new Match(room.mode, seats, now, room.code, room.rules, room.other(room.first).profile.id);
-        if (next.code) this.codes.set(next.code, next.id); this.bind(next);
-      } return;
+    if (action === 'returnToRoom') {
+      if (room.mode !== 'friend' || room.phase !== 'finished') throw Error('当前不能返回好友房');
+      // Keep the old result available until each player confirms independently.
+      const nextId = this.returnedRooms.get(room.id);
+      let next = nextId ? this.rooms.get(nextId) : undefined;
+      next?.tick(now);
+      if (next?.phase === 'waiting') {
+        next.join(this.seat(user), now);
+        next.seats.sort((a, b) => room.seats.findIndex(s => s.profile.id === a.profile.id) - room.seats.findIndex(s => s.profile.id === b.profile.id));
+        user.roomId = next.id;
+      } else {
+        if (!room.saved) { this.saveResult(room); room.saved = true; }
+        const code = room.code && this.codes.get(room.code) === room.id ? room.code : this.allocateCode();
+        next = new Match('friend', [this.seat(user)], now, code, room.rules,
+          room.first ? room.other(room.first).profile.id : undefined);
+        this.codes.set(code, next.id);
+        this.returnedRooms.set(room.id, next.id);
+        this.bind(next);
+      }
+      return;
     }
     throw Error('不支持的操作');
   }
@@ -131,9 +145,9 @@ export class Service {
       }
       if (room.phase === 'waiting' && !room.seats[0].online && now >= (room.seats[0].disconnectedAt ?? now) + 30000) room.finish(null, 'room_expired', now, true);
       if (['finished', 'cancelled'].includes(room.phase)) {
-        this.releaseCode(room);
+        if (room.mode !== 'friend' || room.phase === 'cancelled') this.releaseCode(room);
         if (!room.saved) { this.saveResult(room); room.saved = true; }
-        if (now - room.endedAt > 600000) { for (const s of room.seats) { const u = this.users.get(s.profile.id); if (u?.roomId === room.id) { u.roomId = undefined; u.notice = '上一局已结束'; } } this.rooms.delete(room.id); }
+        if (now - room.endedAt > 600000) { for (const s of room.seats) { const u = this.users.get(s.profile.id); if (u?.roomId === room.id) { u.roomId = undefined; u.notice = '上一局已结束'; } } this.releaseCode(room); this.returnedRooms.delete(room.id); this.rooms.delete(room.id); }
       }
     }
     for (const [code, until] of this.cooldown) if (now >= until) this.cooldown.delete(code);

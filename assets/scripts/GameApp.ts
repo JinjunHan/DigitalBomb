@@ -44,7 +44,6 @@ export class GameApp extends Component {
   private feedbackArt!: FeedbackArt;
   private suppressFeedback = false;
   private opponentFeedbackActive = false;
-  private rematchNotice = '';
   private loginFailed = false;
   private startupScreen?: StartupScreen;
   private startupStatus = '';
@@ -268,7 +267,7 @@ export class GameApp extends Component {
     }
     const sameRoom = !!r && r.id === this.lastRoom, oldTurn = this.lastTurn, oldPhase = this.lastPhase;
     if (!sameRoom && r && r.phase === 'preparing') this.audio.play('ready');
-    if (!sameRoom) { this.clearEffects(); this.dismissNotice(); this.warnedTurn=-1; this.submitting = false; this.rematchNotice = ''; }
+    if (!sameRoom) { this.clearEffects(); this.dismissNotice(); this.warnedTurn=-1; this.submitting = false; }
     this.seenGuesses = r?.history.length ?? 0;
     if ((r?.id ?? '') !== this.lastRoom) { this.draft = ''; this.recordScrolls = []; this.recordPositions.clear(); this.recordsOpponent = false; this.overlay = ''; this.lastRoom = r?.id ?? ''; this.lastTurn = -1; }
     if (r && r.turn !== this.lastTurn) { this.draft = ''; this.selected = -1; this.lastTurn = r.turn; this.openingRendered = false; }
@@ -302,7 +301,7 @@ export class GameApp extends Component {
     if (action === 'guess') { this.submitting = true; this.feedback('正在验证', null, String(payload.digits ?? ''), '等待牌桌确认…', true); }
     this.render();
     try { await this.net.command(action, { roomId: this.net.state?.room?.id, ...payload }); if (action === 'lock') this.audio.play('ready'); }
-    catch (e) { this.audio.play('error'); if (action === 'guess') { this.submitting = false; this.clearEffects(); } this.noticePage=this.noticeContext();this.notice = (e as Error).message; if (action === 'rematch' && /对方已离开|再战邀请已过期/.test(this.notice)) this.rematchNotice = this.notice; this.noticeUntil = Date.now() + 6500; }
+    catch (e) { this.audio.play('error'); if (action === 'guess') { this.submitting = false; this.clearEffects(); } this.noticePage=this.noticeContext();this.notice = (e as Error).message; this.noticeUntil = Date.now() + 6500; }
     finally { this.busy = false; this.render(); }
   }
   private n(name: string, x: number, y: number, w: number, h: number, parent = this.root) {
@@ -1082,14 +1081,7 @@ export class GameApp extends Component {
     }
     const win=r.result?.winner===me, draw=!r.result?.winner;
     art(draw?'draw-title':win?'victory-title':'defeat-title',0,win?200:draw?180:200,draw?550:win?530:750);
-    if(!draw||(!r.rematch.includes(me)&&!this.rematchNotice))label(resultCaption(r,me),0,win?316:!draw?318:380,win?430:650,50,28).color=new Color(!draw?C.ink:C.cream);
-    if(r.rematch.includes(me)||this.rematchNotice) {
-      const key=this.rematchNotice.includes('离开')?1:this.rematchNotice?2:0;
-      art('rematch-'+key,0,850,730);
-      if(key===0)label('等待中…',0,1080,450,65,30);
-      else art('match',0,1080,360,()=>this.act('queue'));
-      art('result-home',0,1190,360,home);return;
-    }
+    label(resultCaption(r,me),0,win?316:!draw?318:380,win?430:650,50,28).color=new Color(!draw?C.ink:C.cream);
     art('result-paper',0,810,840);
     const peer=r.players.find(p=>p.id!==me);
     const count=(id:string)=>r.history.filter(h=>h.playerId===id&&h.digits!==null).length;
@@ -1105,9 +1097,12 @@ export class GameApp extends Component {
       }
     }
     art('records',0,1135,380,()=>{this.overlay='resultRecords';this.render();});
-    art('rematch',0,1260,767,()=>{if(!this.busy)this.act('rematch');});
-    art('match',-200,1390,368,()=>{if(!this.busy)this.act('queue');});
-    art('result-home',200,1390,362,home);
+    if (r.mode === 'friend') {
+      this.button('确认 · 返回房间', 375, 1190, 610, 82, () => this.act('returnToRoom'), true, !this.busy);
+    } else {
+      art('match',-200,1300,368,()=>{if(!this.busy)this.act('queue');});
+      art('result-home',200,1300,362,home);
+    }
   }
   private result(r: RoomView) {
     if (this.feedbackArt.ready) { this.artResult(r); return; }
@@ -1117,11 +1112,12 @@ export class GameApp extends Component {
     if (r.revealed) { const other = r.players.find(p => p.id !== me)!; this.text('对手密码 · ' + other.name, 375, 550, 24); this.cards(r.revealed[other.id], 650, 92); this.text('我的底牌  ' + r.ownSecret, 375, 765, 28); }
     const own = r.history.filter(h => h.playerId === me && h.digits !== null).length;
     this.text(`有效猜测 ${own} 次`, 375, 845, 25);
-    if (r.phase === 'finished') {
-      this.button(r.rematch.includes(me) ? '等待对方同意…' : '与当前对手再来一局', 375, 950, 610, 82, () => this.act('rematch'), true, !r.rematch.includes(me) && !this.busy);
-      this.button('重新匹配', 375, 1055, 610, 82, () => this.act('queue'), false, !this.busy);
+    if (r.phase === 'finished' && r.mode === 'friend') {
+      this.button('确认 · 返回房间', 375, 1100, 610, 82, () => this.act('returnToRoom'), true, !this.busy);
+    } else {
+      if (r.phase === 'finished') this.button('重新匹配', 375, 1055, 610, 82, () => this.act('queue'), false, !this.busy);
+      this.button('返回大厅', 375, 1160, 610, 82, () => { this.page = 'lobby'; this.act('leave'); });
     }
-    this.button('返回大厅', 375, 1160, 610, 82, () => { this.page = 'lobby'; this.act('leave'); });
     this.button('查看本局记录', 375, 1245, 300, 48, () => { this.overlay = 'resultRecords'; this.render(); });
   }
   private offerWechatProfile() {
