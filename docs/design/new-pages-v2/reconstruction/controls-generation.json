@@ -1,0 +1,6 @@
+{
+  "name": "controls",
+  "source": "04-interactive-tutorial.png",
+  "prompt": "Use case: precise-object-edit. Asset type: blank UI components source for deterministic slicing. Edit exact attached 941x1672 tutorial screen. Remove ALL text, letters, digits, symbols representing numbers and words throughout image, including 1,9,2,3,4 in every card and wooden plaque. Restore the blank original surfaces beneath. Preserve all card borders, answer button borders, large inner paper panel, leafy title plaque, the back arrow button, decorative dividers, all shadows and silhouette pixel positions exactly. Remove orange selection brackets around first cards, restoring paper. No redesign, no layout change, no new decorations. Need every card and every button blank and textured for runtime text.",
+  "generated": "/Users/hanjinjun/.codex/generated_images/01a18b9a-338c-7132-8fc0-eb99151d8c61/exec-bb124d67-47c2-4dd4-936c-329b45e90af0.png"
+}

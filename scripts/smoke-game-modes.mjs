@@ -19,12 +19,13 @@ try {
       const walk = node => { for (const c of node.components) if (c.learning) window.app = c; node.children.forEach(walk); };
       walk(cc.director.getScene()); return window.app?.startupEntered && app.battleArtReady && app.modalArtReady && app.joinArtReady;
     });
+    await page.waitForFunction(() => !app.learning.visible || app.learning.ready);
     await page.waitForTimeout(500);
   }
   async function click(value, byName = false) {
     const point = await page.evaluate(({ value, byName }) => {
       let target;
-      const walk = node => { if (!node.activeInHierarchy) return; const label = node.getComponent(cc.Label); if (byName ? node.name === value : label?.string === value) target = node; node.children.forEach(walk); };
+      const walk = node => { if (!node.activeInHierarchy) return; const label = node.getComponent(cc.Label); if (byName ? node.name === value : (label?.string === value || node.name === 'LearningControl-' + value)) target = node; node.children.forEach(walk); };
       walk(cc.director.getScene()); if (!target) throw Error('Missing control: ' + value);
       const p = target.worldPosition, size = cc.view.getVisibleSize(), rect = document.querySelector('canvas').getBoundingClientRect();
       return { x: rect.x + p.x / size.width * rect.width, y: rect.y + rect.height - p.y / size.height * rect.height };

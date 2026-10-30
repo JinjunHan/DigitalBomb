@@ -1,0 +1,26 @@
+[
+  {
+    "name": "mode",
+    "source": "01-online-mode.png",
+    "prompt": "Use case: precise-object-edit. Asset type: clean layered Cocos game background reconstruction, NOT final screen. Edit this exact 941x1672 reference, keep framing proportions and pixel positions. Remove ALL letters, numbers, cards, radio circles, ribbons, selected outlines and all buttons/content from the parchment. Remove the back button. Keep the wood study scene and large tall parchment board completely unchanged in silhouette/location, the leafy wooden header but make its main title and subtitle plate blank. The parchment must be entirely empty uninterrupted textured parchment from y400 to1530: no row borders, no bottombutton, no text, no UI. Restore what was hidden. Preserve foreground cup and book. Preserve rich original wood/brass/parchment texture and lighting. No added UI or labels.",
+    "generated": "/Users/hanjinjun/.codex/generated_images/01a18b9a-338c-7132-8fc0-eb99151d8c61/exec-b224ef86-7be0-4128-ab9f-2998d7f29e2e.png"
+  },
+  {
+    "name": "hub",
+    "source": "03-learning-hub.png",
+    "prompt": "Use case: precise-object-edit. Asset type: clean layered Cocos game background reconstruction, NOT final screen. Edit this exact 941x1672 reference, keep framing proportions and pixel positions. Remove back button. Keep leafy main header but remove all text from header and its subtitle. Keep the upper and lower parchment panels and decorative teaching illustration with 1234 to9234 exactly as shown, including annotations. Remove only the start teaching orange button, all three lower practice tiles, and two bottom navigation buttons, restoring underlying paper or felt. Preserve fixed 互动教学 and 学会第一步推理 labels, 自由练习 plaque and 不限时·不计战绩. No other changes. Preserve rich original wood/brass/parchment texture and lighting. No added UI or labels.",
+    "generated": "/Users/hanjinjun/.codex/generated_images/01a18b9a-338c-7132-8fc0-eb99151d8c61/exec-662e35ea-fcbc-4ebc-8f72-6b371546f91d.png"
+  },
+  {
+    "name": "practice",
+    "source": "05-free-practice.png",
+    "prompt": "Use case: precise-object-edit. Asset type: clean layered Cocos game background reconstruction, NOT final screen. Edit this exact 941x1672 reference, keep framing proportions and pixel positions. Remove back button. Keep the study scene, paper boards, main leafy header and smaller subtitle plate but erase all text in main header. Keep subtitle 不限时·不计战绩 and 我的猜测 and 本次猜测 section labels. Remove ALL history sample digits, history cards, turn labels, hits, inference text, sticky note, all input cards and hints button; fill with original parchment. Keep bottom wooden keypad tray completely empty with no keys, no digits no buttons. No digits anywhere. Restore covered backgrounds. Preserve panel borders. Preserve rich original wood/brass/parchment texture and lighting. No added UI or labels.",
+    "generated": "/Users/hanjinjun/.codex/generated_images/01a18b9a-338c-7132-8fc0-eb99151d8c61/exec-3a5d7597-66b7-4160-a456-bded78c16628.png"
+  },
+  {
+    "name": "notebook",
+    "source": "06-position-deduction.png",
+    "prompt": "Use case: precise-object-edit. Asset type: clean layered Cocos game background reconstruction, NOT final screen. Edit this exact 941x1672 reference, keep framing proportions and pixel positions. Remove back button. Preserve study scene, leafy wooden title 我的推理笔记, notebook gold rings and paper silhouette. Remove ALL tabs (both selected/unselected), records, numbers, candidate count banner, all position rows/grid/cards/digits, legend, warnings, countdown banner and orange back button. Restore entirely blank uninterrupted notebook parchment and surrounding felt. Keep header and notebook ring bindings. No text except title 我的推理笔记. Preserve rich original wood/brass/parchment texture and lighting. No added UI or labels.",
+    "generated": "/Users/hanjinjun/.codex/generated_images/01a18b9a-338c-7132-8fc0-eb99151d8c61/exec-c55db393-bf90-4573-9376-c601a72ac807.png"
+  }
+]

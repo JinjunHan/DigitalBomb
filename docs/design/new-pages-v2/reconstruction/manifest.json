@@ -1,0 +1,28 @@
+{
+  "coordinates": "source pixels [left,top,right,bottom], 941x1672; alpha masks supersampled",
+  "layers": [
+    {
+      "layer": 0,
+      "purpose": "reconstructed clean study/paper backgrounds; no interactive sample values"
+    },
+    {
+      "layer": 1,
+      "purpose": "source complete title plaques and fixed buttons; baked text, no duplicate label"
+    },
+    {
+      "layer": 2,
+      "purpose": "blank paper cards and dynamic native digits/history/candidate count/timer"
+    },
+    {
+      "layer": 3,
+      "purpose": "independent selection check, excluded cross and focus state"
+    },
+    {
+      "layer": 4,
+      "purpose": "full-control touch targets; scaled with canvas"
+    }
+  ],
+  "source": "docs/design/new-pages-v2/*.png",
+  "output": "assets/resources/art/learning-v2",
+  "shared": "back button, keypad, digit cards, paper controls; no server rule changes"
+}

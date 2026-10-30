@@ -14,8 +14,9 @@ const page=await browser.newPage({viewport:{width:390,height:844},deviceScaleFac
 const errors=[];page.on('pageerror',e=>errors.push(e.message));
 await page.goto('http://127.0.0.1:8080');await page.waitForTimeout(5000);
 await page.evaluate(()=>{const walk=n=>{for(const c of n.components)if(c.learning)window.app=c;for(const child of n.children)walk(child);};walk(cc.director.getScene());});
+await page.waitForFunction(()=>app.learning.ready);
 async function click(text, first=false){
- const p=await page.evaluate(({t,first})=>{let found;const walk=n=>{const l=n.getComponent(cc.Label);if(l?.string===t&&(!first||!found))found=n;for(const c of n.children)walk(c);};walk(cc.director.getScene());if(!found)throw Error('Label missing '+t);const v=found.worldPosition,sz=cc.view.getVisibleSize(),r=document.querySelector('canvas').getBoundingClientRect();return {x:r.x+v.x/sz.width*r.width,y:r.y+r.height-v.y/sz.height*r.height};},{t:text,first});
+ const p=await page.evaluate(({t,first})=>{let found;const walk=n=>{const l=n.getComponent(cc.Label);if((l?.string===t||n.name==='LearningControl-'+t)&&(!first||!found))found=n;for(const c of n.children)walk(c);};walk(cc.director.getScene());if(!found)throw Error('Label missing '+t);const v=found.worldPosition,sz=cc.view.getVisibleSize(),r=document.querySelector('canvas').getBoundingClientRect();return {x:r.x+v.x/sz.width*r.width,y:r.y+r.height-v.y/sz.height*r.height};},{t:text,first});
  await page.mouse.click(p.x,p.y);await page.waitForTimeout(150);
 }
 await click('互动教学 · 学会第一步推理');

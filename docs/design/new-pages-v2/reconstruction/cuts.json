@@ -1,0 +1,530 @@
+{
+  "bg-mode": {
+    "source": "reconstruction/mode-clean.png",
+    "rect": [
+      0,
+      0,
+      941,
+      1672
+    ],
+    "mask": "rounded:0",
+    "bakedText": false,
+    "output": "assets/resources/art/learning-v2/bg-mode.jpg"
+  },
+  "bg-hub": {
+    "source": "reconstruction/hub-clean.png",
+    "rect": [
+      0,
+      0,
+      941,
+      1672
+    ],
+    "mask": "rounded:0",
+    "bakedText": false,
+    "output": "assets/resources/art/learning-v2/bg-hub.jpg"
+  },
+  "bg-practice": {
+    "source": "reconstruction/practice-clean.png",
+    "rect": [
+      0,
+      0,
+      941,
+      1672
+    ],
+    "mask": "rounded:0",
+    "bakedText": false,
+    "output": "assets/resources/art/learning-v2/bg-practice.jpg"
+  },
+  "bg-notebook": {
+    "source": "reconstruction/notebook-clean.png",
+    "rect": [
+      0,
+      0,
+      941,
+      1672
+    ],
+    "mask": "rounded:0",
+    "bakedText": false,
+    "output": "assets/resources/art/learning-v2/bg-notebook.jpg"
+  },
+  "back": {
+    "source": "01-online-mode.png",
+    "rect": [
+      39,
+      64,
+      138,
+      163
+    ],
+    "mask": "ellipse",
+    "bakedText": true,
+    "output": "assets/resources/art/learning-v2/back.png"
+  },
+  "title-online": {
+    "source": "01-online-mode.png",
+    "rect": [
+      218,
+      222,
+      731,
+      330
+    ],
+    "mask": "rounded:18",
+    "bakedText": true,
+    "output": "assets/resources/art/learning-v2/title-online.png"
+  },
+  "title-friend": {
+    "source": "02-friend-mode.png",
+    "rect": [
+      218,
+      240,
+      731,
+      330
+    ],
+    "mask": "rounded:18",
+    "bakedText": true,
+    "output": "assets/resources/art/learning-v2/title-friend.png"
+  },
+  "title-hub": {
+    "source": "03-learning-hub.png",
+    "rect": [
+      218,
+      222,
+      731,
+      330
+    ],
+    "mask": "rounded:18",
+    "bakedText": true,
+    "output": "assets/resources/art/learning-v2/title-hub.png"
+  },
+  "title-tutorial": {
+    "source": "04-interactive-tutorial.png",
+    "rect": [
+      218,
+      222,
+      731,
+      330
+    ],
+    "mask": "rounded:18",
+    "bakedText": true,
+    "output": "assets/resources/art/learning-v2/title-tutorial.png"
+  },
+  "mode-2": {
+    "source": "01-online-mode.png",
+    "rect": [
+      124,
+      419,
+      827,
+      623
+    ],
+    "mask": "rounded:24",
+    "bakedText": true,
+    "output": "assets/resources/art/learning-v2/mode-2.png"
+  },
+  "mode-3": {
+    "source": "01-online-mode.png",
+    "rect": [
+      113,
+      635,
+      832,
+      847
+    ],
+    "mask": "rounded:26",
+    "bakedText": true,
+    "output": "assets/resources/art/learning-v2/mode-3.png"
+  },
+  "mode-4": {
+    "source": "02-friend-mode.png",
+    "rect": [
+      101,
+      861,
+      846,
+      1081
+    ],
+    "mask": "rounded:28",
+    "bakedText": true,
+    "output": "assets/resources/art/learning-v2/mode-4.png"
+  },
+  "check": {
+    "source": "01-online-mode.png",
+    "rect": [
+      748,
+      939,
+      814,
+      1006
+    ],
+    "mask": "ellipse",
+    "bakedText": true,
+    "output": "assets/resources/art/learning-v2/check.png"
+  },
+  "match": {
+    "source": "01-online-mode.png",
+    "rect": [
+      177,
+      1278,
+      770,
+      1447
+    ],
+    "mask": "rounded:46",
+    "bakedText": true,
+    "output": "assets/resources/art/learning-v2/match.png"
+  },
+  "create": {
+    "source": "02-friend-mode.png",
+    "rect": [
+      176,
+      1318,
+      772,
+      1485
+    ],
+    "mask": "rounded:44",
+    "bakedText": true,
+    "output": "assets/resources/art/learning-v2/create.png"
+  },
+  "start": {
+    "source": "03-learning-hub.png",
+    "rect": [
+      206,
+      882,
+      738,
+      1020
+    ],
+    "mask": "rounded:38",
+    "bakedText": true,
+    "output": "assets/resources/art/learning-v2/start.png"
+  },
+  "practice-2": {
+    "source": "03-learning-hub.png",
+    "rect": [
+      103,
+      1197,
+      344,
+      1420
+    ],
+    "mask": "rounded:24",
+    "bakedText": true,
+    "output": "assets/resources/art/learning-v2/practice-2.png"
+  },
+  "practice-3": {
+    "source": "03-learning-hub.png",
+    "rect": [
+      350,
+      1197,
+      593,
+      1420
+    ],
+    "mask": "rounded:24",
+    "bakedText": true,
+    "output": "assets/resources/art/learning-v2/practice-3.png"
+  },
+  "practice-4": {
+    "source": "03-learning-hub.png",
+    "rect": [
+      599,
+      1197,
+      846,
+      1420
+    ],
+    "mask": "rounded:24",
+    "bakedText": true,
+    "output": "assets/resources/art/learning-v2/practice-4.png"
+  },
+  "rules": {
+    "source": "03-learning-hub.png",
+    "rect": [
+      140,
+      1464,
+      451,
+      1561
+    ],
+    "mask": "rounded:25",
+    "bakedText": true,
+    "output": "assets/resources/art/learning-v2/rules.png"
+  },
+  "home": {
+    "source": "03-learning-hub.png",
+    "rect": [
+      492,
+      1464,
+      805,
+      1561
+    ],
+    "mask": "rounded:25",
+    "bakedText": true,
+    "output": "assets/resources/art/learning-v2/home.png"
+  },
+  "hint": {
+    "source": "05-free-practice.png",
+    "rect": [
+      621,
+      919,
+      853,
+      1027
+    ],
+    "mask": "rounded:25",
+    "bakedText": true,
+    "output": "assets/resources/art/learning-v2/hint.png"
+  },
+  "key-1": {
+    "source": "05-free-practice.png",
+    "rect": [
+      162,
+      1105,
+      363,
+      1196
+    ],
+    "mask": "rounded:24",
+    "bakedText": true,
+    "output": "assets/resources/art/learning-v2/key-1.png"
+  },
+  "key-2": {
+    "source": "05-free-practice.png",
+    "rect": [
+      370,
+      1105,
+      571,
+      1196
+    ],
+    "mask": "rounded:24",
+    "bakedText": true,
+    "output": "assets/resources/art/learning-v2/key-2.png"
+  },
+  "key-3": {
+    "source": "05-free-practice.png",
+    "rect": [
+      580,
+      1105,
+      781,
+      1196
+    ],
+    "mask": "rounded:24",
+    "bakedText": true,
+    "output": "assets/resources/art/learning-v2/key-3.png"
+  },
+  "key-4": {
+    "source": "05-free-practice.png",
+    "rect": [
+      162,
+      1198,
+      363,
+      1289
+    ],
+    "mask": "rounded:24",
+    "bakedText": true,
+    "output": "assets/resources/art/learning-v2/key-4.png"
+  },
+  "key-5": {
+    "source": "05-free-practice.png",
+    "rect": [
+      370,
+      1198,
+      571,
+      1289
+    ],
+    "mask": "rounded:24",
+    "bakedText": true,
+    "output": "assets/resources/art/learning-v2/key-5.png"
+  },
+  "key-6": {
+    "source": "05-free-practice.png",
+    "rect": [
+      580,
+      1198,
+      781,
+      1289
+    ],
+    "mask": "rounded:24",
+    "bakedText": true,
+    "output": "assets/resources/art/learning-v2/key-6.png"
+  },
+  "key-7": {
+    "source": "05-free-practice.png",
+    "rect": [
+      162,
+      1292,
+      363,
+      1383
+    ],
+    "mask": "rounded:24",
+    "bakedText": true,
+    "output": "assets/resources/art/learning-v2/key-7.png"
+  },
+  "key-8": {
+    "source": "05-free-practice.png",
+    "rect": [
+      370,
+      1292,
+      571,
+      1383
+    ],
+    "mask": "rounded:24",
+    "bakedText": true,
+    "output": "assets/resources/art/learning-v2/key-8.png"
+  },
+  "key-9": {
+    "source": "05-free-practice.png",
+    "rect": [
+      580,
+      1292,
+      781,
+      1383
+    ],
+    "mask": "rounded:24",
+    "bakedText": true,
+    "output": "assets/resources/art/learning-v2/key-9.png"
+  },
+  "key-0": {
+    "source": "05-free-practice.png",
+    "rect": [
+      372,
+      1386,
+      574,
+      1501
+    ],
+    "mask": "rounded:24",
+    "bakedText": true,
+    "output": "assets/resources/art/learning-v2/key-0.png"
+  },
+  "key-delete": {
+    "source": "05-free-practice.png",
+    "rect": [
+      148,
+      1390,
+      365,
+      1507
+    ],
+    "mask": "rounded:25",
+    "bakedText": true,
+    "output": "assets/resources/art/learning-v2/key-delete.png"
+  },
+  "key-submit": {
+    "source": "05-free-practice.png",
+    "rect": [
+      580,
+      1385,
+      809,
+      1508
+    ],
+    "mask": "rounded:30",
+    "bakedText": true,
+    "output": "assets/resources/art/learning-v2/key-submit.png"
+  },
+  "tab-positions": {
+    "source": "06-position-deduction.png",
+    "rect": [
+      143,
+      268,
+      500,
+      357
+    ],
+    "mask": "rounded:28",
+    "bakedText": true,
+    "output": "assets/resources/art/learning-v2/tab-positions.png"
+  },
+  "tab-history": {
+    "source": "07-history-comparison.png",
+    "rect": [
+      489,
+      335,
+      807,
+      415
+    ],
+    "mask": "rounded:24",
+    "bakedText": true,
+    "output": "assets/resources/art/learning-v2/tab-history.png"
+  },
+  "baseline": {
+    "source": "07-history-comparison.png",
+    "rect": [
+      92,
+      1320,
+      467,
+      1446
+    ],
+    "mask": "rounded:30",
+    "bakedText": true,
+    "output": "assets/resources/art/learning-v2/baseline.png"
+  },
+  "copy": {
+    "source": "07-history-comparison.png",
+    "rect": [
+      472,
+      1320,
+      875,
+      1446
+    ],
+    "mask": "rounded:30",
+    "bakedText": true,
+    "output": "assets/resources/art/learning-v2/copy.png"
+  },
+  "return": {
+    "source": "06-position-deduction.png",
+    "rect": [
+      215,
+      1435,
+      733,
+      1568
+    ],
+    "mask": "rounded:33",
+    "bakedText": true,
+    "output": "assets/resources/art/learning-v2/return.png"
+  },
+  "card": {
+    "source": "reconstruction/controls-clean.png",
+    "rect": [
+      272,
+      583,
+      367,
+      713
+    ],
+    "mask": "rounded:12",
+    "bakedText": false,
+    "output": "assets/resources/art/learning-v2/card.png"
+  },
+  "answer": {
+    "source": "reconstruction/controls-clean.png",
+    "rect": [
+      110,
+      1135,
+      340,
+      1283
+    ],
+    "mask": "rounded:25",
+    "bakedText": false,
+    "output": "assets/resources/art/learning-v2/answer.png"
+  },
+  "panel": {
+    "source": "reconstruction/controls-clean.png",
+    "rect": [
+      110,
+      416,
+      832,
+      1014
+    ],
+    "mask": "rounded:30",
+    "bakedText": false,
+    "output": "assets/resources/art/learning-v2/panel.png"
+  },
+  "banner": {
+    "source": "reconstruction/controls-clean.png",
+    "rect": [
+      587,
+      602,
+      804,
+      700
+    ],
+    "mask": "rounded:23",
+    "bakedText": false,
+    "output": "assets/resources/art/learning-v2/banner.png"
+  },
+  "subtitle": {
+    "source": "reconstruction/controls-clean.png",
+    "rect": [
+      304,
+      330,
+      640,
+      391
+    ],
+    "mask": "rounded:22",
+    "bakedText": false,
+    "output": "assets/resources/art/learning-v2/subtitle.png"
+  }
+}
