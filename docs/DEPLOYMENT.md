@@ -57,3 +57,14 @@ AppID：wx3f231fcad8d0170f。
 - 独立线上测试账号通过公网 HTTPS/WSS：资料保存并核实 SQLite 落库、拒绝旧房间 ID、有效邀请入房、退出测试房间、清除测试头像。没有输出会话凭据。测试账号保留，不删除用户数据。
 - 微信登录配置健康标志为 true，但未读取 AppSecret。用户明确表示微信后台隐私指引和平台授权弹窗尚未配置；这部分不是后端部署即可自动完成，仍须管理员处理后真机验收。
 - 回滚时先停服，原代码与数据库须成对恢复；旧 INSERT 语句不兼容新增列，不能仅恢复旧入口而直接使用新结构数据库。恢复部署前数据库会丢失备份后的新数据，实际回滚前应再次备份当前库并评估。
+
+## 2026-10-30 好友房结算返回更新
+
+通过 baota-mcp 将源码提交 `9dc04a4` 编译后的 `server/service.js` 部署到 `/www/wwwroot/digital-bomb-service/server/service.js`，重启 `digital-bomb.service` 生效。仅更新该文件，数据库、密钥、Nginx 和 Web 静态资源未改动。
+
+- 备份：`/www/backup/digital-bomb-friend-9dc04a4/original/service.js`；候选文件和公网验证脚本保存在同目录的 `staged/`。
+- 发布前核对旧文件 SHA256，确认 `game.js`、`wechat-flow.js` 与本地依赖一致，校验新文件 SHA256 和 Node 语法。替换及健康检查脚本带失败恢复路径，本次无需回滚。
+- 新服务 SHA256：`f79b552fb8f42d5ae4519bd572baeb851add2954d6bf310a4b1f328a26a837c3`。
+- 公网 HTTPS/WSS 双人完整对局通过：补猜平局、拒绝旧 rematch 命令、双方独立确认返回、保留口令及原房主、清空底牌和历史，最后退出测试房间。验证脚本：`scripts/smoke-friend-return.mjs`。测试账号保留，不删除用户数据，不输出凭据。
+- 服务 active、健康接口正常、NRestarts=0，启动日志无致命错误。微信客户端仍须使用新导出的 `build/wechatgame/` 上传体验版或发布，未做真机验证；旧 Web 客户端未同步更新。
+- 本次仅代码变更，可将上述备份原子替换回服务文件并重启服务回退，无需恢复数据库。
