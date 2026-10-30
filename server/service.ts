@@ -18,7 +18,7 @@ export class Service {
   add(profile: Profile, token: string) { const user: User = { profile, token, lastSeen: this.now() }; this.users.set(profile.id, user); return user; }
   room(user: User) { return user.roomId ? this.rooms.get(user.roomId) : undefined; }
   seat(user: User): Seat { return { profile: { ...user.profile }, online: true, misses: 0, bot: false }; }
-  snapshot(user: User): Snapshot { return { me: { ...user.profile }, room: this.room(user)?.view(user.profile.id) ?? null, queuedAt: user.queue?.at ?? null, queuedDigitCount: user.queue?.digitCount, serverNow: this.now(), notice: user.notice }; }
+  snapshot(user: User): Snapshot { return { me: { ...user.profile }, room: this.room(user)?.view(user.profile.id) ?? null, supportedDigitCounts: [2, 3, 4], queuedAt: user.queue?.at ?? null, queuedDigitCount: user.queue?.digitCount, serverNow: this.now(), notice: user.notice }; }
   heartbeat(user: User) {
     user.lastSeen = this.now(); user.offlineAt = undefined;
     const room = this.room(user); const seat = room?.seats.find(s => s.profile.id === user.profile.id);

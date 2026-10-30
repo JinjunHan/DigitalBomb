@@ -1449,6 +1449,10 @@ export class GameApp extends Component {
     this.overlay='';
     this.learning.openMode(mode,rememberedDigitCount(read(key,'')),size=>{
       if(this.busy||!this.net.online)return;
+      // Legacy services ignore digitCount and silently create four-digit rooms.
+      if(size!==4&&!this.net.state?.supportedDigitCounts?.includes(size)) {
+        this.toast('当前服务尚未支持该位数，请稍后重试');return;
+      }
       write(key,String(size));this.learning.close();
       void this.act(mode==='public'?'queue':'create',{digitCount:size});
     });

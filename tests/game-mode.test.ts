@@ -7,6 +7,19 @@ import { confirmationValid } from '../assets/scripts/shared/modal-state';
 import { feedbackEvent } from '../assets/scripts/shared/feedback-state';
 
 const seat = (id: string): Seat => ({ profile: { id, name: id, avatar: 0 }, online: true, bot: false, misses: 0 });
+test('server advertises the digit modes implemented by room creation', () => {
+  const service = new Service(() => 1000);
+  const user = service.add({ id: 'capability-test', name: '测试玩家', avatar: 0 }, 'local-test');
+  assert.deepEqual(service.snapshot(user).supportedDigitCounts, [2, 3, 4]);
+  for (const digitCount of service.snapshot(user).supportedDigitCounts!) {
+    assert.equal(service.command(user, { id: `create-${digitCount}`, action: 'create', payload: { digitCount } }).error, undefined);
+    const room = service.snapshot(user).room!;
+    assert.equal(room.digitCount, digitCount);
+    assert.equal(room.turnMs, 60000);
+    assert.equal(room.roundLimit, 30);
+    assert.equal(service.command(user, { id: `leave-${digitCount}`, action: 'leave', payload: { roomId: room.id } }).error, undefined);
+  }
+});
 test('four is the default; explicit invalid modes fail without silently coercing', () => {
   assert.equal(requestedDigitCount(undefined), 4);
   for (const value of [null, '2', 1, 5, 2.5, {}, NaN]) assert.throws(() => requestedDigitCount(value));

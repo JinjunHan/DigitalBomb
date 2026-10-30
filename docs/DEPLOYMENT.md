@@ -1,5 +1,27 @@
 # 公网体验版部署记录
 
+## 2026-10-30 正式多位数规则部署与回归
+
+用户报告选 2/3 位进入仍为 4 位。只读核对及独立内存复现确认线上仍运行旧 service.js / game.js：忽略 digitCount，校验固定四位，默认 30 秒 / 20 轮。此前本地多位数验证未覆盖线上部署差异。
+
+用户明确确认“现在部署并重启”后，通过 baota-mcp 更新并重启 digital-bomb.service。仅更新以下四个代码文件：
+
+| 文件 | 部署 SHA256 |
+| --- | --- |
+| server/service.js | bcd9cc70835e3c4218ede5ffc2b4ef036136dbee880caadfd6a0324aef343772 |
+| server/game.js | 90da84e41a86b6ef962e8954d132a74b6adfc9cb75a554d139acfea08bc8a2dc |
+| assets/scripts/shared/game-mode.js | 306ce91e11946ae6727d48de19f5dc8816ab7516ba42f42e4e2be07b2f7228f0 |
+| assets/scripts/shared/deduction.js | 77b8f75bcd3d19fd55cee196e396e3d58849de4cf39637ae5cdc05ab77a9099a |
+
+- 备份和候选目录：/www/backup/digital-bomb-modes-20261030/，权限 700。original/ 保存原代码，metadata.json 记录原文件存在情况及权限，staged/ 保存候选，release.json 保存预期旧哈希及新哈希。
+- 停服前核对旧入口依赖哈希，检查所有候选 Node 语法，并独立执行 2/3/4 位房间、加入、锁定、60 秒及 30 轮规则。替换后检查服务 active、健康响应及完整哈希，失败路径恢复旧代码。本次成功，未回滚。
+- 数据库、密钥、Nginx 和 Web 静态资源没有部署改动。公网回归使用两个新增测试账号，产生测试对局记录；未删除用户数据，所有测试房间已退出。
+- scripts/smoke-online-modes.cjs 公网 HTTPS/WSS 验证通过：2/3/4 位分别创建/加入好友房、拒绝错误密码长度、完整同轮平局、返回房间保留位数与四位口令，以及同位数正式匹配、60 秒/30 轮。
+- 服务快照新增 supportedDigitCounts，客户端确认 2/3 位前检查能力；连接旧服务时显示明确提示，不发送错误匹配请求、不覆盖已记忆偏好。4 位保留旧服务兼容。
+- 本地 87 项测试、双端类型检查、新旧服务能力模拟及 2/3/4 位完整客户端对局通过。微信重新导出到 build/wechatgame/，包体检查通过；仍未做微信真机验证或正式发布。
+- 复现候选：tsc -p tsconfig.server.json --outDir temp/mode-service-review --rootDir . 后执行 node scripts/prepare-mode-deploy.mjs。该工具只生成本地候选，不自动部署；其中旧哈希是本次发布前快照，后续部署应重新核实。
+- 代码回退：停服后按 metadata.json 恢复原先存在的文件、移除本次新增文件，再启动服务；无需恢复数据库。回退会恢复旧四位规则，新客户端会阻止 2/3 位进入旧服务。
+
 日期：2026-10-27。地址：https://bomb.aiforevery.cn
 
 ## 已部署

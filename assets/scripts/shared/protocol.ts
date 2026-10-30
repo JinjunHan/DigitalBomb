@@ -13,6 +13,7 @@ export interface RoomView {
 }
 export interface Snapshot {
   me: Profile; room: RoomView | null; queuedAt: number | null;
+  supportedDigitCounts?: DigitCount[];
   queuedDigitCount?: DigitCount; serverNow: number; notice?: string;
 }
 export interface Command { id: string; action: string; payload?: Record<string, unknown> }

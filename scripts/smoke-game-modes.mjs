@@ -37,6 +37,16 @@ try {
   const selected = () => page.evaluate(() => app.learning.selectedMode);
   await boot(); await click('先去大厅');
   await click('Lobby-match-full', true); assert.equal(await selected(), 4); await shot('default-four');
+  // An old service has no capability field: do not silently enter its four-digit mode.
+  const supported = await page.evaluate(() => app.net.state.supportedDigitCounts);
+  assert.deepEqual(supported, [2, 3, 4]);
+  await page.evaluate(() => delete app.net.state.supportedDigitCounts);
+  await click('2 位 · 轻松局 · 100 种组合'); await click('开始匹配');
+  assert.equal(await page.evaluate(() => app.learning.visible), true);
+  assert.equal(await page.evaluate(() => app.net.state.room), null);
+  assert.equal(await page.evaluate(() => app.net.state.queuedAt), null);
+  await click('返回'); await click('Lobby-match-full', true); assert.equal(await selected(), 4);
+  await page.evaluate(supported => { app.net.state.supportedDigitCounts = supported; }, supported);
   await click('2 位 · 轻松局 · 100 种组合'); await click('开始匹配');
   assert.equal(await page.evaluate(() => app.net.state.queuedDigitCount), 2);
   await click('Matching-cancel', true); await boot();
