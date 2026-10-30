@@ -1,0 +1,72 @@
+{
+  "generator": "built-in imagegen",
+  "created": "2026-10-30",
+  "status": "design-concepts-not-integrated",
+  "images": [
+    {
+      "name": "01-online-mode",
+      "prompt": "Use case: ui-mockup. Redesign the online-match digit-selection screen shown in reference 2 into a polished final game UI concept; reference 1 is the visual style reference, not a layout to copy. Single full-bleed portrait 9:16 screen, no phone frame, no montage. Chinese mobile WeChat game 猜数字暗号. Warm illustrated wood-paneled study, emerald teal felt table, antique brass hardware, ivory parchment, dark brown Chinese serif lettering, orange lacquer primary button, tangible beveled game controls matching reference 1. Transform the flat text modal into an exquisite layered parchment folio occupying most of screen, balanced spacing, large readable Chinese text and touch controls. Top safe region 8% mostly scenery, especially upper right. Upper-left small independent back arrow, ornate wooden title plaque '在线匹配', small subtitle '选择密码位数'. Three substantial vertically stacked mode cards: first has exactly TWO ivory mini cards with question marks and text '2 位 · 轻松局' and '100 种组合'; second exactly THREE mini cards and '3 位 · 标准局' and '1,000 种组合'; third exactly FOUR mini cards and '4 位 · 挑战局' and '10,000 种组合'. FOUR-digit card clearly SELECTED with brass outline, restrained amber glow, green checkmark and small ribbon '默认'. Other cards quiet unselected parchment. Below choices small readable text '下次自动记住你的选择'. Footer info strip '每回合 60 秒 · 最多 30 轮'. Large orange primary button '开始匹配'. Small secondary text '仅匹配相同位数的对手'. Do not use 3 as default; no pricing, coins, ads, hearts, rewards, invented mechanics. Real game UI, calm premium craftsmanship, gentle depth, clear hierarchy and sparse flourishes. All Chinese labels must be spelled correctly; no tiny paragraphs. This is a new visual redesign, preserve game palette and the actual three-mode functionality.",
+      "file": "01-online-mode.png",
+      "source": "/Users/hanjinjun/.codex/generated_images/01a18b9a-338c-7132-8fc0-eb99151d8c61/exec-fe76cc2f-5fc9-4f9e-914b-bcf2835d4da0.png",
+      "reference": [
+        "../01-lobby-v3.png",
+        "../../verification/game-modes/default-four.png"
+      ]
+    },
+    {
+      "name": "02-friend-mode",
+      "prompt": "Redesign a matching sibling screen of reference 1: a Chinese mobile game FRIEND ROOM CREATION mode selection page. Preserve exactly the warm wood, brass, emerald felt, ornate parchment, beveled buttons, readable ivory/brown Chinese typography and 9:16 full-bleed composition. Reference 1 is the finished style/layout family. No device frame. Top-right 8% scenery only for WeChat safe area. Title plaque '好友对战', subtitle '创建房间 · 选择位数'. Three stacked mode panels with exactly 2,3,4 little ivory question-mark cards respectively. Panel text '2 位 · 轻松局' / '100 种组合', '3 位 · 标准局' / '1,000 种组合', '4 位 · 挑战局' / '10,000 种组合'. This screen demonstrates returning-user preference: THREE digits selected with green check and brass amber border, ribbon '上次选择'; two and four unselected. Separate small footnote '首次默认 4 位'. Below panels a concise scroll inset '好友加入后使用相同规则'. Small information line '房间口令仍为四位'. Large bright orange action '创建房间'. Under button small text '自动记住本次选择'. Include a subtle two-player brass silhouette icon on the title, not a large character. Do not show an actual room code yet, do not imply three is default, no advertisement, currency or matchmaking status. High fidelity game UI concept with large touch areas, accurately typeset Chinese, premium craftsmanship.",
+      "file": "02-friend-mode.png",
+      "source": "/Users/hanjinjun/.codex/generated_images/01a18b9a-338c-7132-8fc0-eb99151d8c61/exec-6c8c5d4e-7009-4f55-a88b-ef4221feef4f.png",
+      "reference": [
+        "01-online-mode.png"
+      ]
+    },
+    {
+      "name": "03-learning-hub",
+      "prompt": "Redesign the NEW PLAYER LEARNING HUB for the Chinese mobile number deduction game, using reference 1 as exact visual style family. One portrait 9:16 full-bleed game screen, no phone frame, no montage. Warm illustrated study surrounds emerald teal felt table; a leather-backed parchment workbook with brass corners occupies center, wooden plaque title '新手练习室'. Top-left back control, top-right safe margin free of controls. Subtitle '先学会推理，再与对手较量'. Main large illustrated teaching card uses two miniature strips 1234 and 9234 with first-digit change highlighted, magnifying glass and pencil as small decorative tools; strong text '互动教学', subtitle '学会第一步推理', orange CTA '开始教学'. Lower section titled '自由练习' with subline '不限时 · 不计战绩'. Three equal distinct selectable tiles in one row with TWO/THREE/FOUR small ivory cards respectively and labels '2 位入门', '3 位进阶', '4 位标准'. They are equally unselected; do not visually promote three as default formal play. Footer two separate calmer buttons '对战规则' and '返回大厅'. Friendly inviting tutorial atmosphere, tactile paper and restrained ornaments, a clear dominant teaching action, enough whitespace for Chinese legibility. No progress rewards, no coins, hearts, timer or real opponent. Keep controls as complete separable illustrated assets suitable for later slicing.",
+      "file": "03-learning-hub.png",
+      "source": "/Users/hanjinjun/.codex/generated_images/01a18b9a-338c-7132-8fc0-eb99151d8c61/exec-807a113b-11c4-4ba5-9626-d4c0946da02d.png",
+      "reference": [
+        "01-online-mode.png"
+      ]
+    },
+    {
+      "name": "04-interactive-tutorial",
+      "prompt": "Create a refined redesign of the INTERACTIVE TUTORIAL deduction decision screen for Chinese mobile game 猜数字暗号. Reference 1 gives exact warm wooden-study, emerald felt, ivory parchment, brass and orange button visual style. One portrait 9:16 full-bleed screen, no phone device or montage. Top-left back arrow, top-right clear safe area. Wooden plaque '互动教学', below a subtle four-step indicator '第 3 步 / 4'. A parchment lesson board has heading '只改一位，看命中变化'. Show two precisely aligned rows of four separate digit cards: first row exactly '1 2 3 4' with amber stamp '命中 2 位'; second row exactly '9 2 3 4' with amber stamp '命中 1 位'. Show a thin orange comparison bracket ONLY around first column (1 changing to 9), all other digits neutral cream; this highlight marks the changed input, NOT secret-answer feedback. A small caption '只改第一位，命中减少 1'. Below spacious question '原来的第一位是什么？'. Three large answer buttons labeled '1', '9', '还不能判断', all unselected so user must think. Beneath them subdued explanatory hint '比较两次记录，找到线索'. Bottom small line '教学不计时，可以放心尝试' plus secondary quiet '跳过教学'. No secret shown, no inferred correct-answer checkmark yet, no keyboard needed in this decision state. Premium readable Chinese typography, careful row alignment, strong pedagogical hierarchy, tangible game craft.",
+      "file": "04-interactive-tutorial.png",
+      "source": "/Users/hanjinjun/.codex/generated_images/01a18b9a-338c-7132-8fc0-eb99151d8c61/exec-a63f36b0-98a2-40d4-9881-d619d81fd04b.png",
+      "reference": [
+        "01-online-mode.png"
+      ]
+    },
+    {
+      "name": "05-free-practice",
+      "prompt": "Redesign a THREE-DIGIT FREE PRACTICE screen for the Chinese number deduction mobile game in reference 1's warm brass/wood/ivory parchment and emerald felt visual family. One full-bleed portrait 9:16 game screen, no device, no montage. Room scene background, smaller wooden title plaque '3 位自由练习', upper left back, upper right clear safe margin. Subtitle '不限时 · 不计战绩'. Upper half parchment records ledger titled '我的猜测' with exactly two rows: '第 1 次' then three aligned digits '1 2 3' then badge '1/3'; '第 2 次' digits '9 2 3' badge '0/3'. Below a concise pinned note '只改第一位，命中减少 1'. Center separate input area labeled '本次猜测' with exactly THREE large ivory cards showing '1 5 3', second or third card gently raised to indicate edit selection but no green correctness marks. Nearby a clearly clickable leather/brass tab '推理提示'. Bottom substantial leather keyboard tray contains a standard 3-column four-row keypad: 1 2 3 / 4 5 6 / 7 8 9 / 删除 0 提交. '提交' orange primary button, numbers ivory, 删除 blue-dark. No human opponent, no own-secret hand, no countdown, no 30-round badge, no rewards. This is actual practice input with consistent three-digit data. Large Chinese labels and digits, all buttons fully inside safe margins, reuse game materials and illustration quality, clear space between record panel, input cards and keyboard.",
+      "file": "05-free-practice.png",
+      "source": "/Users/hanjinjun/.codex/generated_images/01a18b9a-338c-7132-8fc0-eb99151d8c61/exec-575b958f-7a86-4718-843a-284259eaea6a.png",
+      "reference": [
+        "01-online-mode.png"
+      ]
+    },
+    {
+      "name": "06-position-deduction",
+      "prompt": "Redesign the PER-POSITION DEDUCTION notebook for Chinese mobile game, using reference 1 as high-quality visual family: emerald felt, warm wooden room, antique brass, parchment, carved tabs. Full-bleed 9:16 portrait, no phone or montage. Notebook almost fills screen, underlying battle subtly dimmed, top-right safe area clear. Title '我的推理笔记', upper-left back. Two substantial tabs '逐位排除' SELECTED and '记录对比' unselected. Small three evidence chips: '0000 → 0/4', '1234 → 2/4', '9234 → 1/4'. Heading '剩余 192 种可能'. Main area EXACTLY FOUR distinct spacious rows labeled '第 1 位', '第 2 位', '第 3 位', '第 4 位'. EACH row shows the digits 0 1 2 3 4 5 6 7 8 9 ONCE as ten small evenly spaced chips. In FIRST row, digit 1 is green with check and row badge '已确定'; digits 0,2,3,4,5,6,7,8,9 have clear muted red X/strike-through. In SECOND, THIRD and FOURTH row, ONLY digit 0 is excluded with red X/strike-through; all digits 1 through 9 remain neutral ivory, NO green confirmation on these rows. This exact state is mathematically derived from those three clues. Legend '已确定' with green check, '仍可能' neutral ivory, '已排除' with red x. Small explanatory text '可能数字不能任意组合'. Bottom wooden timer strip '你的回合 45s · 查看提示不暂停计时'. Large orange button '返回猜测'. Do not show the actual secret or automatic complete suggested answer. Very clear graphic organization, high contrast, accessible state marks beyond color, wide readable digits, restrained ornate border and no extraneous paragraphs.",
+      "file": "06-position-deduction.png",
+      "source": "/Users/hanjinjun/.codex/generated_images/01a18b9a-338c-7132-8fc0-eb99151d8c61/exec-0d5836f5-4fec-424d-bd73-239790aca2b8.png",
+      "reference": [
+        "01-online-mode.png"
+      ],
+      "revisionPrompt": "Edit this exact UI concept with ONE precise correction, preserving all other layout, text, color, digits, cards, materials and background. In the three small evidence chips near the top, directly beneath the text '0000 → 0/4', '1234 → 2/4', '9234 → 1/4', DELETE ALL of the decorative round green/brown dots. Fill only their former space with matching blank parchment. There must be no position lamps or circle markers in those three historical-feedback chips: feedback reveals a count only, not correct positions. Keep all three chip text lines, the '剩余 192 种可能' total and the entire four-row digit-elimination grid EXACTLY unchanged. In particular row 1 confirms only 1; rows 2/3/4 exclude only 0. No other modifications, no new text. Keep same portrait size and premium illustrated style."
+    },
+    {
+      "name": "07-history-comparison",
+      "prompt": "Redesign the HISTORY COMPARISON notebook for Chinese mobile number deduction game, matching reference 1's warm wood/brass/ivory parchment/emerald felt illustrated game style. One portrait 9:16 full-bleed screen, no device, no montage. Dimmed battle table behind open parchment ledger. Upper-left back, top-right safe area blank scenery. Title '我的推理笔记'. Tabs '逐位排除' unselected and '记录对比' SELECTED. Table heading '我的猜测 · 共 3 条'. Exactly three tidy rows: first '第 1 次' digits '0 0 0 0' feedback '0/4'; second '第 2 次' digits '1 2 3 4' feedback '2/4' small badge '对照'; third '第 3 次' digits '9 2 3 4' feedback '1/4' small badge '已选'. Third row highlighted modestly in gold. Below ledger a separate larger comparison inset: heading '只改了第 1 位', visually show card '1' arrow card '9' and text '命中 2 → 1'. Beneath a readable deduction note '命中减少 1，原来的第一位是 1'. This is a deduction from two guesses, not secret reveal; don't mark other positions as correct. Two substantial bottom actions: secondary ivory '设为对照' and primary orange '复制后修改'. Small strip at very bottom '你的回合 45s · 查看记录不暂停计时'. Strong tab state, beautiful aligned numeric columns, comfortable generous typography, thin brass rule separators, polished complete sliced-control-ready artwork, no invented additional rows, no currency or ads.",
+      "file": "07-history-comparison.png",
+      "source": "/Users/hanjinjun/.codex/generated_images/01a18b9a-338c-7132-8fc0-eb99151d8c61/exec-4fc23af8-1360-4dc3-b748-ed88f5bc0313.png",
+      "reference": [
+        "01-online-mode.png"
+      ]
+    }
+  ]
+}
