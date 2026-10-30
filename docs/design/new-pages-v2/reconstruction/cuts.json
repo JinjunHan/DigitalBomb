@@ -163,7 +163,7 @@
       770,
       1447
     ],
-    "mask": "rounded:46",
+    "mask": "button-contours.json#match",
     "bakedText": true,
     "output": "assets/resources/art/learning-v2/match.png"
   },
@@ -175,7 +175,7 @@
       772,
       1485
     ],
-    "mask": "rounded:44",
+    "mask": "button-contours.json#create",
     "bakedText": true,
     "output": "assets/resources/art/learning-v2/create.png"
   },
@@ -187,7 +187,7 @@
       738,
       1020
     ],
-    "mask": "rounded:38",
+    "mask": "button-contours.json#start",
     "bakedText": true,
     "output": "assets/resources/art/learning-v2/start.png"
   },

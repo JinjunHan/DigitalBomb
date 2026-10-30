@@ -3,18 +3,46 @@ Rectangles are left/top/right/bottom in the 941x1672 source, masks 4x AA.
 Reconstructed surfaces are explicitly recorded separately from original cuts.
 """
 from pathlib import Path
-from PIL import Image, ImageDraw
-import json, uuid, subprocess
+from PIL import Image, ImageDraw, ImageFilter, ImageChops
+import json, uuid, subprocess, math
 
 root = Path(__file__).resolve().parents[1]
 source = root / 'docs/design/new-pages-v2'
 out = root / 'assets/resources/art/learning-v2'
 out.mkdir(parents=True, exist_ok=True)
 cuts = {}
+contour_spec = json.loads((source/'reconstruction/button-contours.json').read_text())
+
+def contour_cut(im, points):
+    # Smooth the traced perimeter; keep RGB only inside the actual metal rim.
+    sampled = []
+    for i, p1 in enumerate(points):
+        p0, p2, p3 = points[i-1], points[(i+1)%len(points)], points[(i+2)%len(points)]
+        # Limit handles by adjacent chord lengths: long straight edges must
+        # not overshoot the short corner arcs and leave stray opaque lines.
+        a=min(math.dist(p1,p0),math.dist(p2,p1))/3/max(math.dist(p2,p0),1)
+        b=min(math.dist(p2,p1),math.dist(p3,p2))/3/max(math.dist(p3,p1),1)
+        c1 = [p1[k]+(p2[k]-p0[k])*a for k in (0,1)]
+        c2 = [p2[k]-(p3[k]-p1[k])*b for k in (0,1)]
+        for step in range(12):
+            t=step/12;u=1-t
+            sampled.append(tuple(4*(u**3*p1[k]+3*u*u*t*c1[k]+3*u*t*t*c2[k]+t**3*p2[k]) for k in (0,1)))
+    mask = Image.new('L', (im.width*4,im.height*4))
+    ImageDraw.Draw(mask).polygon(sampled,fill=255)
+    mask = mask.resize(im.size,Image.Resampling.LANCZOS)
+    shadow = Image.new('L',im.size)
+    shadow.paste(mask,(0,contour_spec['shadow']['offset'][1]))
+    shadow = shadow.filter(ImageFilter.GaussianBlur(contour_spec['shadow']['blur']))
+    shadow = shadow.point(lambda value: round(value*contour_spec['shadow']['opacity']))
+    base=Image.new('RGBA',im.size,(0,0,0,0));base.putalpha(shadow)
+    im.putalpha(ImageChops.multiply(im.getchannel('A'),mask))
+    return Image.alpha_composite(base,im)
 
 def cut(name, file, rect, radius=0, ellipse=False):
     im = Image.open(source / file).convert('RGBA').crop(rect)
-    if radius or ellipse:
+    if name in contour_spec['contours']:
+        im = contour_cut(im,contour_spec['contours'][name])
+    elif radius or ellipse:
         mask = Image.new('L', (im.width*4, im.height*4))
         d = ImageDraw.Draw(mask)
         box = (2, 2, im.width*4-3, im.height*4-3)
@@ -28,7 +56,7 @@ def cut(name, file, rect, radius=0, ellipse=False):
         im = im.resize((round(im.width*.8),round(im.height*.8)), Image.Resampling.LANCZOS)
         im.save(out / (name+'.png'), optimize=True)
         subprocess.run(['pngquant', '--force', '--speed', '1', '--quality', '40-65', '--nofs', '--output', str(out/(name+'.png')), str(out/(name+'.png'))], check=True)
-    cuts[name] = {'source': file, 'rect': rect, 'mask': 'ellipse' if ellipse else f'rounded:{radius}', 'bakedText': not file.startswith('reconstruction/'), 'output': str((out/(name+('.jpg' if name.startswith('bg-') else '.png'))).relative_to(root))}
+    cuts[name] = {'source': file, 'rect': rect, 'mask': 'button-contours.json#'+name if name in contour_spec['contours'] else 'ellipse' if ellipse else f'rounded:{radius}', 'bakedText': not file.startswith('reconstruction/'), 'output': str((out/(name+('.jpg' if name.startswith('bg-') else '.png'))).relative_to(root))}
 
 for name in ['mode', 'hub', 'practice', 'notebook']:
     cut('bg-'+name, 'reconstruction/'+name+'-clean.png', (0,0,941,1672))
@@ -88,3 +116,13 @@ for i,name in enumerate(names):
     sheet.paste(tile,(x+(250-tile.width)//2,y),tile);d.text((x+6,y+152),name,fill='#b87530')
 sheet.save(source/'reconstruction/contact-sheet.png')
 print(f'Wrote {len(cuts)} isolated assets')
+# Both backgrounds for each corrected perimeter, at runtime resolution.
+check=Image.new('RGB',(1000,540));draw=ImageDraw.Draw(check)
+for i,name in enumerate(contour_spec['contours']):
+    for j,color in enumerate(['#172a2e','#f8f1e5']):
+        x,y=j*500,i*180
+        draw.rectangle((x,y,x+499,y+179),fill=color)
+        tile=Image.open(out/(name+'.png')).convert('RGBA')
+        check.paste(tile,(x+10,y+20),tile)
+        draw.text((x+10,y+158),name,fill='#b77b40')
+check.save(source/'reconstruction/button-contours-check.png')
