@@ -6,6 +6,7 @@ export interface RoomView {
   id: string; mode: 'public' | 'friend'; code?: string; phase: Phase;
   players: (Profile & { ready: boolean; online: boolean })[];
   version: number; round: number; turn: number; current: string; first: string;
+  roundLimit?: number; turnMs?: number;
   deadline: number; startAt: number; history: Guess[]; ownSecret?: string;
   revealed?: Record<string, string>; result?: Result; rematch: string[];
 }

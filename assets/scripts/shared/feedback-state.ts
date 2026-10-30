@@ -1,3 +1,4 @@
+import { clueCaption, STANDARD_ROUNDS } from './deduction';
 import type { RoomView } from './protocol';
 export interface FeedbackEvent { kind: 'own' | 'opponent' | 'timeout' | 'end'; hits?: number; title: string; caption: string; art: string; urgent?: boolean }
 /** Pure snapshot transition: never replay history on initial load, room change or reconnect. */
@@ -13,7 +14,7 @@ export function feedbackEvent(room: RoomView, me: string, previous: { roomId: st
   const own = fresh.playerId === me;
   if (fresh.hits === null) return { kind: 'timeout', title: '', caption: '', art: own ? 'timeout-0' : 'timeout-1' };
   const hits = fresh.hits;
-  if (own) return { kind: 'own', hits, title: hits === 4 ? '全部命中' : '我的猜测', caption: hits === 4 ? '等待对手本轮补猜' : ['暂未命中，换个思路', '找到一点线索了', '推理正在接近答案', '只差一位，继续推理'][hits], art: hits === 4 ? 'own-gold' : 'own' };
+  if (own) return { kind: 'own', hits, title: hits === 4 ? '全部命中' : '我的猜测', caption: hits === 4 ? '等待对手本轮补猜' : clueCaption(fresh), art: hits === 4 ? 'own-gold' : 'own' };
   return { kind: 'opponent', hits, title: '', caption: '', art: 'opponent-' + hits, urgent: hits >= 3 };
 }
 export function cancellationArt(reason?: string) {
@@ -27,7 +28,7 @@ export function resultCaption(room: RoomView, me: string): string {
     case 'disconnect': return ownLoss ? '你未能及时重新连接' : '对手未能及时重新连接';
     case 'resigned': return ownLoss ? '你已认输' : '对手已认输';
     case 'same_round': return '同轮破解，默契十足';
-    case 'round_limit': return '20轮结束，本局平局';
+    case 'round_limit': return `${room.roundLimit ?? STANDARD_ROUNDS}轮结束，本局平局`;
     case 'reply_missed': return ownLoss ? '本轮补猜未命中' : '对手补猜未命中';
     default: return ownLoss ? '对手破解了你的暗号' : '四位密码全部破解';
   }

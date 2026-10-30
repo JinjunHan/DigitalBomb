@@ -1,3 +1,5 @@
+import { LearningPanel } from './LearningPanel';
+import { STANDARD_ROUNDS } from './shared/deduction';
 import { WechatFlow, avatarUrl, type Invitation } from './shared/wechat-flow';
 import { _decorator, Component, Node, UITransform, Label, Graphics, Color, Layers, view, ResolutionPolicy, resources, SpriteFrame, Sprite, Texture2D, profiler, tween, Tween, UIOpacity, Vec3, EditBox, input, Input, EventKeyboard, KeyCode, game, Game, BlockInputEvents, ScrollView, Mask, Vec2, Font, Rect, assetManager, ImageAsset } from 'cc';
 import { StartupAssets } from './shared/startup-assets';
@@ -26,11 +28,12 @@ interface StartupScreen {
 }
 const { ccclass } = _decorator;
 const C = { ink: '#352719', cream: '#F7E7C8', paper: '#EAD5AC', gold: '#D8AA58', teal: '#173E3C', dark: '#102D2C', muted: '#C3C8B6', orange: '#D96A32', blue: '#2A4656' };
-const reasons: Record<string, string> = { same_round: '同轮破解，旗鼓相当', reply_missed: '后手补猜未命中', reply_timeout: '后手补猜超时', cracked: '四位密码全部破解', round_limit: '20 轮挑战完成', timeout: '连续两次行动超时', disconnect: '对方未能重新连接', resigned: '一方认输', prepare_timeout: '准备超时，本局不计胜负', room_expired: '房间已过期', player_left: '玩家离开，本局已取消', both_offline: '双方掉线，本局不计胜负' };
+const reasons: Record<string, string> = { same_round: '同轮破解，旗鼓相当', reply_missed: '后手补猜未命中', reply_timeout: '后手补猜超时', cracked: '四位密码全部破解', round_limit: '本局达到轮数上限', timeout: '连续两次行动超时', disconnect: '对方未能重新连接', resigned: '一方认输', prepare_timeout: '准备超时，本局不计胜负', room_expired: '房间已过期', player_left: '玩家离开，本局已取消', both_offline: '双方掉线，本局不计胜负' };
 
 @ccclass('GameApp')
 export class GameApp extends Component {
   private audio!: GameAudio;
+  private learning = new LearningPanel();
   private wxFlow!: WechatFlow;
   private profilePrompted = false;
   private pendingInvitation?: Invitation;
@@ -269,9 +272,10 @@ export class GameApp extends Component {
     if (!sameRoom && r && r.phase === 'preparing') this.audio.play('ready');
     if (!sameRoom) { this.clearEffects(); this.dismissNotice(); this.warnedTurn=-1; this.submitting = false; }
     this.seenGuesses = r?.history.length ?? 0;
-    if ((r?.id ?? '') !== this.lastRoom) { this.draft = ''; this.recordScrolls = []; this.recordPositions.clear(); this.recordsOpponent = false; this.overlay = ''; this.lastRoom = r?.id ?? ''; this.lastTurn = -1; }
+    if ((r?.id ?? '') !== this.lastRoom) { this.learning.close(); this.draft = ''; this.recordScrolls = []; this.recordPositions.clear(); this.recordsOpponent = false; this.overlay = ''; this.lastRoom = r?.id ?? ''; this.lastTurn = -1; }
     if (r && r.turn !== this.lastTurn) { this.draft = ''; this.selected = -1; this.lastTurn = r.turn; this.openingRendered = false; }
     if (r && this.lastPhase === 'preparing' && r.phase === 'playing') { this.draft = ''; this.selected = -1; }
+    if (r && ['finished','cancelled'].includes(r.phase) && oldPhase !== r.phase) this.learning.close();
     this.lastPhase = r?.phase ?? '';
     const key = JSON.stringify({ ...s, serverNow: 0 }); if (key !== this.lastKey) { this.lastKey = key; this.render(); }
     if (r?.phase === 'cancelled') this.clearEffects();
@@ -461,6 +465,15 @@ export class GameApp extends Component {
     else if (this.page === 'join') this.join();
     else if (this.page === 'profile') this.profile();
     else this.lobby();
+    if (!starting && s && !s.room && s.queuedAt === null && this.page === 'lobby' && !this.overlay && !this.pendingInvitation && !this.learning.visible && this.profileArt.has('paper') && this.modalArt.has('tab-off') && read('learning-offered-v1-'+s.me.id) !== '1') {
+      write('learning-offered-v1-'+s.me.id,'1'); this.learning.open('menu');
+    }
+    if (!starting && this.learning.visible) this.learning.render({
+      parent: this.root, height: this.screenHeight, top: this.layoutTop, bottom: bottomSafeInset(),
+      paper: this.profileArt.get('paper'), button: this.modalArt.get('tab-off'), card: this.battleArt.get('card-paper'),
+      room: s?.room, me: s?.me.id ?? '', now: this.net.now(), redraw: () => this.render(),
+      copy: digits => this.copyGuess(digits), completed: () => write('learning-complete-v1-'+s!.me.id,'1'),
+    });
     const modalKey = starting ? undefined : s && !this.net.online ? 'reconnect' : this.modalKey();
     this.modals.begin(this.modalArtReady ? modalKey : undefined, read('motion', '1') === '1');
     if (modalKey) this.artModal(modalKey);
@@ -564,7 +577,7 @@ export class GameApp extends Component {
     this.lobbyButton('match-full', '在线匹配  ›', 375, 920, 610 * fit, 175 * fit, () => this.act('queue'), !this.busy);
     this.lobbyButton('friend-full', '好友对战  ›', 375, 1100, 610 * fit, 170 * fit, () => { this.page = 'join'; this.code = ''; this.render(); });
     this.lobbyButton('settings-full', '设置', 115, 1250, 76 * fit, 76 * fit, () => { this.overlay = 'settings'; this.render(); });
-    this.lobbyButton('help-full', '怎么玩', 375, 1250, 285 * fit, 121 * fit, () => { this.overlay = 'rules'; this.render(); });
+    this.lobbyButton('help-full', '怎么玩', 375, 1250, 285 * fit, 121 * fit, () => this.openLearning('menu'));
     const muted = read('music', '1') === '0' && read('sound', '1') === '0';
     const soundButton = this.lobbyButton('sound-full', muted ? '静音' : '声音', 635, 1250, 76 * fit, 76 * fit, () => {
       const next = muted ? '1' : '0';
@@ -751,6 +764,13 @@ export class GameApp extends Component {
   }
   private onKey(e: EventKeyboard) {
     this.audio.unlock();
+    if (this.learning.visible) {
+      if (this.modals.node.active || !this.net.online) return;
+      if (e.keyCode >= KeyCode.DIGIT_0 && e.keyCode <= KeyCode.DIGIT_9) this.learning.input(String(e.keyCode - KeyCode.DIGIT_0));
+      else if (e.keyCode === KeyCode.BACKSPACE) this.learning.input('delete');
+      else if (e.keyCode === KeyCode.ENTER) this.learning.input('submit');
+      return;
+    }
     if (this.friendReturn.active || this.modals.node.active || this.overlay || this.page === 'profile' && !this.net.state?.room || !this.net.online || this.busy) return;
     const r = this.net.state?.room;
     const context = !r && this.page === 'join' ? 'join' : r?.phase === 'preparing' && !r.ownSecret ? 'secret' : r && ['playing', 'reply'].includes(r.phase) && r.current === this.net.state?.me.id ? 'guess' : null;
@@ -764,7 +784,7 @@ export class GameApp extends Component {
     if (r.phase === 'finished' || r.phase === 'cancelled') { this.result(r); return; }
     if (this.battleArtReady) { this.battleArtwork(r); return; }
     const opponent = r.players.find(p => p.id !== this.net.state!.me.id)!;
-    this.header(r.phase === 'preparing' ? '设置底牌' : `第 ${r.round} 轮 / 20`, () => {
+    this.header(r.phase === 'preparing' ? '设置底牌' : `第 ${r.round} 轮 / ${r.roundLimit ?? STANDARD_ROUNDS}`, () => {
       if (r.phase === 'preparing') this.ask('leave', () => this.act('leave'));
       else { this.overlay = 'gameMenu'; this.render(); }
     });
@@ -891,7 +911,7 @@ export class GameApp extends Component {
       this.roundRoll.sync(r.id,0,false,true);
       navText('设置底牌',-9,190);
     } else {
-      navText('第',-78,32);navText('轮 / 20',32,94);
+      navText('第',-78,32);navText(`轮 / ${r.roundLimit ?? STANDARD_ROUNDS}`,32,94);
       const clip = this.n('RoundDigitViewport',375,667,50,42,nav);clip.setPosition(-40,0);
       clip.addComponent(Mask).type=Mask.Type.GRAPHICS_RECT;
       this.roundRoll.sync(r.id,r.round,read('motion','1')==='1');
@@ -910,7 +930,7 @@ export class GameApp extends Component {
       if(this.friendDigitFont) this.timerLabel.font=this.friendDigitFont;
       this.timerLabel.lineHeight=46;
       label('s',540,493,29,20,'#FFD978',38);
-      const rules=art('rules',[243,523,699,589]); touch(rules,()=>{this.overlay='rules';this.render();});
+      const rules=art('rules',[243,523,699,589]); touch(rules,()=>this.openLearning('rules'));
       const value=r.ownSecret ?? this.draft;
       // Palms behind the fan; only isolated thumbs cross card fronts.
       art('hands');art('hand-right');
@@ -932,6 +952,9 @@ export class GameApp extends Component {
     } else {
       art('records');
       const records=art('all-records');touch(records,()=>{this.recordsOpponent=false;this.overlay='guessRecords';this.render();});
+      const hintButton=art('hint-button',[543,678,808,741],this.modalArt.get('tab-off'));
+      label('推理提示 / 排除',675,710,25,240,C.ink,44);
+      touch(hintButton,()=>this.openLearning('clues'));
       const rows=r.history.filter(h=>h.playerId===me.id),rowHeight=94,height=282,width=680;
       const viewport=place(this.n('BattleRecordsViewport',375,667,width,height,group),470.5,397+height/2);
       viewport.addComponent(Mask).type=Mask.Type.GRAPHICS_RECT;
@@ -941,7 +964,8 @@ export class GameApp extends Component {
       if(!rows.length)label('暂无记录，输入四位数字开始猜测',470,532,27,620);
       rows.forEach((h,i)=>{
         const y=i*rowHeight+45;
-        art('record-row',[149,y-45,805,y+45],undefined,content);
+        const rowNode=art('record-row',[149,y-45,805,y+45],undefined,content);
+        touch(rowNode,()=>{if(h.digits)this.copyGuess(h.digits);},editable&&!!h.digits);
         label(`第${Math.floor(h.turn/2)+1}轮`,231,y,30,145,C.ink,45,content);
         if(h.digits)for(let j=0;j<4;j++)number(h.digits[j],349+j*88,y,45,67,68,content);
         else label('本次超时',481,y,30,350,C.ink,45,content);
@@ -1052,7 +1076,7 @@ export class GameApp extends Component {
     this.box(375, 543, 686, 356, '#613B21', 18);
     this.box(375, 538, 670, 346, C.cream);
     this.recordTabs(r, 405);
-    this.button('展开', 625, 405, 100, 46, () => { this.overlay = 'guessRecords'; this.render(); });
+    this.button('提示', 625, 405, 100, 46, () => this.openLearning('clues'));
     this.recordList(r, 443, 210, false, 'table');
     this.text('本次猜测', 115, 775, 22, C.cream, 180); this.cards(this.draft, 790, 66, false, mine);
     this.text('我的底牌\n已锁定', 140, 882, 19, C.gold, 190, 60); this.cards(r.ownSecret ?? '', 882, 42, this.hideSecret);
@@ -1121,7 +1145,7 @@ export class GameApp extends Component {
     this.button('查看本局记录', 375, 1245, 300, 48, () => { this.overlay = 'resultRecords'; this.render(); });
   }
   private offerWechatProfile() {
-    const wx=wechat(),s=this.net.state;if(!wx||!s||s.room||s.queuedAt!==null||this.page!=='lobby'||read('profile-choice-'+s.me.id)==='1')return;
+    const wx=wechat(),s=this.net.state;if(this.learning.visible||!wx||!s||s.room||s.queuedAt!==null||this.page!=='lobby'||read('profile-choice-'+s.me.id)==='1')return;
     write('profile-choice-'+s.me.id,'1');
     wx.showModal?.({title:'完善游戏资料',content:'可以使用微信头像昵称，也可以保留默认资料直接开始游戏。',confirmText:'完善资料',cancelText:'先用默认',success:(result:any)=>{
       if(result.confirm&&this.isValid&&!this.net.state?.room&&this.net.state?.queuedAt===null)this.openProfile();
@@ -1362,6 +1386,7 @@ export class GameApp extends Component {
     this.applyLobbyShuffle();
     this.roundRoll.advance(dt,read('motion','1')==='1');this.applyRoundRoll();
     this.scenery?.update(dt);
+    this.learning.update(this.net.now());
     this.modals?.update(dt, read('motion', '1') === '1');
     this.friendReturn?.update(dt, read('motion', '1') === '1');
     if (!this.profileMotion || !this.profilePanel?.isValid) return;
@@ -1395,6 +1420,16 @@ export class GameApp extends Component {
     this.net.onState = () => this.stateChanged(); this.net.onStatus = () => { if (!this.net.online) this.suppressFeedback = true; this.render(); }; this.net.onError = s => this.toast(s);
     this.render();
     try { await this.connect(); } finally { this.reconnecting = false; this.render(); }
+  }
+  private openLearning(page: 'menu' | 'rules' | 'clues') {
+    this.overlay = ''; this.learning.open(page); this.render();
+  }
+  private copyGuess(digits: string) {
+    const state = this.net.state, room = state?.room;
+    if (!room || !state || !this.net.online || this.busy || !['playing','reply'].includes(room.phase) || room.current !== state.me.id || this.net.now() < room.startAt || this.net.now() >= room.deadline) {
+      this.toast('轮到你时可复制记录并修改'); return;
+    }
+    this.draft = digits; this.selected = -1; this.learning.close(); this.overlay = ''; this.render();
   }
   private modalKey(): ModalKind | undefined {
     return this.overlay === 'confirm' ? this.confirmation?.kind
@@ -1504,7 +1539,11 @@ export class GameApp extends Component {
         const updateThumb = () => place(thumb, 809.5, rowTop + thumbHeight / 2 + Math.max(0, Math.min(1, scroll.getScrollOffset().y / max)) * (height - thumbHeight));
         viewport.on(ScrollView.EventType.SCROLLING, updateThumb); updateThumb();
       }
-      if (live) art('live-latest', () => scroll.scrollToBottom(.2));
+      if (live) {
+        art('live-latest', () => scroll.scrollToBottom(.2));
+        art('tab-off', () => this.openLearning('clues'), [144, 1243, 590, 1307]);
+        label('我的推理提示 / 逐位排除',367,1275,25,425,55);
+      }
     }
     this.modals.attach(group, scale);
   }
