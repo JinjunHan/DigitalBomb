@@ -4,6 +4,8 @@
 
 [打开设计稿 / 运行效果对照](index.html) · [素材来源、提示词、坐标与复现说明](../../design/new-pages-v2/reconstruction/README.md)
 
+最新更新：[2026-10-31 页面与交互优化记录](interaction-polish.md)。下列运行截图已同步更新。
+
 ## 验证范围
 
 - `npm test`：86 项通过。

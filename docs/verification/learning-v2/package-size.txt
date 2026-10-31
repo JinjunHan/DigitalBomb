@@ -1,4 +1,4 @@
 [WeChat branding] Illustrated startup with live progress installed.
-[WeChat package] main: 2315.7 KB
+[WeChat package] main: 2316.8 KB
 [WeChat package] resources: 26309.7 KB
-[WeChat package] total: 28625.3 KB; headroom to 30 MiB: 2094.7 KB
+[WeChat package] total: 28626.4 KB; headroom to 30 MiB: 2093.6 KB

@@ -20,7 +20,12 @@ try {
  assert.equal(await page.evaluate(()=>app.learning.tutorial.step),2);await shot('04-interactive-tutorial');
  await click('返回');await click('3 位 · 进阶');
  await page.evaluate(()=>app.learning.practice.answer='145');
- await page.keyboard.type('123');await click('提交');await page.keyboard.type('923');await click('提交');await page.keyboard.type('153');await click('digit-1');await shot('05-free-practice');
+ await page.keyboard.type('123');await click('提交');await page.keyboard.type('923');await click('提交');await page.keyboard.type('153');await click('digit-1');
+ await click('删除');assert.equal(await page.evaluate(()=>app.learning.draft),'13');
+ await page.keyboard.press('Backspace');await page.keyboard.press('Backspace');await page.keyboard.type('153');
+ await page.keyboard.type('9');assert.match(await page.evaluate(()=>app.learning.message),/已填满/);
+ assert.equal(await page.evaluate(()=>app.learning.draft),'153');
+ await click('删除');await click('3');await click('digit-1');await shot('05-free-practice');
  assert.deepEqual(await page.evaluate(()=>app.learning.practice.history.map(h=>h.hits)),[1,0]);
  await click('返回');await click('4 位 · 标准');await page.evaluate(()=>app.learning.practice.answer='1255');
  for(const digits of ['0000','1234','9234']){await page.keyboard.type(digits);await click('提交');}
@@ -33,6 +38,10 @@ try {
  await page.evaluate(()=>{const h=app.learning.practice.history;app.learning.practice.history=Array.from({length:30},(_,i)=>({...h[i%3]}));app.learning.go('clues');});
  await click('记录与对比');assert.equal(await page.evaluate(()=>app.learning.recordPage),9);
  await click('上一页');await page.evaluate(()=>app.render());assert.equal(await page.evaluate(()=>app.learning.recordPage),8);
+ assert.equal(await page.evaluate(()=>app.learning.selected),24);
+ await click('回到最新');assert.equal(await page.evaluate(()=>app.learning.recordPage),9);
+ assert.equal(await page.evaluate(()=>app.learning.selected),29);
+ await click('上一页');
  await shot('history-30-records');
  await click('返回');await click('返回');await click('先去大厅');
  await page.evaluate(()=>{app.selectMode('public');});await shot('01-online-mode');

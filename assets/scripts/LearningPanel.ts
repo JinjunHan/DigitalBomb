@@ -69,11 +69,15 @@ export class LearningPanel {
         this.message = this.practice!.submit(this.draft) ?? '';
         if (!this.message) { this.draft = ''; this.slot = -1; }
       }
-    } else if (key === 'delete') { this.draft = this.draft.slice(0, -1); this.slot = -1; }
+    } else if (key === 'delete') {
+      const index = this.slot >= 0 && this.slot < this.draft.length ? this.slot : this.draft.length - 1;
+      this.draft = this.draft.slice(0, Math.max(0, index)) + this.draft.slice(index + 1); this.slot = -1;
+    }
     else if (/^\d$/.test(key)) {
       if (this.slot >= 0 && this.slot < this.draft.length) {
         this.draft = this.draft.slice(0, this.slot) + key + this.draft.slice(this.slot + 1); this.slot = -1;
       } else if (this.draft.length < size) this.draft += key;
+      else this.message = '数字已填满，点击要修改的卡牌再输入。';
     }
     this.refresh();
   }
@@ -126,7 +130,8 @@ export class LearningPanel {
     // Blank reconstructed answer artwork; 9-slicing preserves corners at variable text widths.
     const node = this.art('answer', x,y,w,h); const sprite = node.getComponent(Sprite)!;
     sprite.type = Sprite.Type.SLICED;
-    this.text(value,x,y,w-30,h-16,/^[0-9]$/.test(value)?76:32,enabled ? '#3D1D08' : '#877C6C');
+    const caption = this.text(value,x,y,w-30,h-16,/^[0-9]$/.test(value)?76:32,enabled ? '#3D1D08' : '#877C6C');
+    caption.node.setParent(node); caption.node.setPosition(0,0);
     return this.touch(node,value,action,enabled);
   }
   private back() {
@@ -188,7 +193,7 @@ export class LearningPanel {
       this.fixed('mode-'+size,`${modeLabel(size)} · ${10**size} 种组合`,470,y,724,()=>{this.selectedMode=size;this.refresh();});
       if(this.selectedMode===size) this.art('check',779,y,64);
     }
-    this.text('首次默认 4 位 · 下次自动记住你的选择',470,1120,720,60,31);
+    this.text(`已选 ${modeLabel(this.selectedMode)} · 确认后记住`,470,1120,720,60,33);
     this.art('banner',470,1220,720,90);
     this.text(friend?'好友加入后使用相同规则':'每回合 60 秒  |  最多 30 轮',470,1220,650,65,33,'#FFE5A9');
     this.fixed(friend?'create':'match',friend?'创建房间':'开始匹配',470,1380,595,()=>this.chooseMode?.(this.selectedMode));
@@ -229,12 +234,13 @@ export class LearningPanel {
       const cx=x+(i-(size-1)/2)*(width+12), selected=editable&&this.slot===i;
       const node=this.art('card',cx,y-(selected?12:0),width);
       if(selected) node.getComponent(Sprite)!.color=new Color('#FFE39A');
-      this.text(digits[i]??'—',cx,y-(selected?12:0),width-8,width*1.2,width*.75,selected?'#A8401B':'#321502');
+      const digit = this.text(digits[i]??'—',cx,y-(selected?12:0),width-8,width*1.2,width*.75,selected?'#A8401B':'#321502');
+      digit.node.setParent(node); digit.node.setPosition(0,0);
       if(editable) this.touch(node,'digit-'+i,()=>{this.slot=i;this.refresh();});
     }
   }
   private keyboard(size: DigitCount, practice=false) {
-    this.cards(this.draft,practice?395:470,practice?968:820,practice?105:110,true,size);
+    this.cards(this.draft,practice?395:470,practice?958:820,practice?105:110,true,size);
     for(const [i,key] of ['1','2','3','4','5','6','7','8','9','delete','0','submit'].entries()) {
       this.fixed('key-'+key,key==='delete'?'删除':key==='submit'?'提交':key,260+(i%3)*211,(practice?1154:1020)+Math.floor(i/3)*100,205,()=>this.input(key),key!=='submit'||this.draft.length===size);
     }
@@ -295,6 +301,7 @@ export class LearningPanel {
     const caption=recent.length>1?compareClues(recent[0],recent[1]):recent.length?clueCaption(recent[0]):'点击卡牌可单独修改一位';
     this.text(this.message||caption,470,744,670,106,30);
     this.keyboard(practice.size,true);
+    this.text(this.slot>=0?`正在修改第 ${this.slot+1} 位 · 点击键盘替换`:`已输入 ${this.draft.length}/${practice.size} 位 · 点击卡牌可修改`,470,1050,680,40,26);
     this.fixed('hint',`推理提示 · ${practice.history.length} 条记录`,747,970,215,()=>this.go('clues'));
   }
   private clues() {
@@ -345,9 +352,14 @@ export class LearningPanel {
       this.text(h.hits===null?'—':`${h.hits}/${size}`,690,y,110,70,38);
       this.text(index===selected?'已选':index===baseline?'对照':'',793,y,80,60,25);
     });
-    this.button('上一页',235,892,190,()=>{this.recordPage--;this.refresh();},this.recordPage>0,66);
-    this.text(`${this.recordPage+1} / ${pages}`,470,892,200,60,28);
-    this.button('下一页',705,892,190,()=>{this.recordPage++;this.refresh();},this.recordPage+1<pages,66);
+    if (pages > 1) {
+      const move = (page: number, index = page * 3) => {
+        this.recordPage = page; this.selected = index; this.refresh();
+      };
+      this.button('上一页',235,892,190,()=>move(this.recordPage-1),this.recordPage>0,80);
+      this.button(`${this.recordPage+1}/${pages} · 回最新`,470,892,230,()=>move(pages-1,history.length-1),true,80).name='LearningControl-回到最新';
+      this.button('下一页',705,892,190,()=>move(this.recordPage+1),this.recordPage+1<pages,80);
+    } else this.text(history.length?'点击记录选择，再设为对照':'猜测后即可在这里查看和对比记录',470,892,700,65,29);
     const item=history[selected],before=history[baseline];
     const caption=item?before&&baseline!==selected?compareClues(before,item):clueCaption(item):'点击记录选择，再设为对照，可比较任意两次猜测。';
     this.art('answer',470,1110,735,320);
@@ -367,10 +379,14 @@ export class LearningPanel {
         this.text(`命中数 ${before.hits} → ${item.hits}`,470,1090,650,70,37);
       }
     }
-    this.text(caption,470,1200,650,115,32);
+    this.text(caption,470,item?.digits&&before?.digits&&baseline!==selected?1200:1110,650,135,32);
     this.fixed('baseline','设为对照',285,1500,360,()=>{this.baseline=selected;this.refresh();},!!item?.digits);
     const room=this.context.room;
     const canCopy=!room?!this.practice?.solved:['playing','reply'].includes(room.phase)&&room.current===this.context.me&&this.context.now>=room.startAt&&this.context.now<room.deadline;
+    const copyHint = !item?.digits ? (history.length?'超时记录没有数字，无法复制':'先提交一次猜测，再选择记录')
+      : !canCopy ? (!room?'本局已破解，可返回开始新练习':'轮到你行动时可复制记录')
+      : `已选第 ${selected+1} 次 · 复制后可修改任意一位`;
+    this.text(copyHint,470,1302,700,50,28);
     this.fixed('copy','复制后修改',677,1500,383,()=>{
       if(!item?.digits)return;
       if(room)this.context.copy(item.digits);
