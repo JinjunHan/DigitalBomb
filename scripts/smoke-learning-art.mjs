@@ -20,6 +20,9 @@ try {
  assert.equal(await page.evaluate(()=>app.learning.tutorial.step),2);await shot('04-interactive-tutorial');
  await click('返回');await click('3 位 · 进阶');
  await page.evaluate(()=>app.learning.practice.answer='145');
+ await click('digit-2');assert.equal(await page.evaluate(()=>app.learning.slot),0);
+ await click('1');assert.equal(await page.evaluate(()=>app.learning.draft),'1');
+ assert.equal(await page.evaluate(()=>app.learning.slot),-1);await click('删除');
  await page.keyboard.type('123');await click('提交');await page.keyboard.type('923');await click('提交');await page.keyboard.type('153');await click('digit-1');
  await click('删除');assert.equal(await page.evaluate(()=>app.learning.draft),'13');
  await page.keyboard.press('Backspace');await page.keyboard.press('Backspace');await page.keyboard.type('153');
@@ -32,7 +35,7 @@ try {
  await click('推理提示 · 3 条记录');assert.equal(await page.evaluate(()=>app.learning.cache.count),192);await shot('06-position-deduction');
  assert.deepEqual(await page.evaluate(()=>app.learning.cache.positions[0].possible),['1']);
  await click('记录与对比');await shot('07-history-comparison');
- await click('record-0');await click('设为对照');await click('record-2');await click('复制后修改');
+ await click('record-0');await click('设为对照');await shot('baseline-guidance');await click('record-2');await click('复制后修改');
  assert.equal(await page.evaluate(()=>app.learning.draft),'9234');
  // UI boundary fixture: enough valid records to require ten pages, no backend secrets.
  await page.evaluate(()=>{const h=app.learning.practice.history;app.learning.practice.history=Array.from({length:30},(_,i)=>({...h[i%3]}));app.learning.go('clues');});
@@ -43,6 +46,11 @@ try {
  assert.equal(await page.evaluate(()=>app.learning.selected),29);
  await click('上一页');
  await shot('history-30-records');
+ await click('返回');await click('推理提示 · 30 条记录');
+ assert.equal(await page.evaluate(()=>app.learning.recordPage),9);
+ assert.equal(await page.evaluate(()=>app.learning.selected),-1);
+ await click('复制后修改');assert.equal(await page.evaluate(()=>app.learning.draft),'9234');
+ await click('推理提示 · 30 条记录');
  await click('返回');await click('返回');await click('先去大厅');
  await page.evaluate(()=>{app.selectMode('public');});await shot('01-online-mode');
  await click('返回');await page.evaluate(()=>app.selectMode('friend'));await click('3 位 · 标准局 · 1000 种组合');await shot('02-friend-mode');

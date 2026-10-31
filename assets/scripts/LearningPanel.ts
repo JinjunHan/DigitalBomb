@@ -50,7 +50,7 @@ export class LearningPanel {
   }
   close() { this.visible = false; this.timer = undefined; }
   private refresh() { this.context.redraw(); }
-  private go(page: Page) { if (page === 'clues') this.recordPage = -1; this.page = page; this.message = ''; this.refresh(); }
+  private go(page: Page) { if (page === 'clues') { this.recordPage = -1; this.selected = -1; } this.page = page; this.message = ''; this.refresh(); }
   private startPractice(size: DigitCount) {
     this.practice = new Practice(size); this.draft = ''; this.slot = -1;
     this.selected = -1; this.baseline = -1; this.recordPage = 0; this.go('practice');
@@ -76,7 +76,7 @@ export class LearningPanel {
     else if (/^\d$/.test(key)) {
       if (this.slot >= 0 && this.slot < this.draft.length) {
         this.draft = this.draft.slice(0, this.slot) + key + this.draft.slice(this.slot + 1); this.slot = -1;
-      } else if (this.draft.length < size) this.draft += key;
+      } else if (this.draft.length < size) { this.draft += key; this.slot = -1; }
       else this.message = '数字已填满，点击要修改的卡牌再输入。';
     }
     this.refresh();
@@ -236,7 +236,10 @@ export class LearningPanel {
       if(selected) node.getComponent(Sprite)!.color=new Color('#FFE39A');
       const digit = this.text(digits[i]??'—',cx,y-(selected?12:0),width-8,width*1.2,width*.75,selected?'#A8401B':'#321502');
       digit.node.setParent(node); digit.node.setPosition(0,0);
-      if(editable) this.touch(node,'digit-'+i,()=>{this.slot=i;this.refresh();});
+      if(editable) this.touch(node,'digit-'+i,()=>{
+        const target = Math.min(i, this.draft.length);
+        this.slot = this.slot === target ? -1 : target; this.message = ''; this.refresh();
+      });
     }
   }
   private keyboard(size: DigitCount, practice=false) {
@@ -301,7 +304,7 @@ export class LearningPanel {
     const caption=recent.length>1?compareClues(recent[0],recent[1]):recent.length?clueCaption(recent[0]):'点击卡牌可单独修改一位';
     this.text(this.message||caption,470,744,670,106,30);
     this.keyboard(practice.size,true);
-    this.text(this.slot>=0?`正在修改第 ${this.slot+1} 位 · 点击键盘替换`:`已输入 ${this.draft.length}/${practice.size} 位 · 点击卡牌可修改`,470,1050,680,40,26);
+    this.text(this.slot>=0?(this.slot<this.draft.length?`正在修改第 ${this.slot+1} 位 · 点击键盘替换`:`接着填写第 ${this.slot+1} 位 · 点击键盘输入`):`已输入 ${this.draft.length}/${practice.size} 位 · 点击卡牌可修改`,470,1050,680,40,26);
     this.fixed('hint',`推理提示 · ${practice.history.length} 条记录`,747,970,215,()=>this.go('clues'));
   }
   private clues() {
@@ -361,7 +364,7 @@ export class LearningPanel {
       this.button('下一页',705,892,190,()=>move(this.recordPage+1),this.recordPage+1<pages,80);
     } else this.text(history.length?'点击记录选择，再设为对照':'猜测后即可在这里查看和对比记录',470,892,700,65,29);
     const item=history[selected],before=history[baseline];
-    const caption=item?before&&baseline!==selected?compareClues(before,item):clueCaption(item):'点击记录选择，再设为对照，可比较任意两次猜测。';
+    const caption=item?baseline===selected&&this.baseline>=0?`已将第 ${selected+1} 次设为对照。\n再点击另一条记录，查看变化。`:before&&baseline!==selected?compareClues(before,item):clueCaption(item):'点击记录选择，再设为对照，可比较任意两次猜测。';
     this.art('answer',470,1110,735,320);
     if(item?.digits&&before?.digits&&baseline!==selected){
       const changed=Array.from(item.digits).map((digit,i)=>digit!==before.digits![i]?i:-1).filter(i=>i>=0);
