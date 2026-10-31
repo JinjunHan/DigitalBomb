@@ -23,7 +23,11 @@ try {
  await click('digit-2');assert.equal(await page.evaluate(()=>app.learning.slot),0);
  await click('1');assert.equal(await page.evaluate(()=>app.learning.draft),'1');
  assert.equal(await page.evaluate(()=>app.learning.slot),-1);await click('删除');
- await page.keyboard.type('123');await click('提交');await page.keyboard.type('923');await click('提交');await page.keyboard.type('153');await click('digit-1');
+ await page.keyboard.type('123');await click('提交');await page.keyboard.type('923');await click('提交');
+ await click('reuse-0');assert.equal(await page.evaluate(()=>app.learning.draft),'123');
+ assert.equal(await page.evaluate(()=>app.learning.practice.history.length),2);
+ await click('digit-1');await click('5');assert.equal(await page.evaluate(()=>app.learning.draft),'153');
+ await click('digit-1');
  await click('删除');assert.equal(await page.evaluate(()=>app.learning.draft),'13');
  await page.keyboard.press('Backspace');await page.keyboard.press('Backspace');await page.keyboard.type('153');
  await page.keyboard.type('9');assert.match(await page.evaluate(()=>app.learning.message),/已填满/);

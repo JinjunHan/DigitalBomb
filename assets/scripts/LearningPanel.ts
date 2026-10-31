@@ -245,7 +245,7 @@ export class LearningPanel {
   private keyboard(size: DigitCount, practice=false) {
     this.cards(this.draft,practice?395:470,practice?958:820,practice?105:110,true,size);
     for(const [i,key] of ['1','2','3','4','5','6','7','8','9','delete','0','submit'].entries()) {
-      this.fixed('key-'+key,key==='delete'?'删除':key==='submit'?'提交':key,260+(i%3)*211,(practice?1154:1020)+Math.floor(i/3)*100,205,()=>this.input(key),key!=='submit'||this.draft.length===size);
+      this.fixed('key-'+key,key==='delete'?'删除':key==='submit'?'提交':key,260+(i%3)*211,(practice?1154:1020)+Math.floor(i/3)*100,205,()=>this.input(key),key==='submit'?this.draft.length===size:key==='delete'?this.draft.length>0:true);
     }
   }
   private teach() {
@@ -300,9 +300,16 @@ export class LearningPanel {
       this.text(`第 ${practice.history.length-recent.length+i+1} 次`,229,y,145,70,31);
       this.cards(h.digits!,470,y,practice.size===4?65:86);
       this.text(`${h.hits}/${practice.size}`,722,y,120,70,40);
+      const index=practice.history.length-recent.length+i;
+      const reuse=this.node('PracticeReuse',470,y,680,130);
+      this.touch(reuse,'reuse-'+index,()=>{
+        this.draft=h.digits!; this.slot=-1;
+        this.message=`已复用第 ${index+1} 次猜测，点击一张卡牌修改。`; this.refresh();
+      });
     });
+    if(recent.length)this.text('点击上方记录复用 · 改一位再比较',470,710,650,32,24);
     const caption=recent.length>1?compareClues(recent[0],recent[1]):recent.length?clueCaption(recent[0]):'点击卡牌可单独修改一位';
-    this.text(this.message||caption,470,744,670,106,30);
+    this.text(this.message||caption,470,760,670,90,30);
     this.keyboard(practice.size,true);
     this.text(this.slot>=0?(this.slot<this.draft.length?`正在修改第 ${this.slot+1} 位 · 点击键盘替换`:`接着填写第 ${this.slot+1} 位 · 点击键盘输入`):`已输入 ${this.draft.length}/${practice.size} 位 · 点击卡牌可修改`,470,1050,680,40,26);
     this.fixed('hint',`推理提示 · ${practice.history.length} 条记录`,747,970,215,()=>this.go('clues'));
