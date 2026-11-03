@@ -4,7 +4,7 @@ import { Practice, Tutorial } from './shared/learning';
 import type { RoomView } from './shared/protocol';
 import { modeLabel, type MatchMode } from './shared/game-mode';
 
-const LEARNING_ART = ["bg-mode", "bg-hub", "bg-practice", "bg-notebook", "back", "title-online", "title-friend", "title-hub", "title-tutorial", "mode-2", "mode-3", "mode-4", "check", "match", "create", "start", "practice-2", "practice-3", "practice-4", "rules", "home", "hint", "key-1", "key-2", "key-3", "key-4", "key-5", "key-6", "key-7", "key-8", "key-9", "key-0", "key-delete", "key-submit", "tab-positions", "tab-history", "baseline", "copy", "return", "card", "answer", "panel", "banner", "subtitle"];
+const LEARNING_ART = ["paper", "back", "title-online", "title-friend", "title-hub", "title-tutorial", "mode-2", "mode-3", "mode-4", "check", "match", "create", "start", "practice-2", "practice-3", "practice-4", "rules", "home", "hint", "key-1", "key-2", "key-3", "key-4", "key-5", "key-6", "key-7", "key-8", "key-9", "key-0", "key-delete", "key-submit", "tab-positions", "tab-history", "baseline", "copy", "return", "card", "answer", "panel", "banner", "subtitle"];
 
 interface Context {
   parent: Node; height: number; top: number; bottom: number;
@@ -89,9 +89,9 @@ export class LearningPanel {
     if (this.loading) return;
     this.loading = true;
     // Publish the whole batch atomically: network redraws never expose half a skin.
-    resources.load(LEARNING_ART.map(name => 'art/learning-v2/' + name + '/texture'), Texture2D, (error, textures) => {
+    resources.load(LEARNING_ART.map(name => name === 'paper' ? 'art/profile/paper/texture' : 'art/learning-v2/' + name + '/texture'), Texture2D, (error, textures) => {
       if (error) { this.failed = true; this.loading = false; }
-      else textures.forEach((texture, i) => { const frame = new SpriteFrame(); frame.texture = texture; if (['answer','subtitle','banner','card'].includes(LEARNING_ART[i])) { const name=LEARNING_ART[i]; const x=name==='answer'?52:name==='card'?12:30; const y=name==='answer'?38:name==='card'?12:22; frame.insetLeft=x; frame.insetRight=x; frame.insetTop=y; frame.insetBottom=y; } this.frames.set(LEARNING_ART[i], frame); });
+      else textures.forEach((texture, i) => { const frame = new SpriteFrame(); frame.texture = texture; if (LEARNING_ART[i] === 'paper') { frame.insetLeft=110; frame.insetRight=110; frame.insetTop=160; frame.insetBottom=130; } if (['answer','subtitle','banner','card'].includes(LEARNING_ART[i])) { const name=LEARNING_ART[i]; const x=name==='answer'?52:name==='card'?12:30; const y=name==='answer'?38:name==='card'?12:22; frame.insetLeft=x; frame.insetRight=x; frame.insetTop=y; frame.insetBottom=y; } this.frames.set(LEARNING_ART[i], frame); });
       if (this.visible && this.context.parent.isValid) this.refresh();
     });
   }
@@ -104,7 +104,7 @@ export class LearningPanel {
     w ??= frame.originalSize.width; h ??= w * frame.originalSize.height / frame.originalSize.width;
     const node = this.node('LearningArt-' + name, x, y, w, h);
     const sprite = node.addComponent(Sprite); sprite.spriteFrame = frame; sprite.sizeMode = Sprite.SizeMode.CUSTOM;
-    if (['answer','subtitle','banner','card'].includes(name)) sprite.type = Sprite.Type.SLICED;
+    if (['paper','answer','subtitle','banner','card'].includes(name)) sprite.type = Sprite.Type.SLICED;
     node.getComponent(UITransform)!.setContentSize(w, h); return node;
   }
   private text(value: string, x: number, y: number, w = 700, h = 70, size = 34, color = '#3D1D08') {
@@ -145,12 +145,11 @@ export class LearningPanel {
     this.context = context; this.timer = undefined; this.timerRoom = context.room ?? undefined;
     const blocker = new Node('LearningBlocker'); blocker.layer = Layers.Enum.UI_2D; context.parent.addChild(blocker);
     blocker.addComponent(UITransform).setContentSize(750,context.height); blocker.addComponent(BlockInputEvents);
-    const shade = blocker.addComponent(Graphics); shade.fillColor = new Color('#112C29');
+    const shade = blocker.addComponent(Graphics); shade.fillColor = new Color(17,44,41,55);
     shade.rect(-375,-context.height/2,750,context.height); shade.fill();
     this.group = new Node('LearningPanel'); this.group.layer = Layers.Enum.UI_2D; blocker.addChild(this.group);
     this.group.addComponent(UITransform).setContentSize(941,1672);
-    // Only the interactive range y=64..1570 must fit the safe area. Decorative
-    // scene margins can extend beyond it, retaining the original full-width composition.
+    // Fit the controls to the safe area; the persistent 2.5D scene stays outside this group.
     const scale = Math.min(750/941,(context.height-context.top-context.bottom-8)/1506);
     this.group.setScale(scale,scale,1);
     this.group.setPosition(0,context.height/2-context.top-(836-64)*scale);
@@ -161,12 +160,7 @@ export class LearningPanel {
       const back=this.text('返回',470,1000,300,100,38,'#F8DFAC');back.node.on(Node.EventType.TOUCH_END,()=>this.back());
       if (!this.failed) this.loadArt(); return;
     }
-    const background = this.page === 'menu' ? 'hub' : this.page === 'clues' ? 'notebook' : this.page === 'practice' && !this.practice?.solved ? 'practice' : 'mode';
-    const backdrop = this.art('bg-mode',470.5,836,941,1672);
-    backdrop.setParent(blocker); backdrop.setPosition(0,0); backdrop.setSiblingIndex(0);
-    const cover = Math.max(750/941,context.height/1672); backdrop.setScale(cover,cover,1);
-    backdrop.getComponent(Sprite)!.color = new Color('#887C69');
-    this.art('bg-'+background,470.5,836,941,1672);
+    this.art('paper',470.5,885,910,1450);
     this.fixed('back','返回',88,114,99,()=>this.back());
     if (this.page === 'mode') this.modeSelection();
     else if (this.page === 'confirmation') this.confirm();
@@ -182,8 +176,8 @@ export class LearningPanel {
   }
   private heading(value: string, subtitle: string, asset?: string) {
     if (asset) this.art('title-'+asset,474.5,asset==='friend'?285:276,513,asset==='friend'?90:108);
-    else this.text(value,470,275,480,100,60,'#FFE5A9');
-    this.text(subtitle,470,358,350,55,29,'#FFE5A9');
+    else { this.art('banner',470,275,650,115); this.text(value,470,275,600,100,54,'#FFE5A9'); }
+    this.text(subtitle,470,358,650,55,29);
   }
   private modeSelection() {
     const friend=this.matchMode==='friend';
@@ -215,8 +209,18 @@ export class LearningPanel {
   }
   private menu() {
     this.heading('','先学会推理，再与对手较量','hub');
-    this.fixed('start','互动教学 · 学会第一步推理',472,951,532,()=>this.startTutorial());
-    for(const [i,size] of ([2,3,4] as const).entries()) this.fixed('practice-'+size,`${size} 位 · ${['入门','进阶','标准'][i]}`,225+i*249,1309,241,()=>this.startPractice(size));
+    this.art('panel',471,680,722,550);
+    this.text('只改一位，比较命中变化',470,465,650,70,38);
+    for (const [i,digits] of ['1234','9234'].entries()) {
+      Array.from(digits).forEach((digit,j)=>this.text(digit,211+j*104,618+i*165,86,110,76,j===0?'#9F3415':'#321502'));
+      this.text(`命中 ${2-i} 位`,695,619+i*165,190,80,36,'#FFE5A9');
+    }
+    this.text('第一位改变，其他位相同',470,900,600,60,32);
+    this.art('banner',470,1150,520,95);
+    this.text('自由练习',470,1150,470,70,42,'#FFE5A9');
+    this.text('不限时 · 不计战绩',470,1220,650,40,27);
+    this.fixed('start','互动教学 · 学会第一步推理',472,1030,532,()=>this.startTutorial());
+    for(const [i,size] of ([2,3,4] as const).entries()) this.fixed('practice-'+size,`${size} 位 · ${['入门','进阶','标准'][i]}`,225+i*249,1360,241,()=>this.startPractice(size));
     this.fixed('rules','查看正式对战规则',295,1513,311,()=>this.go('rules'));
     this.fixed('home','先去大厅',648,1513,311,()=>{this.close();this.refresh();});
   }
@@ -292,7 +296,9 @@ export class LearningPanel {
       this.button('再练一次',470,1270,600,()=>this.startPractice(practice.size),true,100);
       this.button(practice.size<4?`挑战 ${practice.size+1} 位`:'返回练习室',470,1410,600,()=>practice.size<4?this.startPractice((practice.size+1) as DigitCount):this.go('menu'),true,100);return;
     }
+    this.art('banner',470,227,650,110);
     this.text(`${practice.size} 位自由练习`,470,227,490,100,58,'#FFE5A9');
+    this.text('我的猜测 · 不限时 · 不计战绩',470,330,650,60,30);
     const recent=practice.history.slice(-2);
     if(!recent.length) this.text('先猜一组数字，收集第一条线索\n每位 0～9 · 可重复 · 可 0 开头',470,530,660,160,33);
     recent.forEach((h,i)=>{
@@ -318,6 +324,8 @@ export class LearningPanel {
     const {room,me}=this.context;
     const history:Clue[]=room?room.history.filter(h=>h.playerId===me):this.practice?.history??[];
     const size:DigitCount=room?room.digitCount??4:this.practice?.size??4;
+    this.art('banner',470,205,650,100);
+    this.text('我的推理笔记',470,205,600,80,46,'#FFE5A9');
     const left=this.fixed('tab-positions','逐位排除',310,317,350,()=>{this.tab='positions';this.refresh();});
     const right=this.fixed('tab-history','记录与对比',660,317,330,()=>{this.tab='history';this.refresh();});
     (this.tab==='positions'?right:left).getComponent(Sprite)!.color=new Color('#B5A18B');

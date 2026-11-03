@@ -502,6 +502,8 @@ export class GameApp extends Component {
     if (!starting && s && !s.room && s.queuedAt === null && this.page === 'lobby' && !this.overlay && !this.pendingInvitation && !this.learning.visible && this.profileArt.has('paper') && this.modalArt.has('tab-off') && read('learning-offered-v1-'+s.me.id) !== '1') {
       write('learning-offered-v1-'+s.me.id,'1'); this.learning.open('menu');
     }
+    // Learning pages share the scene, while their underlying page controls stay hidden.
+    if (!starting && this.learning.visible) for (const child of this.root.children) child.active = false;
     if (!starting && this.learning.visible) this.learning.render({
       parent: this.root, height: this.screenHeight, top: this.layoutTop, bottom: bottomSafeInset(),
       paper: this.profileArt.get('paper'), button: this.modalArt.get('tab-off'), card: this.battleArt.get('card-paper'),
