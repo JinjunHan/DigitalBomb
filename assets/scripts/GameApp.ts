@@ -18,6 +18,7 @@ import { BATTLE_RECTS } from './shared/battle-art';
 import { LobbyShuffle } from './shared/lobby-shuffle';
 import { SceneBackdrop } from './SceneBackdrop';
 import { InputEditSession } from './shared/input-edit-session';
+import { matchingTransition } from './shared/matching-transition';
 import { profileTransition } from './shared/profile-transition';
 import { GameAudio } from './GameAudio';
 import { Connection } from './Connection';
@@ -81,6 +82,12 @@ export class GameApp extends Component {
   private battleArtReady = false;
   private matchingArt = new Map<string, SpriteFrame>();
   private matchingArtReady = false;
+  private showingMatching = false;
+  private matchingMotionElapsed = 0;
+  private matchingMotionFrames = 0;
+  private matchingMotion = false;
+  private matchingOutgoing?: Node;
+  private matchingIncoming?: Node;
   private lobbyShuffle = new LobbyShuffle();
   private lobbyDigitFrames: SpriteFrame[] = [];
   private lobbyReels: { current: Sprite; next: Sprite; height: number }[] = [];
@@ -215,7 +222,7 @@ export class GameApp extends Component {
     this.wxFlow.start();
     this.resizeLayout(); this.connect(); this.schedule(this.updateTimer, 0.2);
   }
-  onDestroy() { this.opponentCard?.destroy(); clearTimeout(this.loginDeadline); this.releaseStartup(); this.wxFlow?.destroy(); if (this.feedbackArt) this.feedbackArt.disposed = true; this.friendReturn?.destroy(); this.modals?.destroy(); this.stopJoinMotion(); this.scenery?.destroy(); view.off('canvas-resize', this.resizeLayout, this); this.audio.dispose(); if (this.profilePanel) Tween.stopAllByTarget(this.profilePanel); this.clearEffects(); this.net.stop(); input.off(Input.EventType.KEY_DOWN, this.onKey, this); game.off(Game.EVENT_SHOW, this.onShow, this); game.off(Game.EVENT_HIDE, this.onHide, this); }
+  onDestroy() { this.finishMatchingMotion(); this.opponentCard?.destroy(); clearTimeout(this.loginDeadline); this.releaseStartup(); this.wxFlow?.destroy(); if (this.feedbackArt) this.feedbackArt.disposed = true; this.friendReturn?.destroy(); this.modals?.destroy(); this.stopJoinMotion(); this.scenery?.destroy(); view.off('canvas-resize', this.resizeLayout, this); this.audio.dispose(); if (this.profilePanel) Tween.stopAllByTarget(this.profilePanel); this.clearEffects(); this.net.stop(); input.off(Input.EventType.KEY_DOWN, this.onKey, this); game.off(Game.EVENT_SHOW, this.onShow, this); game.off(Game.EVENT_HIDE, this.onHide, this); }
   private onHide() { this.wxFlow?.clearButton();this.audio.background(true); }
   private onShow() { this.audio.background(false); if (this.net.online) this.net.command('sync').catch(() => {}); }
   private loadStartupTexture(path: string, loaded: (texture: Texture2D) => void) {
@@ -433,6 +440,20 @@ export class GameApp extends Component {
     const keepInput = this.page === 'profile' && !this.profileMotion && !this.busy && !this.overlay
       && !this.net.state?.room && this.net.state?.queuedAt === null;
     if (keepInput && this.nicknameSession.deferRedraw()) return;
+    const enteringMatching = !!this.net.state && !this.net.state.room && this.net.state.queuedAt !== null;
+    const motionEnabled = read('motion', '1') === '1';
+    if (!enteringMatching || !motionEnabled) this.finishMatchingMotion();
+    if (enteringMatching && !this.showingMatching && this.startupEntered && motionEnabled) {
+      this.matchingMotion = true; this.matchingMotionElapsed = 0; this.matchingMotionFrames = 0;
+      const outgoing = this.n('MatchingOutgoing', 375, 667, 750, this.screenHeight, this.node);
+      outgoing.setSiblingIndex(this.root.getSiblingIndex());
+      outgoing.addComponent(UIOpacity);
+      for (const child of [...this.root.children]) child.parent = outgoing;
+      outgoing.pauseSystemEvents(true);
+      this.matchingOutgoing = outgoing;
+    }
+    this.showingMatching = enteringMatching;
+    this.matchingIncoming = undefined;
     this.wxFlow?.clearButton();this.wechatProfileNode=undefined;
     this.nicknameSession.end(); this.nicknameEditBox = undefined;
     for (const { view: scroll, key } of this.recordScrolls) {
@@ -470,6 +491,14 @@ export class GameApp extends Component {
     else if (this.page === 'join') this.join();
     else if (this.page === 'profile') this.profile();
     else this.lobby();
+    if (enteringMatching && this.matchingMotion) {
+      const children = [...this.root.children];
+      const incoming = this.n('MatchingIncoming', 375, 667, 750, this.screenHeight);
+      incoming.setPosition(0, 0); incoming.addComponent(UIOpacity);
+      for (const child of children) child.parent = incoming;
+      this.matchingIncoming = incoming;
+      this.applyMatchingMotion();
+    }
     if (!starting && s && !s.room && s.queuedAt === null && this.page === 'lobby' && !this.overlay && !this.pendingInvitation && !this.learning.visible && this.profileArt.has('paper') && this.modalArt.has('tab-off') && read('learning-offered-v1-'+s.me.id) !== '1') {
       write('learning-offered-v1-'+s.me.id,'1'); this.learning.open('menu');
     }
@@ -594,6 +623,29 @@ export class GameApp extends Component {
       const slashNode = this.n('MutedSlash', 375, 667, 50 * fit, 50 * fit, soundButton);
       const slash = slashNode.addComponent(Graphics); slash.strokeColor = new Color(C.cream); slash.lineWidth = 3;
       slash.moveTo(-20 * fit, -20 * fit); slash.lineTo(20 * fit, 20 * fit); slash.stroke();
+    }
+  }
+  private finishMatchingMotion() {
+    this.matchingMotion = false;
+    if (this.matchingOutgoing?.isValid) {
+      this.matchingOutgoing.removeFromParent(); this.matchingOutgoing.destroy();
+    }
+    this.matchingOutgoing = undefined;
+    if (this.matchingIncoming?.isValid) {
+      this.matchingIncoming.setPosition(0, 0); this.matchingIncoming.setScale(1, 1, 1);
+      this.matchingIncoming.getComponent(UIOpacity)!.opacity = 255;
+    }
+  }
+  private applyMatchingMotion() {
+    const pose = matchingTransition(this.matchingMotionElapsed);
+    if (this.matchingOutgoing?.isValid) {
+      this.matchingOutgoing.setScale(pose.outgoingScale, pose.outgoingScale, 1);
+      this.matchingOutgoing.getComponent(UIOpacity)!.opacity = Math.round(255 * pose.outgoingOpacity);
+    }
+    if (this.matchingIncoming?.isValid) {
+      this.matchingIncoming.setPosition(0, pose.incomingY);
+      this.matchingIncoming.setScale(pose.incomingScale, pose.incomingScale, 1);
+      this.matchingIncoming.getComponent(UIOpacity)!.opacity = Math.round(255 * pose.incomingOpacity);
     }
   }
   private matching() {
@@ -1399,6 +1451,14 @@ export class GameApp extends Component {
     if(this.roundNew?.isValid)this.roundNew.setPosition(0,pose.newY);
   }
   update(dt: number) {
+    if (this.matchingMotion) {
+      if (read('motion', '1') !== '1') this.finishMatchingMotion();
+      else if (++this.matchingMotionFrames > 2) {
+        this.matchingMotionElapsed += Math.min(Math.max(dt, 0), .05);
+        this.applyMatchingMotion();
+        if (matchingTransition(this.matchingMotionElapsed).complete) this.finishMatchingMotion();
+      }
+    }
     const reelStops=this.lobbyShuffle.advance(dt,read('motion','1')==='1');
     if(reelStops.length && !this.overlay && this.net.online)this.audio.play('tap');
     this.applyLobbyShuffle();
