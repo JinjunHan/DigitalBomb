@@ -1607,8 +1607,9 @@ export class GameApp extends Component {
           this.render();
         }, [610, y, 774, y + 88]);
       });
-      const credits = label('音乐：Kevin MacLeod · 授权详情', 470, 1237, 24, 690, 60);
-      credits.node.on(Node.EventType.TOUCH_END, () => {
+      // The music-note artwork is baked into settings-body; overlay only its hit target.
+      const credits = place(this.n('MusicCredits', 375, 667, 140, 140, group), 233, 584);
+      credits.on(Node.EventType.TOUCH_END, () => {
         if (!this.modals.interactive) return;
         const content = 'Local Forecast - Elevator\nSneaky Snitch\n作者：Kevin MacLeod (incompetech.com)\n许可：Creative Commons Attribution 4.0\nhttps://creativecommons.org/licenses/by/4.0/\n来源：https://incompetech.com/music/royalty-free/\n已截取、循环交叉淡化、响度调整并转为单声道。';
         if (wechat()) wechat().showModal({ title: '音乐署名与授权', content, showCancel: false, confirmText: '知道了' });
