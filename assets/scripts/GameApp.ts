@@ -474,6 +474,7 @@ export class GameApp extends Component {
     const state = this.net.state;
     const sceneView = state?.room ? (state.room.phase === 'waiting' ? 'friend' : 'game')
       : state?.queuedAt != null ? 'matching' : this.page === 'join' ? 'friend' : 'lobby';
+    this.audio.setScene(sceneView === 'game' ? 'battle' : 'lobby');
     this.scenery.setView(sceneView, read('motion', '1') === '1');
     const s = this.net.state;
     const starting = !this.startupEntered && (!s || !this.net.online || !this.startupAssets.ready);
@@ -1453,6 +1454,7 @@ export class GameApp extends Component {
     if(this.roundNew?.isValid)this.roundNew.setPosition(0,pose.newY);
   }
   update(dt: number) {
+    this.audio?.update(dt);
     if (this.matchingMotion) {
       if (read('motion', '1') !== '1') this.finishMatchingMotion();
       else if (++this.matchingMotionFrames > 2) {
@@ -1581,6 +1583,13 @@ export class GameApp extends Component {
           this.render();
         }, [610, y, 774, y + 88]);
       });
+      const credits = label('音乐：Kevin MacLeod · 授权详情', 470, 1237, 24, 690, 60);
+      credits.node.on(Node.EventType.TOUCH_END, () => {
+        if (!this.modals.interactive) return;
+        const content = 'Local Forecast - Elevator\nSneaky Snitch\n作者：Kevin MacLeod (incompetech.com)\n许可：Creative Commons Attribution 4.0\nhttps://creativecommons.org/licenses/by/4.0/\n来源：https://incompetech.com/music/royalty-free/\n已截取、循环交叉淡化、响度调整并转为单声道。';
+        if (wechat()) wechat().showModal({ title: '音乐署名与授权', content, showCancel: false, confirmText: '知道了' });
+        else globalThis.alert(content);
+      });
     } else if (key === 'menu') {
       art('menu-continue', this.closeModal); art('menu-resign', () => this.ask('resign', () => this.act('resign')));
     } else if (key === 'reconnect') {
@@ -1648,6 +1657,8 @@ export class GameApp extends Component {
   }
   private updateTimer = () => {
     const s = this.net.state, r = s?.room, now = this.net.now();
+    this.audio.setDucked(!!(r && s && ['playing', 'reply'].includes(r.phase)
+      && r.current === s.me.id && now >= r.startAt && r.deadline - now <= 5000 && r.deadline > now));
     if (r && r.phase === 'playing' && !this.openingRendered && now >= r.startAt) { this.openingRendered = true; this.render(); return; }
     if (this.timerLabel && s) {
       if (s.queuedAt !== null) { const seconds = Math.floor((now - s.queuedAt) / 1000); this.timerLabel.string = `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`; }

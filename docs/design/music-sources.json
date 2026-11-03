@@ -1,0 +1,28 @@
+[
+  {
+    "file": "music-lobby.mp3",
+    "title": "Local Forecast - Elevator",
+    "artist": "Kevin MacLeod",
+    "isrc": "USUAN1300012",
+    "source": "https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1300012",
+    "license": "https://creativecommons.org/licenses/by/4.0/",
+    "source_sha256": "8c46b44e65324bc339fbbc3e770611d671f6c74a40f3ec8dd50332c082b25cc9",
+    "start_seconds": 5.853658536585366,
+    "loop_seconds": 46.82928125,
+    "crossfade_seconds": 0.08,
+    "changes": "16-bar excerpt, circular crossfade, loudness normalization, mono 32 kHz / 48 kbps MP3"
+  },
+  {
+    "file": "music-battle.mp3",
+    "title": "Sneaky Snitch",
+    "artist": "Kevin MacLeod",
+    "isrc": "USUAN1100772",
+    "source": "https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1100772",
+    "license": "https://creativecommons.org/licenses/by/4.0/",
+    "source_sha256": "db1710333d68a215277f77e4e17e1a64bf4ed38f87c70f8d0f56b16b6aa4f884",
+    "start_seconds": 5.517241379310345,
+    "loop_seconds": 44.1379375,
+    "crossfade_seconds": 0.08,
+    "changes": "16-bar excerpt, circular crossfade, loudness normalization, mono 32 kHz / 48 kbps MP3"
+  }
+]
