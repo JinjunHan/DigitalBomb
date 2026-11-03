@@ -67,7 +67,7 @@ for item in plan:
  im.putalpha(mask.resize((w,h),Image.Resampling.LANCZOS));out=R/'assets/resources/art'/item['folder']/(item['key']+'.png');packed=pack(im);packed.save(out,optimize=True)
  meta=Path(str(out)+'.meta')
  if not meta.exists():
-  template=json.loads((R/'assets/resources/art/battle/right-thumb.png.meta').read_text());old=template['uuid'];template=json.loads(json.dumps(template).replace(old,str(uuid.uuid4())).replace('right-thumb',item['key']));meta.write_text(json.dumps(template,indent=2)+'\n')
+  template=json.loads((R/'docs/design/battle-hands-v2/legacy/right-thumb.png.meta').read_text());old=template['uuid'];template=json.loads(json.dumps(template).replace(old,str(uuid.uuid4())).replace('right-thumb',item['key']));meta.write_text(json.dumps(template,indent=2)+'\n')
 # Selection edge is derived from the CURRENT paper art, so aspect and corner curvature match exactly.
 card=Image.open(R/'assets/resources/art/battle/card-paper.png').convert('RGBA');a=card.getchannel('A');pad=ImageOps.expand(a,8,fill=0);inner=pad.filter(ImageFilter.MinFilter(15)).crop((8,8,8+a.width,8+a.height));card.putalpha(ImageChops.subtract(a,inner));card=pack(card);card.save(R/'assets/resources/art/battle/card-selected.png',optimize=True)
 p=R/'assets/scripts/shared/feedback-art.ts';s=p.read_text();s=re.sub(r'("defeat-title": \[)\s*777,\s*304',r'\1\n    815,\n    365',s);p.write_text(s)

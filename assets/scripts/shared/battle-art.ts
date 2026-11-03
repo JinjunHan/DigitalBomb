@@ -1,5 +1,6 @@
-/** Source rectangles: battle/slices.json and ui-repairs-v2/manifest.json. */
+/** Source rectangles: battle/slices.json, ui-repairs-v2/manifest.json, and battle-hands-v2/README.md. */
 export const BATTLE_RECTS: Record<string, readonly number[]> = {
+  "grip-sleeve": [0, 0, 1536, 1024],
   "opponent": [
     330,
     0,
@@ -89,24 +90,6 @@ export const BATTLE_RECTS: Record<string, readonly number[]> = {
     630,
     480,
     837
-  ],
-  "hands": [
-    0,
-    736,
-    941,
-    1165
-  ],
-  "hand-right": [
-    637,
-    737,
-    941,
-    1076
-  ],
-  "right-thumb": [
-    640,
-    797,
-    819,
-    935
   ],
   "prep-1": [
     183,
@@ -252,18 +235,6 @@ export const BATTLE_RECTS: Record<string, readonly number[]> = {
     899,
     1588
   ],
-  "play-hand-left": [
-    184,
-    991,
-    340,
-    1192
-  ],
-  "play-hand-right": [
-    610,
-    1004,
-    941,
-    1194
-  ],
   "card-selected": [
     0,
     0,
@@ -288,22 +259,4 @@ export const BATTLE_RECTS: Record<string, readonly number[]> = {
     961,
     1650
   ],
-  "left-thumb": [
-    0,
-    736,
-    941,
-    1165
-  ],
-  "play-left-thumb": [
-    184,
-    991,
-    340,
-    1192
-  ],
-  "play-right-thumb": [
-    610,
-    1004,
-    941,
-    1194
-  ]
 };

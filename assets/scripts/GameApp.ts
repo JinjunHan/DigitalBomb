@@ -188,7 +188,9 @@ export class GameApp extends Component {
     for (const name of battleNames) {
       resources.load('art/battle/' + name + '/texture', Texture2D, (err, texture) => {
         if (err || !this.isValid) return;
-        const frame = new SpriteFrame(); frame.texture = texture; this.battleArt.set(name, frame);
+        const frame = new SpriteFrame(); frame.texture = texture;
+        if (name === 'grip-sleeve') { frame.insetLeft = 40; frame.insetRight = 700; }
+        this.battleArt.set(name, frame);
         if (battleNames.every(key => this.battleArt.has(key))) { this.battleArtReady = true; this.render(); }
       });
     }
@@ -924,6 +926,29 @@ export class GameApp extends Component {
     art('seated', 471.5, 1318, 163, 36);
     art('close', 470.5, 1439.5, 447, 111, close);
   }
+  /** Keep the sleeve cut beyond the viewport; only the knitted midsection stretches. */
+  private battleHands(parent: Node, count: number, preparing: boolean, sceneScale: number, selected = -1) {
+    const frame = this.battleArt.get('grip-sleeve')!;
+    const sourceWidth = frame.originalSize.width, sourceHeight = frame.originalSize.height;
+    const handScale = preparing ? .34 : .24;
+    const center = preparing ? 471.5 : 463.5, spacing = preparing ? 149 : 105;
+    const thumbX = sourceWidth * (1470 / 1536), thumbY = sourceHeight * (400 / 1024);
+    for (const side of [-1, 1]) {
+      const index = side < 0 ? 0 : count - 1;
+      const gripX = center + side * ((count - 1) * spacing / 2 + (preparing ? 55 : 35));
+      const gripY = (preparing ? 752 + 25 + 45 : 1030 + 15 + 35) - (preparing && selected === index ? 18 : 0);
+      const edge = 470.5 + side * (375 / sceneScale + 40);
+      const tail = (sourceWidth - thumbX) * handScale;
+      const width = Math.max(sourceWidth, (Math.abs(edge - gripX) + tail) / handScale);
+      const node = this.n(side < 0 ? 'BattleGripLeft' : 'BattleGripRight',375,667,width,sourceHeight,parent);
+      const transform = node.getComponent(UITransform)!; transform.setAnchorPoint(1,.5);
+      node.setPosition(gripX - side * tail - 470.5, -gripY + (thumbY - sourceHeight / 2) * handScale);
+      node.setScale(-side * handScale, handScale, 1);
+      const sprite = node.addComponent(Sprite); sprite.spriteFrame = frame;
+      sprite.type = Sprite.Type.SLICED; sprite.sizeMode = Sprite.SizeMode.CUSTOM;
+      transform.setContentSize(width,sourceHeight);
+    }
+  }
   /** Both battle screens use the reference coordinate system and one safe-area transform. */
   private battleArtwork(r: RoomView) {
     const prep = r.phase === 'preparing', me = this.net.state!.me, count = r.digitCount ?? 4;
@@ -1003,8 +1028,7 @@ export class GameApp extends Component {
       label('s',540,493,29,20,'#FFD978',38);
       const rules=art('rules',[243,523,699,589]); touch(rules,()=>this.openLearning('rules'));
       const value=r.ownSecret ?? this.draft;
-      // Palms behind the fan; only isolated thumbs cross card fronts.
-      art('hands');art('hand-right');
+      // Draw the fan first; the complete grip silhouettes overlap its outer corners.
       const selected=editable ? (this.selected>=0 ? this.selected : value.length<count ? value.length : -1) : -1;
       const order=Array.from({length:count},(_,i)=>i).sort((a,b)=>Number(a===selected)-Number(b===selected));
       const paper=this.battleArt.get('card-paper')!,ratio=paper.originalSize.height/paper.originalSize.width;
@@ -1016,7 +1040,7 @@ export class GameApp extends Component {
         const digit=number(value[i]??'',x,y,132,155,172,cardGroup);digit.node.angle=card.angle;
         if(editable){touch(card,()=>{this.selected=i;this.render();});touch(digit.node,()=>{this.selected=i;this.render();});}
       }
-      art('left-thumb');art('right-thumb');
+      this.battleHands(group, count, true, scale, selected);
       const lock=art('lock');touch(lock,()=>this.lockSecret(),editable&&this.draft.length===count);
       art('status',[230,1546,711,1603]);
       label(r.ownSecret ? '底牌已锁定，等待对手' : 'ⓘ 锁定后本局不可修改',470,1572,29,650,C.gold);
@@ -1060,14 +1084,14 @@ export class GameApp extends Component {
         const digit=number(this.draft[i] ?? '',x,840,77,95,106);
         touch(digit.node,()=>{this.selected=i;this.render();},editable);
       }
-      art('play-hand-left');art('play-hand-right');
+
       for(let i=0;i<count;i++) {
         const x=463.5+(i-(count-1)/2)*105,y=1030+(i===0||i===count-1?15:0);
         const card=art('card-paper',[x-69,y-95,x+69,y+95]);card.angle=count===4?[16,6,-6,-16][i]:((count-1)/2-i)*12;
         const digit=number(this.hideSecret?'?':r.ownSecret?.[i] ?? '',x,y,83,100,115);digit.node.angle=card.angle;
         touch(card,()=>{this.hideSecret=!this.hideSecret;this.render();});touch(digit.node,()=>{this.hideSecret=!this.hideSecret;this.render();});
       }
-      art('play-left-thumb');art('play-right-thumb');
+      this.battleHands(group, count, false, scale);
       const portraitRect=[28,1000,208,1180];
       const portrait=this.avatarFrame(me)??this.profileArt.get('avatar-'+me.avatar);
       const portraitBg=this.profileArt.get('portrait-background');
