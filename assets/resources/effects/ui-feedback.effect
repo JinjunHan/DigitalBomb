@@ -1,0 +1,121 @@
+// Sprite pipeline follows Cocos Creator 3.8.8 builtin-sprite.effect.
+CCEffect %{
+  techniques:
+  - passes:
+    - vert: sprite-vs:vert
+      frag: sprite-fs:frag
+      depthStencilState:
+        depthTest: false
+        depthWrite: false
+      blendState:
+        targets:
+        - blend: true
+          blendSrc: src_alpha
+          blendDst: one_minus_src_alpha
+          blendDstAlpha: one_minus_src_alpha
+      rasterizerState:
+        cullMode: none
+      properties:
+        alphaThreshold: { value: 0.5 }
+        fxParams: { value: [-1, 0, 0, 0] }
+        surfaceParams: { value: [1, 0, 0, 0] }
+        uvX: { value: [1, 0, 0, 0] }
+        uvY: { value: [0, 1, 0, 0] }
+}%
+
+CCProgram sprite-vs %{
+  precision highp float;
+  #include <builtin/uniforms/cc-global>
+  #if USE_LOCAL
+    #include <builtin/uniforms/cc-local>
+  #endif
+  #if SAMPLE_FROM_RT
+    #include <common/common-define>
+  #endif
+  in vec3 a_position;
+  in vec2 a_texCoord;
+  in vec4 a_color;
+  out vec4 color;
+  out vec2 uv0;
+  vec4 vert () {
+    vec4 pos = vec4(a_position, 1);
+    #if USE_LOCAL
+      pos = cc_matWorld * pos;
+    #endif
+    #if USE_PIXEL_ALIGNMENT
+      pos = cc_matView * pos;
+      pos.xyz = floor(pos.xyz);
+      pos = cc_matProj * pos;
+    #else
+      pos = cc_matViewProj * pos;
+    #endif
+    uv0 = a_texCoord;
+    #if SAMPLE_FROM_RT
+      CC_HANDLE_RT_SAMPLE_FLIP(uv0);
+    #endif
+    color = a_color;
+    return pos;
+  }
+}%
+
+CCProgram sprite-fs %{
+  precision highp float;
+  #include <builtin/internal/embedded-alpha>
+  #include <builtin/internal/alpha-test>
+  in vec4 color;
+  in vec2 uv0;
+  #if USE_TEXTURE
+    #pragma builtin(local)
+    layout(set = 2, binding = 12) uniform sampler2D cc_spriteTexture;
+  #endif
+  uniform ArtworkEffects {
+    vec4 fxParams;
+    vec4 surfaceParams;
+    vec4 uvX;
+    vec4 uvY;
+  };
+  float hash21(vec2 p) {
+    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+  }
+  float paperNoise(vec2 p) {
+    vec2 i = floor(p), f = fract(p);
+    f = f * f * (3.0 - 2.0 * f);
+    return mix(mix(hash21(i), hash21(i + vec2(1.0, 0.0)), f.x),
+      mix(hash21(i + vec2(0.0, 1.0)), hash21(i + vec2(1.0, 1.0)), f.x), f.y);
+  }
+  vec4 frag () {
+    vec4 o = vec4(1.0);
+    #if USE_TEXTURE
+      o *= CCSampleWithAlphaSeparated(cc_spriteTexture, uv0);
+    #endif
+    vec2 localUV = vec2(dot(uv0, uvX.xy) + uvX.z, dot(uv0, uvY.xy) + uvY.z);
+    float edge = smoothstep(.24, .48, max(abs(localUV.x - .5), abs(localUV.y - .5)));
+    // Warm sweep crosses the original pixels; source alpha and soft shadows remain intact.
+    if (fxParams.x >= 0.0) {
+      float band = 1.0 - smoothstep(.0, .12, abs(localUV.x + localUV.y * .25 - mix(-.2, 1.45, fxParams.x)));
+      o.rgb += vec3(.32, .23, .09) * band * sin(fxParams.x * 3.14159265);
+    }
+    o.rgb = mix(o.rgb, vec3(.95, .21, .13), clamp(fxParams.y + fxParams.z * edge, 0.0, .65));
+    o.rgb += vec3(.30, .21, .07) * fxParams.w * (.3 + edge);
+    if (surfaceParams.y > 0.0) {
+      float time = surfaceParams.z;
+      vec2 delta = (localUV - vec2(.66 + .06 * sin(time * .19), .30 + .04 * sin(time * .13))) * vec2(1.0, .72);
+      float pool = 1.0 - smoothstep(.02, .65, length(delta));
+      float drift = .65 + .18 * sin(time * .63 + localUV.x * 3.0) + .12 * sin(time * .37 - localUV.y * 4.0);
+      o.rgb += vec3(1.0, .71, .32) * surfaceParams.y * pool * drift;
+    }
+    // Run noise only while paper actually enters/leaves, never on idle UI or scenery.
+    if (surfaceParams.x < 1.0) {
+      float threshold = localUV.y * .78 + paperNoise(localUV * vec2(18.0, 25.0)) * .22;
+      float frontier = mix(-.06, 1.06, surfaceParams.x);
+      float coverage = 1.0 - smoothstep(frontier - .025, frontier + .025, threshold);
+      float rim = (1.0 - smoothstep(.0, .035, abs(threshold - frontier))) * coverage;
+      o.rgb += vec3(.13, .075, .02) * rim;
+      o.a *= coverage;
+    }
+    if (surfaceParams.w > .5) o.rgb = vec3(dot(o.rgb, vec3(.2126, .7152, .0722)));
+    o *= color;
+    ALPHA_TEST(o);
+    return o;
+  }
+}%

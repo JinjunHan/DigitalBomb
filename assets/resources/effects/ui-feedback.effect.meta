@@ -1,0 +1,19 @@
+{
+  "ver": "1.7.1",
+  "importer": "effect",
+  "imported": true,
+  "uuid": "4a2d9272-276c-4a4d-bd7b-8b34a4feab92",
+  "files": [
+    ".json"
+  ],
+  "subMetas": {},
+  "userData": {
+    "combinations": [
+      {
+        "USE_TEXTURE": [
+          true
+        ]
+      }
+    ]
+  }
+}

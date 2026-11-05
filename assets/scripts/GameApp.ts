@@ -7,6 +7,8 @@ import { _decorator, Component, Node, UITransform, Label, Graphics, Color, Layer
 import { StartupAssets } from './shared/startup-assets';
 import { RoundRoll } from './shared/round-roll';
 import { FeedbackArt } from './FeedbackArt';
+import { SpriteEffects } from './SpriteEffects';
+import { countdownUrgency } from './shared/shader-feedback';
 import { feedbackEvent, cancellationArt, resultCaption, type FeedbackEvent } from './shared/feedback-state';
 import { FriendReturnLayer } from './FriendReturnLayer';
 import { shouldReturnToJoin } from './shared/friend-return';
@@ -94,6 +96,9 @@ export class GameApp extends Component {
   private joinDigits: Label[] = [];
   private joinGlows: UIOpacity[] = [];
   private joinButton?: Node;
+  private joinPaper?: SpriteEffects;
+  private timerEffects?: SpriteEffects;
+  private profilePaper?: SpriteEffects;
   private friendDigitFont?: Font;
   private profilePanel?: Node;
   private profileBack?: Node;
@@ -132,6 +137,7 @@ export class GameApp extends Component {
     this.clearEffects(); this.render();
   };
   onLoad() {
+    SpriteEffects.prepare();
     const startup = globalThis as typeof globalThis & { __digitalBombStartup?: StartupScreen };
     if (startup.__digitalBombStartup) {
       this.startupScreen = startup.__digitalBombStartup;
@@ -336,6 +342,16 @@ export class GameApp extends Component {
     const n = this.n(value.slice(0, 30), x, y, width, height, parent), l = n.addComponent(Label); l.string = value; l.fontSize = size; l.lineHeight = size * 1.35;
     l.color = new Color(color); l.horizontalAlign = Label.HorizontalAlign.CENTER; l.verticalAlign = Label.VerticalAlign.CENTER; l.overflow = Label.Overflow.SHRINK; l.fontFamily = 'Georgia, Songti SC, serif'; return l;
   }
+  /** Bind only enabled controls; material allocation is deferred until first press. */
+  private bindPressEffect(node: Node, enabled: () => boolean = () => true) {
+    const sprite = node.getComponent(Sprite); if (!sprite) return;
+    node.on(Node.EventType.TOUCH_START, () => {
+      if (enabled() && read('motion', '1') === '1') SpriteEffects.attach(sprite).press(true);
+    });
+    const release = () => node.getComponent(SpriteEffects)?.press(false);
+    node.on(Node.EventType.TOUCH_CANCEL, release);
+    node.on(Node.EventType.TOUCH_END, release);
+  }
   private button(label: string, x: number, y: number, w: number, h: number, fn: () => void, primary = false, enabled = true) {
     const key = /^([0-9]|删除|清空|随机)$/.test(label);
     this.box(x, y + 5, w, h, '#301B10', 12);
@@ -377,7 +393,12 @@ export class GameApp extends Component {
     if(opponent) { group.setPosition(110*battleScale,group.position.y);group.setScale(battleScale*600/650,battleScale*600/650,1);this.opponentFeedbackActive=true;this.setOpponentSeatVisible(false); }
     const width = own ? 430 : event.kind === 'end' ? 480 : 650;
     if (this.feedbackArt.ready) {
-      this.feedbackArt.image(group, event.art, 0, 0, width);
+      const art = this.feedbackArt.image(group, event.art, 0, 0, width);
+      if (!pending) {
+        const fx = SpriteEffects.attach(art.getComponent(Sprite)!);
+        if (event.hits === 0 || event.kind === 'timeout') fx.flash();
+        else if ((event.hits !== undefined && event.hits > 0) || (event.kind === 'end' && this.net.state?.room?.result?.winner === this.net.state?.me.id)) fx.sweep();
+      }
       if (own) {
         this.feedbackArt.label(group, event.title, 0, -52, 335, 50, 34).isBold=true;
         const value = this.feedbackArt.label(group, pending ? '···' : `${event.hits} / ${this.digitCount()}`, 0, 50, 310, 112, 80);
@@ -468,11 +489,11 @@ export class GameApp extends Component {
     if(this.noticePage!==noticePage){this.dismissNotice();this.noticePage=noticePage;}
     if(this.noticeNode?.isValid){this.noticeNode.removeFromParent();this.noticeNode.destroy();}
     this.noticeNode=undefined;
-    this.stopJoinMotion(); this.joinDigits = []; this.joinGlows = []; this.joinButton = undefined;
+    this.stopJoinMotion(); this.joinDigits = []; this.joinGlows = []; this.joinButton = undefined; this.joinPaper = undefined;
     this.lobbyReels = []; this.roundOld = undefined; this.roundNew = undefined;
-    this.profilePanel = undefined; this.profileBack = undefined; this.transitionLobby = undefined;
+    this.profilePaper = undefined; this.profilePanel = undefined; this.profileBack = undefined; this.transitionLobby = undefined;
     for (const child of [...this.root.children]) { child.removeFromParent(); child.destroy(); }
-    this.timerLabel = undefined; this.toastLabel = undefined;
+    this.timerLabel = undefined; this.timerEffects = undefined; this.toastLabel = undefined;
     const state = this.net.state;
     const sceneView = state?.room ? (state.room.phase === 'waiting' ? 'friend' : 'game')
       : state?.queuedAt != null ? 'matching' : this.page === 'join' ? 'friend' : 'lobby';
@@ -583,6 +604,7 @@ export class GameApp extends Component {
     // Labels are baked into these approved slices. Do not draw duplicate system text.
     if (!enabled) n.addComponent(UIOpacity).opacity = 140;
     else {
+      this.bindPressEffect(n);
       n.on(Node.EventType.TOUCH_START, () => { if (read('motion', '1') === '1') n.setScale(.97, .97, 1); });
       n.on(Node.EventType.TOUCH_CANCEL, () => n.setScale(1, 1, 1));
       n.on(Node.EventType.TOUCH_END, () => { n.setScale(1, 1, 1); this.audio.unlock(); this.audio.play('tap'); fn(); });
@@ -695,6 +717,7 @@ export class GameApp extends Component {
     const cancel=sprite('cancel',[207,1390,734,1545]);
     if(this.busy) cancel.addComponent(UIOpacity).opacity=150;
     else {
+      this.bindPressEffect(cancel);
       cancel.on(Node.EventType.TOUCH_START,()=>{if(read('motion','1')==='1')cancel.setScale(.97,.97,1);});
       cancel.on(Node.EventType.TOUCH_CANCEL,()=>cancel.setScale(1,1,1));
       cancel.on(Node.EventType.TOUCH_END,()=>{cancel.setScale(1,1,1);this.audio.unlock();this.audio.play('tap');this.act('cancelQueue');});
@@ -731,6 +754,7 @@ export class GameApp extends Component {
       sprite.sizeMode = Sprite.SizeMode.CUSTOM; node.getComponent(UITransform)!.setContentSize(w, h);
       if (!enabled) { sprite.grayscale = true; node.addComponent(UIOpacity).opacity = 165; }
       if (action && (enabled || name === 'join')) {
+        this.bindPressEffect(node, () => name !== 'join' || this.code.length === 4 && !this.busy && this.net.online);
         node.on(Node.EventType.TOUCH_START, () => { if (read('motion', '1') === '1') node.setScale(.97, .97, 1); });
         node.on(Node.EventType.TOUCH_CANCEL, () => node.setScale(1, 1, 1));
         node.on(Node.EventType.TOUCH_END, () => { node.setScale(1, 1, 1); if (name === 'join' && (this.code.length !== 4 || this.busy || !this.net.online)) return; this.audio.unlock(); if (!name.startsWith('key-')) this.audio.play('tap'); action(); });
@@ -738,7 +762,8 @@ export class GameApp extends Component {
       return node;
     };
     art('back', [26, 46, 227, 122], () => { this.page = 'lobby'; this.render(); }, !this.busy);
-    art('heading', [249, 65, 696, 256]); art('paper', [120, 292, 823, 998]);
+    art('heading', [249, 65, 696, 256]);
+    this.joinPaper = SpriteEffects.attach(art('paper', [120, 292, 823, 998]).getComponent(Sprite)!);
     for (let i = 0; i < 4; i++) {
       const digit = this.text(this.code[i] ?? '', 375, 667, 105, C.ink, 110, 140, group);
       digit.node.setPosition([266, 402, 540, 677][i] - 470.5, -557);
@@ -801,7 +826,11 @@ export class GameApp extends Component {
       button.getComponent(Sprite)!.grayscale = !enabled;
       const opacity = button.getComponent(UIOpacity) ?? button.addComponent(UIOpacity); opacity.opacity = enabled ? 255 : 165;
       Tween.stopAllByTarget(button); button.setScale(1, 1, 1);
-      if (motion && enabled && previous.length < 4) tween(button).to(.09, { scale: new Vec3(1.025, 1.025, 1) }).to(.11, { scale: Vec3.ONE }).start();
+      if (motion && enabled && previous.length < 4) {
+        tween(button).to(.09, { scale: new Vec3(1.025, 1.025, 1) }).to(.11, { scale: Vec3.ONE }).start();
+        SpriteEffects.attach(button.getComponent(Sprite)!).sweep();
+        this.joinPaper?.sweep();
+      }
     }
   }
   private keypad(top: number, context: 'join' | 'secret' | 'guess', enabled = true) {
@@ -882,6 +911,7 @@ export class GameApp extends Component {
       if (action) {
         if (this.busy) node.addComponent(UIOpacity).opacity = 150;
         else {
+          this.bindPressEffect(node);
           node.on(Node.EventType.TOUCH_START, () => { if (read('motion', '1') === '1') node.setScale(.97, .97, 1); });
           node.on(Node.EventType.TOUCH_CANCEL, () => node.setScale(1, 1, 1));
           node.on(Node.EventType.TOUCH_END, () => { node.setScale(1, 1, 1); this.audio.unlock(); this.audio.play('tap'); action(); });
@@ -959,6 +989,7 @@ export class GameApp extends Component {
     const place = (node: Node, x: number, y: number) => { node.setPosition(x - 470.5, -y); return node; };
     const touch = (node: Node, action: () => void, enabled = true) => {
       if (!enabled) { const sprite = node.getComponent(Sprite); if (sprite) sprite.grayscale = true; node.addComponent(UIOpacity).opacity = 145; return; }
+      this.bindPressEffect(node);
       node.on(Node.EventType.TOUCH_START, () => { if (read('motion', '1') === '1') node.setScale(.98, .98, 1); });
       node.on(Node.EventType.TOUCH_CANCEL, () => node.setScale(1, 1, 1));
       node.on(Node.EventType.TOUCH_END, () => { node.setScale(1, 1, 1); this.audio.unlock(); action(); });
@@ -1021,7 +1052,7 @@ export class GameApp extends Component {
       art('status',[355,299,586,344]); label(opponent.ready ? '对手已准备' : '对手正在设置',470,323,28,215,C.cream);
       if(count===4)art('heading');
       else {art('mode-heading',[179,362,762,463],this.modalArt.get('tab-off')??this.profileArt.get('input'));label(`设置你的 ${count} 位密码`,470,411,40,530,C.ink,70);}
-      art('timer');
+      this.timerEffects = SpriteEffects.attach(art('timer').getComponent(Sprite)!);
       this.timerLabel=label('',497,489,42,70,'#FFD978',54);
       if(this.friendDigitFont) this.timerLabel.font=this.friendDigitFont;
       this.timerLabel.lineHeight=46;
@@ -1108,7 +1139,7 @@ export class GameApp extends Component {
       const secretStatus=art('status',[285,1100,656,1155]);
       touch(secretStatus,()=>{this.hideSecret=!this.hideSecret;this.render();});
       label(this.hideSecret?'底牌已隐藏 · 点击查看':'我的底牌 · 已锁定',470,1128,28,350,C.cream);
-      art('turn');this.timerLabel=label('',470,1190,28,330,C.cream,48);
+      this.timerEffects = SpriteEffects.attach(art('turn').getComponent(Sprite)!);this.timerLabel=label('',470,1190,28,330,C.cream,48);
     }
     if(this.opponentFeedbackActive)this.setOpponentSeatVisible(false);
     const prefix=prep?'prep-':'play-';
@@ -1359,6 +1390,7 @@ export class GameApp extends Component {
     const n = this.profileSprite(art, x, y, w, h);
     if (!n) return this.button(label, x, y, w, h, () => { this.finishNicknameEditing(); action(); }, art === 'save', enabled);
     if (!enabled) { if (this.busy) n.addComponent(UIOpacity).opacity = 150; return n; }
+    this.bindPressEffect(n);
     n.on(Node.EventType.TOUCH_START, () => { if (read('motion', '1') === '1') n.setScale(.97, .97, 1); });
     n.on(Node.EventType.TOUCH_CANCEL, () => n.setScale(1, 1, 1));
     n.on(Node.EventType.TOUCH_END, () => { n.setScale(1, 1, 1); this.audio.unlock(); this.audio.play('tap'); this.finishNicknameEditing(); action(); });
@@ -1384,7 +1416,9 @@ export class GameApp extends Component {
     // Fixed local paper coordinates: the complete sheet and its controls rotate together.
     this.root = sheet; this.screenHeight = 1334; this.layoutTop = 60; this.layoutScale = 1;
     try {
-      if (!this.profileSprite('paper', 375, 715, 710, 1040)) this.box(375, 715, 710, 1040, C.cream, 24);
+      const paper = this.profileSprite('paper', 375, 715, 710, 1040);
+      if (paper) this.profilePaper = SpriteEffects.attach(paper.getComponent(Sprite)!);
+      else this.box(375, 715, 710, 1040, C.cream, 24);
       if (!this.profileSprite('heading', 375, 165, 300, 89)) this.text('个人资料', 375, 165, 40);
       this.profileBack = this.profileButton('back', '返回', 100, 85, 166, 62, () => this.closeProfile());
       this.profileSprite('portrait-background', 375, 365, 320, 320);
@@ -1457,9 +1491,11 @@ export class GameApp extends Component {
     const pose = profileTransition(this.profileMotionElapsed, exiting), eased = pose.bodyProgress;
     sheet.setPosition(from.position.x + (to.position.x - from.position.x) * eased,
       from.position.y + (to.position.y - from.position.y) * eased, 0);
+    this.profilePaper?.reveal(exiting ? 1 - eased : eased);
     sheet.angle = from.angle + (to.angle - from.angle) * eased;
     sheet.setScale(this.profileFit * pose.bodyScale, this.profileFit * pose.bodyScale, 1);
-    sheet.getComponent(UIOpacity)!.opacity = Math.round(255 * pose.bodyOpacity);
+    const paperProgress = exiting ? 1 - eased : eased;
+    sheet.getComponent(UIOpacity)!.opacity = Math.round(255 * pose.bodyOpacity * Math.min(1, paperProgress / .35));
     if (this.profileBack?.isValid) {
       const left = -500 - 166 * this.profileFit;
       const x = exiting ? this.profileBackRest.x + (left - this.profileBackRest.x) * eased
@@ -1479,6 +1515,7 @@ export class GameApp extends Component {
   }
   update(dt: number) {
     this.audio?.update(dt);
+    this.timerEffects?.pulse(countdownUrgency(this.net.state?.room ?? undefined, this.net.state?.me.id, this.net.now()));
     if (this.matchingMotion) {
       if (read('motion', '1') !== '1') this.finishMatchingMotion();
       else if (++this.matchingMotionFrames > 2) {
@@ -1586,6 +1623,7 @@ export class GameApp extends Component {
       const sprite = n.addComponent(Sprite); sprite.spriteFrame = this.modalArt.get(name)!; sprite.sizeMode = Sprite.SizeMode.CUSTOM;
       n.getComponent(UITransform)!.setContentSize(r - l, b - t);
       if (action) {
+        this.bindPressEffect(n, () => this.modals.interactive);
         n.on(Node.EventType.TOUCH_START, () => { if (read('motion', '1') === '1') n.setScale(.98, .98, 1); });
         n.on(Node.EventType.TOUCH_CANCEL, () => n.setScale(1, 1, 1));
         n.on(Node.EventType.TOUCH_END, () => { n.setScale(1, 1, 1); if (!this.modals.interactive) return; this.audio.unlock(); this.audio.play('tap'); action(); });

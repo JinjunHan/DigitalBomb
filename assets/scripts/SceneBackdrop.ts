@@ -1,5 +1,6 @@
 import { Node, Layers, UITransform, Sprite, SpriteFrame, Texture2D, resources, Graphics, Color } from 'cc';
 import { SceneCamera, sceneTableScale, type SceneView } from './shared/scene-camera';
+import { SpriteEffects } from './SpriteEffects';
 
 /** Persistent scenery, below all interactive UI. No touch handlers or DOM dependencies. */
 export class SceneBackdrop {
@@ -28,7 +29,10 @@ export class SceneBackdrop {
       const n = this.makeNode(name, this.root, 750, this.height); n.active = false; this.layers.set(name, n);
       const loaded = (texture: Texture2D) => {
         if (this.disposed) return;
-        this.setTexture(n, texture);
+        const sprite = this.setTexture(n, texture);
+        // Keep the moving warm light on the two scenery surfaces, beneath all UI.
+        // Their persistent nodes retain the light's clock across page redraws.
+        if (name === 'room' || name === 'table') SpriteEffects.attach(sprite).ambient(name === 'room' ? .035 : .06);
         if (names.every(key => this.layers.get(key)!.getComponent(Sprite)?.spriteFrame)) {
           this.ready = true; this.fallback.active = false;
           for (const layer of this.layers.values()) layer.active = true;
@@ -47,6 +51,7 @@ export class SceneBackdrop {
   private setTexture(n: Node, texture: Texture2D) {
     const frame = new SpriteFrame(); frame.texture = texture; this.frames.push(frame);
     const sprite = n.addComponent(Sprite); sprite.spriteFrame = frame; sprite.sizeMode = Sprite.SizeMode.CUSTOM;
+    return sprite;
   }
   setView(view: SceneView, motion: boolean) { this.motion = motion; this.view = view; this.camera.setView(view, motion); this.apply(); }
   resize(height: number) { this.height = height; this.apply(); }

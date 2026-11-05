@@ -1,9 +1,10 @@
-import { Node, UITransform, UIOpacity, Graphics, Color, Layers, BlockInputEvents, Vec3 } from 'cc';
+import { Node, UITransform, UIOpacity, Graphics, Color, Layers, BlockInputEvents, Vec3, Sprite } from 'cc';
 import { MODAL_MOTION, modalPose, modalExitPose, modalDetail, type ModalKind, type ModalPose } from './shared/modal-motion';
+import { SpriteEffects } from './SpriteEffects';
 interface Detail { node: Node; rest: Vec3; opacity: UIOpacity; baseOpacity: number }
 interface Surface {
   key: ModalKind; node?: Node; elapsed: number; rest?: Vec3; scale?: number;
-  opacity?: UIOpacity; details: Detail[]; from?: ModalPose; exitElapsed: number;
+  opacity?: UIOpacity; details: Detail[]; papers?: SpriteEffects[]; from?: ModalPose; exitElapsed: number;
 }
 /** Lives outside Interface: redraws refresh content without restarting the transition clock. */
 export class ModalLayer {
@@ -40,7 +41,7 @@ export class ModalLayer {
       } else this.remove(this.active);
       this.active = key ? { key, elapsed: enabled ? 0 : MODAL_MOTION[key].duration, exitElapsed: 0, details: [] } : undefined;
     } else if (this.active) {
-      this.remove(this.active); this.active.node = undefined; this.active.details = [];
+      this.remove(this.active); this.active.node = undefined; this.active.details = []; this.active.papers = [];
     }
     if (!enabled) { this.remove(this.outgoing); this.outgoing = undefined; if (this.active) this.active.elapsed = MODAL_MOTION[this.active.key].duration; }
     this.sync();
@@ -48,7 +49,11 @@ export class ModalLayer {
   attach(node: Node, scale: number) {
     const s = this.active; if (!s) return;
     s.node = node; s.rest = node.position.clone(); s.scale = scale; s.opacity = node.addComponent(UIOpacity);
-    // The body contains static artwork; animate the separate controls and live content only.
+    // Preserve the complete paper artwork; only its pixels dissolve. Text and controls keep their own stagger.
+    s.papers = node.children.filter(n => n.name.endsWith('-body')).flatMap(n => {
+      const sprite = n.getComponent(Sprite);
+      return sprite ? [SpriteEffects.attach(sprite)] : [];
+    });
     s.details = node.children.filter(n => !n.name.endsWith('-body')).map(n => {
       const opacity = n.getComponent(UIOpacity) ?? n.addComponent(UIOpacity);
       return { node: n, rest: n.position.clone(), opacity, baseOpacity: opacity.opacity };
@@ -85,6 +90,8 @@ export class ModalLayer {
       s.rest.y + pose.y * scale + center * scale * (Math.cos(angle) * pose.scale - 1));
     s.node.setScale(scale * pose.scale, scale * pose.scale, 1); s.node.angle = pose.angle;
     s.opacity.opacity = Math.round(255 * pose.opacity);
+    // Share the existing sampled pose so redraws and interrupted entrances never restart the reveal.
+    for (const paper of s.papers ?? []) paper.reveal(this.enabled ? pose.opacity : 1);
     if (details) s.details.forEach((d, i) => {
       const p = modalDetail(s.key, s.elapsed, i);
       d.node.setPosition(d.rest.x, d.rest.y + p.y, d.rest.z); d.opacity.opacity = Math.round(d.baseOpacity * p.opacity);
