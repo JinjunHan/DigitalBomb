@@ -1,0 +1,119 @@
+{
+  "metric": "Material.setProperty calls per rendered frame; excludes initialization; not GPU transfers or device FPS",
+  "framesPerScenario": 60,
+  "beforeCommit": "779eba9",
+  "measurements": [
+    {
+      "scenario": "background",
+      "before": {
+        "room": {
+          "fxParams": 1,
+          "surfaceParams": 1,
+          "uvX": 1,
+          "uvY": 1
+        },
+        "table": {
+          "fxParams": 1,
+          "surfaceParams": 1,
+          "uvX": 1,
+          "uvY": 1
+        }
+      },
+      "after": {
+        "room": {
+          "surfaceParams": 1
+        },
+        "table": {
+          "surfaceParams": 1
+        }
+      }
+    },
+    {
+      "scenario": "held",
+      "before": {
+        "room": {
+          "fxParams": 1,
+          "surfaceParams": 1,
+          "uvX": 1,
+          "uvY": 1
+        },
+        "table": {
+          "fxParams": 1,
+          "surfaceParams": 1,
+          "uvX": 1,
+          "uvY": 1
+        },
+        "Lobby-friend-full": {
+          "fxParams": 1,
+          "surfaceParams": 1,
+          "uvX": 1,
+          "uvY": 1
+        }
+      },
+      "after": {
+        "room": {
+          "surfaceParams": 1
+        },
+        "table": {
+          "surfaceParams": 1
+        },
+        "Lobby-friend-full": {}
+      }
+    },
+    {
+      "scenario": "countdown",
+      "before": {
+        "room": {
+          "fxParams": 1,
+          "surfaceParams": 1,
+          "uvX": 1,
+          "uvY": 1
+        },
+        "table": {
+          "fxParams": 1,
+          "surfaceParams": 1,
+          "uvX": 1,
+          "uvY": 1
+        },
+        "Battle-turn": {
+          "fxParams": 2,
+          "surfaceParams": 2,
+          "uvX": 2,
+          "uvY": 2
+        }
+      },
+      "after": {
+        "room": {
+          "surfaceParams": 1
+        },
+        "table": {
+          "surfaceParams": 1
+        },
+        "Battle-turn": {
+          "fxParams": 1
+        }
+      }
+    }
+  ],
+  "passedRuntimeChecks": [
+    "room/table use live local materials",
+    "real pointer press lights artwork; cancelled release restores material",
+    "profile paper reveals on shared transition; settled redraw stays fully visible",
+    "nickname editing survives redraw; profile exit finishes",
+    "modal reveal/exit continue sampled clock; settled redraw and cleanup pass",
+    "room code pointer keys update, delete and completion sweep works",
+    "gold sweep and red flash produce changing live material properties",
+    "redraw publishes next-frame countdown from the same global phase",
+    "countdown warning active for local deadline; gameplay input works; opponent turn clears warning",
+    "motion-off restores original materials and instant modal; re-enable does not replay stale sweep",
+    "rapid modal replacement leaves no orphan surfaces",
+    "paper created during GameApp.update is masked before its first rendered frame",
+    "cropped and flipped SpriteFrame UVs refresh cached uniforms and map corners correctly",
+    "grayscale changes update material without restarting effects",
+    "disabled Sprite/node restores original material; reenable reuses it; destroy releases it",
+    "empty/missing frame uses original material and a later valid frame recovers finite UV uniforms"
+  ],
+  "emptyFrameTest": "Component start exercised synchronously on a textureless frame, then replaced with valid art before render; Cocos core assembler itself cannot render a textureless SpriteFrame. Recovery and missing-frame restoration passed.",
+  "finalSessionErrors": [],
+  "finalSessionWarnings": []
+}

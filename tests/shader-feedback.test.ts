@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { countdownUrgency } from '../assets/scripts/shared/shader-feedback';
+import { countdownUrgency, spriteUVTransform } from '../assets/scripts/shared/shader-feedback';
 import type { RoomView } from '../assets/scripts/shared/protocol';
 
 const room = { phase: 'playing', current: 'me', startAt: 1000, deadline: 11000 } as RoomView;
@@ -46,5 +46,30 @@ test('invalid clock data never reaches shader uniforms', () => {
     assert.equal(countdownUrgency(room, 'me', invalid), 0);
     assert.equal(countdownUrgency({ ...room, deadline: invalid }, 'me', 9000), 0);
     assert.equal(countdownUrgency({ ...room, startAt: invalid }, 'me', 9000), 0);
+  }
+});
+
+test('local shader UV maps full textures, cropped atlases, rotations and flips', () => {
+  const frames = [
+    [0, 1, 1, 1, 0, 0, 1, 0],
+    [.2, .8, .7, .8, .2, .3, .7, .3],
+    [.2, .3, .2, .8, .7, .3, .7, .8],
+    [1, 1, 0, 1, 1, 0, 0, 0],
+    [0, 0, 1, 0, 0, 1, 1, 1],
+  ];
+  for (const uv of frames) {
+    const t = spriteUVTransform(uv)!;
+    const map = (x: number, y: number) => [t[0] * x + t[1] * y + t[2], t[3] * x + t[4] * y + t[5]];
+    for (const [index, expected] of [[0, [0, 1]], [2, [1, 1]], [4, [0, 0]], [6, [1, 0]]] as const) {
+      map(uv[index], uv[index + 1]).forEach((v, axis) => assert.ok(Math.abs(v - expected[axis]) < 1e-12));
+    }
+    const center = map((uv[0] + uv[6]) / 2, (uv[1] + uv[7]) / 2);
+    center.forEach(v => assert.ok(Math.abs(v - .5) < 1e-12));
+  }
+});
+
+test('shader UV rejects degenerate or invalid frames instead of emitting nonfinite uniforms', () => {
+  for (const uv of [[], [0, 0, 0, 0, 0, 0, 0, 0], [0, NaN, 1, 1, 0, 0, 1, 0], [0, Infinity, 1, 1, 0, 0, 1, 0]]) {
+    assert.equal(spriteUVTransform(uv), undefined);
   }
 });

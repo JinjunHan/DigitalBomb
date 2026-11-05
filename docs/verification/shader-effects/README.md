@@ -20,3 +20,9 @@ Passed checks:
 Console errors: 0. Console warnings: 0. No observed shader compilation or runtime errors. Full raw captures and test harness remain in `/tmp/digitalbomb-shader-verify/` for this local session.
 
 Limits: this is Web renderer verification, not WeChat developer-tools/physical-device performance validation or a release. Screenshot capture intervals vary with headless rendering and do not establish a mobile frame-rate benchmark.
+
+## Parameter upload optimization
+
+[Measurement and regression record](optimization.json) compares 60 rendered frames before/after optimization. Per-frame material API calls changed from 4 to 1 for each ambient surface, 4 to 0 for a static held button, and 8 to 1 for the urgent timer. This does not measure device FPS or GPU transfers.
+
+The 11 existing runtime checks passed. Five additional checks covered a paper created during `GameApp.update` being hidden before its first draw, in-place UV crop/flip updates, grayscale changes, material restoration/reuse/disposal, and empty/missing-frame recovery. The first-frame test caught Cocos converting a NaN Vec4 cache sentinel to zero; the corrected sentinel now forces the initial zero-coverage upload. Empty-frame fallback was exercised before drawing and replaced with valid art, since the Cocos renderer requires a texture. Final independent recovery/visual-check session had zero errors or warnings. The final gold-sweep screenshot was inspected locally; original artwork and text remained intact.

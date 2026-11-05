@@ -36,7 +36,12 @@ CCProgram sprite-vs %{
   in vec2 a_texCoord;
   in vec4 a_color;
   out vec4 color;
-  out vec2 uv0;
+  // One packed varying carries texture UV and the affine local coordinates.
+  out vec4 spriteUV;
+  uniform ArtworkUV {
+    vec4 uvX;
+    vec4 uvY;
+  };
   vec4 vert () {
     vec4 pos = vec4(a_position, 1);
     #if USE_LOCAL
@@ -49,10 +54,11 @@ CCProgram sprite-vs %{
     #else
       pos = cc_matViewProj * pos;
     #endif
-    uv0 = a_texCoord;
+    vec2 uv0 = a_texCoord;
     #if SAMPLE_FROM_RT
       CC_HANDLE_RT_SAMPLE_FLIP(uv0);
     #endif
+    spriteUV = vec4(uv0, dot(uv0, uvX.xy) + uvX.z, dot(uv0, uvY.xy) + uvY.z);
     color = a_color;
     return pos;
   }
@@ -63,7 +69,7 @@ CCProgram sprite-fs %{
   #include <builtin/internal/embedded-alpha>
   #include <builtin/internal/alpha-test>
   in vec4 color;
-  in vec2 uv0;
+  in vec4 spriteUV;
   #if USE_TEXTURE
     #pragma builtin(local)
     layout(set = 2, binding = 12) uniform sampler2D cc_spriteTexture;
@@ -71,8 +77,6 @@ CCProgram sprite-fs %{
   uniform ArtworkEffects {
     vec4 fxParams;
     vec4 surfaceParams;
-    vec4 uvX;
-    vec4 uvY;
   };
   float hash21(vec2 p) {
     return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
@@ -86,17 +90,23 @@ CCProgram sprite-fs %{
   vec4 frag () {
     vec4 o = vec4(1.0);
     #if USE_TEXTURE
-      o *= CCSampleWithAlphaSeparated(cc_spriteTexture, uv0);
+      o *= CCSampleWithAlphaSeparated(cc_spriteTexture, spriteUV.xy);
     #endif
-    vec2 localUV = vec2(dot(uv0, uvX.xy) + uvX.z, dot(uv0, uvY.xy) + uvY.z);
-    float edge = smoothstep(.24, .48, max(abs(localUV.x - .5), abs(localUV.y - .5)));
+    vec2 localUV = spriteUV.zw;
     // Warm sweep crosses the original pixels; source alpha and soft shadows remain intact.
     if (fxParams.x >= 0.0) {
       float band = 1.0 - smoothstep(.0, .12, abs(localUV.x + localUV.y * .25 - mix(-.2, 1.45, fxParams.x)));
       o.rgb += vec3(.32, .23, .09) * band * sin(fxParams.x * 3.14159265);
     }
-    o.rgb = mix(o.rgb, vec3(.95, .21, .13), clamp(fxParams.y + fxParams.z * edge, 0.0, .65));
-    o.rgb += vec3(.30, .21, .07) * fxParams.w * (.3 + edge);
+    // Uniform branches skip rim work for ambient, paper and sweep-only draws.
+    if (fxParams.y > 0.0 || fxParams.z > 0.0 || fxParams.w > 0.0) {
+      float edge = 0.0;
+      if (fxParams.z > 0.0 || fxParams.w > 0.0) {
+        edge = smoothstep(.24, .48, max(abs(localUV.x - .5), abs(localUV.y - .5)));
+      }
+      o.rgb = mix(o.rgb, vec3(.95, .21, .13), clamp(fxParams.y + fxParams.z * edge, 0.0, .65));
+      o.rgb += vec3(.30, .21, .07) * fxParams.w * (.3 + edge);
+    }
     if (surfaceParams.y > 0.0) {
       float time = surfaceParams.z;
       vec2 delta = (localUV - vec2(.66 + .06 * sin(time * .19), .30 + .04 * sin(time * .13))) * vec2(1.0, .72);
