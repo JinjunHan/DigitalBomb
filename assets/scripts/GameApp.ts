@@ -46,6 +46,8 @@ export class GameApp extends Component {
   private pendingInvitation?: Invitation;
   private joiningInvitation = false;
   private draftAvatarUrl = '';
+  private pendingProfileAvatar?: { url: string };
+  private avatarLoads = new Map<string, Promise<SpriteFrame | null>>();
   private wechatProfileNode?: Node;
   private remoteAvatars = new Map<string, SpriteFrame | null>();
   private roundRoll = new RoundRoll();
@@ -1282,14 +1284,49 @@ export class GameApp extends Component {
   private avatarFrame(profile: { avatarUrl?: string; avatar?: number }): SpriteFrame | undefined {
     const fallback = this.profileArt.get('avatar-' + (((profile.avatar ?? 0) % 4 + 4) % 4));
     const url=avatarUrl(profile.avatarUrl);if(!url)return fallback;
-    if(this.remoteAvatars.has(url))return this.remoteAvatars.get(url)??fallback;
-    this.remoteAvatars.set(url,null);
-    assetManager.loadRemote<ImageAsset>(url,{ext:'.png'},(error,image)=>{
-      if(error||!this.isValid)return;
-      const texture=new Texture2D();texture.image=image;
-      const frame=new SpriteFrame();frame.texture=texture;this.remoteAvatars.set(url,frame);this.render();
+    if (!this.remoteAvatars.has(url) && !this.avatarLoads.has(url)) {
+      void this.loadAvatar(url).then(frame => { if (frame && this.isValid) this.render(); });
+    }
+    return this.remoteAvatars.get(url) ?? fallback;
+  }
+  private loadAvatar(url: string): Promise<SpriteFrame | null> {
+    const cached = this.remoteAvatars.get(url);
+    if (cached) return Promise.resolve(cached);
+    const pending = this.avatarLoads.get(url);
+    if (pending) return pending;
+    const image = new Promise<ImageAsset>((resolve, reject) => {
+      const platform = wechat();
+      if (platform?.createImage) {
+        const portrait = platform.createImage();
+        const timeout = setTimeout(() => reject(Error('头像加载超时')), 12000);
+        portrait.onload = () => {
+          clearTimeout(timeout);
+          try {
+            // Native WeChat images need the same pixel format Cocos assigns in its image importer.
+            portrait.format = Texture2D.PixelFormat.RGBA8888;
+            resolve(new ImageAsset(portrait));
+          } catch (error) { reject(error); }
+        };
+        portrait.onerror = () => { clearTimeout(timeout); reject(Error('头像加载失败')); };
+        portrait.src = url;
+      } else {
+        assetManager.loadRemote<ImageAsset>(url, { ext: '.png' }, (error, asset) => error ? reject(error) : resolve(asset));
+      }
     });
-    return fallback;
+    const load = image.then(asset => {
+      if (!this.isValid || !asset.width || !asset.height) return null;
+      const texture = new Texture2D();
+      texture.image = asset;
+      const frame = new SpriteFrame();
+      frame.texture = texture;
+      return frame;
+    }).catch(() => null).then(frame => {
+      this.avatarLoads.delete(url);
+      this.remoteAvatars.set(url, frame);
+      return frame;
+    });
+    this.avatarLoads.set(url, load);
+    return load;
   }
   /** Reuse the same circular identity in the opponent seat and transient feedback. */
   private playerPortrait(parent: Node, profile: { avatar: number; avatarUrl?: string }, x: number, y: number, size: number, showRim = true) {
@@ -1306,6 +1343,7 @@ export class GameApp extends Component {
   private async authorizeProfile() {
     if(this.busy||this.profileMotion)return;
     if(!wechat()){this.toast('请在微信中获取头像昵称，本地可手动设置资料');return;}
+    this.pendingProfileAvatar = undefined;
     this.finishNicknameEditing();this.toast('请点击“使用微信头像昵称”完成授权，拒绝仍可继续游戏');
     const node=this.wechatProfileNode;if(!node)return;
     const rect=node.getComponent(UITransform)!.getBoundingBoxToWorld();
@@ -1315,9 +1353,21 @@ export class GameApp extends Component {
       if(!this.isValid||this.page!=='profile')return;
       if(profile){
         const valid=/^[\p{L}\p{N} _·-]{2,12}$/u.test(profile.name);
-        if(valid)this.nickname=profile.name;
-        this.draftAvatarUrl=profile.avatarUrl;
-        this.toast(valid?'微信资料已填入，点击保存修改后生效':'头像已填入；微信昵称含不支持的字符，请手动填写昵称');
+        if (valid) this.nickname = profile.name;
+        const request = { url: profile.avatarUrl };
+        this.pendingProfileAvatar = request;
+        this.toast('正在加载微信头像…');
+        void this.loadAvatar(request.url).then(frame => {
+          if (!this.isValid || this.pendingProfileAvatar !== request) return;
+          this.pendingProfileAvatar = undefined;
+          if (this.page !== 'profile' || this.profileMotion === 'out' || this.net.state?.room) return;
+          if (!frame) {
+            this.toast('微信头像加载失败，可重新获取或选择下方头像');
+            return;
+          }
+          this.draftAvatarUrl = request.url;
+          this.toast(valid ? '微信资料已填入，点击保存修改后生效' : '微信头像已更新，保留当前昵称，可编辑后保存');
+        });
       }else this.toast(message!);
     }); }catch(e){this.toast((e as Error).message);}
   }
@@ -1334,12 +1384,14 @@ export class GameApp extends Component {
   private async copyRoomCode(code: string) {try{await copy(code);this.toast('口令已复制：'+code);}catch(e){this.toast((e as Error).message);}}
   private openProfile() {
     const me = this.net.state?.me; if (!me || this.profileMotion) return;
+    this.pendingProfileAvatar = undefined;
     this.nickname = me.name; this.avatar = ((me.avatar % 4) + 4) % 4; this.draftAvatarUrl=me.avatarUrl??''; this.page = 'profile'; this.profileMotionFrom = undefined; this.profileMotionTo = undefined;
     this.profileMotion = read('motion', '1') === '1' ? 'in' : '';
     this.profileMotionElapsed = 0; this.profileMotionFrames = 0; this.render();
   }
   private closeProfile() {
     if (this.busy || this.profileMotion) return;
+    this.pendingProfileAvatar = undefined;
     this.finishNicknameEditing();
     if (read('motion', '1') !== '1') { this.page = 'lobby'; this.render(); return; }
     this.profileMotion = 'out'; this.profileMotionElapsed = 0; this.profileMotionFrames = 0;
@@ -1348,6 +1400,7 @@ export class GameApp extends Component {
   private async saveProfile() {
     if (this.busy || this.profileMotion) return;
     this.finishNicknameEditing();
+    if (this.pendingProfileAvatar) { this.toast('微信头像加载中，请稍后保存'); return; }
     const name = this.nickname.trim();
     if (!/^[\p{L}\p{N} _·-]{2,12}$/u.test(name)) { this.toast('昵称需为 2–12 个中文、字母或数字'); return; }
     this.busy = true; this.render();
@@ -1427,7 +1480,7 @@ export class GameApp extends Component {
       }
       this.profileSprite('portrait-frame', 375, 365, 234, 234);
       this.profileButton('change-avatar', '更换头像', 375, 490, 245, 64, () => {
-        this.draftAvatarUrl='';this.avatar = (this.avatar + 1) % 4; this.render();
+        this.pendingProfileAvatar=undefined;this.draftAvatarUrl='';this.avatar = (this.avatar + 1) % 4; this.render();
       });
       this.text('昵称', 130, 600, 31, C.ink, 90, 60);
       this.box(435, 600, 435, 72, '#EBD1A6', 10);
@@ -1459,7 +1512,7 @@ export class GameApp extends Component {
         const x = 150 + (i % 4) * 150, y = 985;
         const face = this.profileSprite('avatar-' + i, x, y, 125, 125) ?? this.box(x, y, 122, 122, C.blue, 61);
         if (!this.profileArt.has('avatar-' + i)) this.text(a, x, y, 36, C.cream, 80, 70);
-        if (!this.busy && !this.profileMotion) face.on(Node.EventType.TOUCH_END, () => { this.finishNicknameEditing(); this.audio.play('tap'); this.draftAvatarUrl='';this.avatar = i; this.render(); });
+        if (!this.busy && !this.profileMotion) face.on(Node.EventType.TOUCH_END, () => { this.finishNicknameEditing(); this.audio.play('tap'); this.pendingProfileAvatar=undefined;this.draftAvatarUrl='';this.avatar = i; this.render(); });
         const frameSize = !this.draftAvatarUrl && i === this.avatar ? 156 : 150;
         this.profileSprite('portrait-frame', x, y, frameSize, frameSize);
         if (!this.draftAvatarUrl && i === this.avatar && !this.profileSprite('avatar-selected', x + 46, y + 45, 58, 58)) {
