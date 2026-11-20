@@ -1344,7 +1344,7 @@ export class GameApp extends Component {
     if(this.busy||this.profileMotion)return;
     if(!wechat()){this.toast('请在微信中获取头像昵称，本地可手动设置资料');return;}
     this.pendingProfileAvatar = undefined;
-    this.finishNicknameEditing();this.toast('请点击“使用微信头像昵称”完成授权，拒绝仍可继续游戏');
+    this.finishNicknameEditing();
     const node=this.wechatProfileNode;if(!node)return;
     const rect=node.getComponent(UITransform)!.getBoundingBoxToWorld();
     const window=wechat().getWindowInfo?.()??wechat().getSystemInfoSync();

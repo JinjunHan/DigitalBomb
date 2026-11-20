@@ -69,8 +69,24 @@ export class WechatFlow {
   }
   async authorize(rect: {left:number;top:number;width:number;height:number}, done: (value: ReturnType<typeof wechatProfile>, message?: string)=>void) {
     this.clearButton();const generation=this.generation;
-    if(!this.wx?.createUserInfoButton)throw Error('请在新版微信中获取头像昵称，或手动设置资料');
     await this.privacy();if(!this.alive||generation!==this.generation)return;
+    if (this.wx?.getSetting && this.wx.getUserInfo) {
+      const granted = await new Promise<boolean>(resolve => this.wx.getSetting({
+        success: (settings: any) => resolve(settings.authSetting?.['scope.userInfo'] === true),
+        fail: () => resolve(false),
+      }));
+      if (!this.alive || generation !== this.generation) return;
+      if (granted) {
+        const profile = await new Promise<ReturnType<typeof wechatProfile>>(resolve => this.wx.getUserInfo({
+          withCredentials: false, lang: 'zh_CN',
+          success: (result: any) => resolve(wechatProfile(result.userInfo)),
+          fail: () => resolve(undefined),
+        }));
+        if (this.alive && generation === this.generation) done(profile, profile ? undefined : '未获取到微信资料，可重试或手动填写');
+        return;
+      }
+    }
+    if(!this.wx?.createUserInfoButton)throw Error('请在新版微信中获取头像昵称，或手动设置资料');
     const button=this.wx.createUserInfoButton({type:'text',text:'',style:{...rect,backgroundColor:'rgba(0,0,0,0)',borderWidth:0},withCredentials:false,lang:'zh_CN'});
     if(!button)throw Error('暂时无法创建授权按钮，请使用默认资料');
     this.button=button;
@@ -79,6 +95,7 @@ export class WechatFlow {
       this.clearButton();const profile=wechatProfile(result?.userInfo);
       done(profile,profile?undefined:'未获取到微信资料，保留当前昵称和头像');
     });button.show?.();
+    this.wx.showToast?.({ title: '请点头像昵称按钮授权', icon: 'none' });
   }
   clearButton() {this.generation++;this.button?.destroy();this.button=undefined;}
   destroy(){this.alive=false;this.clearButton();this.wx?.offShow?.(this.onShow);this.wx?.offShareAppMessage?.(this.onShare);}

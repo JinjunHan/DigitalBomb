@@ -49,3 +49,44 @@ test('WeChat and manual profiles preserve names independently of the avatar', ()
     assert.throws(() => service.perform(user, 'profile', { name, avatar: 0 }));
   }
 });
+
+test('profile grant is checked on each tap; granted users read once, revoked users use the native button', async () => {
+  let granted = true, reads = 0, buttons = 0;
+  let tap!: (result: any) => void;
+  const flow = new WechatFlow({
+    requirePrivacyAuthorize: (request: any) => request.success(),
+    getSetting: (request: any) => request.success({ authSetting: { 'scope.userInfo': granted } }),
+    getUserInfo: (request: any) => {
+      reads++;
+      request.success({ userInfo: { nickName: '微信玩家', avatarUrl: url } });
+    },
+    createUserInfoButton: () => { buttons++; return { destroy() {}, onTap: (callback: typeof tap) => { tap = callback; } }; },
+  }, () => undefined, () => {});
+  const rect = { left: 0, top: 0, width: 100, height: 50 };
+  const values: ReturnType<typeof wechatProfile>[] = [];
+  await flow.authorize(rect, profile => values.push(profile));
+  assert.equal(reads, 1);
+  assert.equal(buttons, 0);
+  assert.deepEqual(values[0], { name: '微信玩家', avatarUrl: url });
+  granted = false;
+  await flow.authorize(rect, profile => values.push(profile));
+  assert.equal(reads, 1);
+  assert.equal(buttons, 1);
+  assert.equal(values.length, 1);
+  tap({ userInfo: { nickName: '另一昵称', avatarUrl: url } });
+  assert.equal(values[1]?.name, '另一昵称');
+});
+
+test('a delayed granted profile read cannot update a closed page', async () => {
+  let started!: () => void, respond!: () => void;
+  const reading = new Promise<void>(resolve => { started = resolve; });
+  const flow = new WechatFlow({
+    getSetting: (r: any) => r.success({ authSetting: { 'scope.userInfo': true } }),
+    getUserInfo: (r: any) => { respond = () => r.success({ userInfo: { nickName: '迟到昵称' } }); started(); },
+  }, () => undefined, () => {});
+  const pending = flow.authorize({ left: 0, top: 0, width: 10, height: 10 }, () => assert.fail('stale result'));
+  await reading;
+  flow.clearButton();
+  respond();
+  await pending;
+});

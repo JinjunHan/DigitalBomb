@@ -40,10 +40,21 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright'),assert=req
  await page.evaluate(() => app.saveProfile());
  assert.deepEqual(await page.evaluate(() => [native.command.payload.name, native.command.payload.avatarUrl]), ['🌟', url]);
  await page.evaluate(() => app.openProfile());
- await page.evaluate(() => app.authorizeProfile());
  const nickname = '🌟'.repeat(12);
- await tap(nickname);
+ const button = await page.evaluate(({ nickname, url }) => {
+   native.reads = 0;
+   wx.getSetting = request => request.success({ authSetting: { 'scope.userInfo': true } });
+   wx.getUserInfo = request => { native.reads++; request.success({ userInfo: { nickName: nickname, avatarUrl: url } }); };
+   native.createButton = wx.createUserInfoButton;
+   wx.createUserInfoButton = () => { throw Error('unexpected second authorization'); };
+   const p = app.wechatProfileNode.worldPosition, size = cc.view.getVisibleSize();
+   const rect = document.querySelector('canvas').getBoundingClientRect();
+   return { x: rect.left + p.x / size.width * rect.width, y: rect.bottom - p.y / size.height * rect.height };
+ }, { nickname, url });
+ await page.mouse.click(button.x, button.y);
  await page.waitForFunction(name => app.nicknameEditBox.string === name, nickname);
+ assert.equal(await page.evaluate(() => native.reads), 1);
+ await page.evaluate(() => { wx.createUserInfoButton = native.createButton; wx.getSetting = r => r.success({ authSetting: {} }); });
  assert.equal(await preview(), true);
  assert.equal(requests, 2);
  await page.screenshot({path:'docs/verification/wechat-profile-preview.png'});
