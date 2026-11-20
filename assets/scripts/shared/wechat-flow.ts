@@ -27,51 +27,10 @@ export function wechatProfile(value: any): { name?: string; avatarUrl?: string }
   if (!nickname && !url) return;
   return { name: nickname, avatarUrl: url };
 }
-const shareImages = ['share-invite.jpg', 'share-guess.jpg', 'share-rematch.jpg'];
+const roomInviteImage = 'share-invite.jpg';
+const shareImages = [roomInviteImage, 'share-guess.jpg', 'share-rematch.jpg'];
 
 export class WechatFlow {
-  private roomCard?: { code: string; path: string };
-  private roomImage(code: string): string {
-    if (this.roomCard?.code === code) return this.roomCard.path;
-    try {
-      const canvas = this.wx.createCanvas();
-      canvas.width = 500;
-      canvas.height = 400;
-      const ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#571d24';
-      ctx.fillRect(0, 0, 500, 400);
-      ctx.strokeStyle = '#d3a269';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(13, 13, 474, 374);
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillStyle = '#e7c58d';
-      ctx.font = '20px sans-serif';
-      ctx.fillText('猜数字暗号 · 好友对战', 250, 60);
-      ctx.fillStyle = '#fff1d6';
-      ctx.font = 'bold 38px sans-serif';
-      ctx.fillText('你的房间口令', 250, 120);
-      for (let i = 0; i < code.length; i++) {
-        const x = 46 + i * 105;
-        ctx.fillStyle = '#f9eacb';
-        ctx.fillRect(x, 171, 92, 116);
-        ctx.fillStyle = '#842c36';
-        ctx.font = 'bold 72px sans-serif';
-        ctx.fillText(code[i], x + 46, 230);
-      }
-      ctx.fillStyle = '#f6ddb3';
-      ctx.font = '22px sans-serif';
-      ctx.fillText('点开卡片，一起猜暗号', 250, 338);
-      const path = canvas.toTempFilePathSync({ fileType: 'png' });
-      if (path) {
-        this.roomCard = { code, path };
-        return path;
-      }
-    } catch {
-      // A client with an unavailable canvas exporter can still open the invitation.
-    }
-    return shareImages[0];
-  }
   private button: any;
   private alive = true;
   private generation = 0;
@@ -81,7 +40,7 @@ export class WechatFlow {
   private onShare = () => {
     if (!this.sharingEnabled) return;
     const room = this.room();
-    return room ? { title: '来猜我的暗号，房间口令 ' + room.code, query: `code=${room.code}&roomId=${encodeURIComponent(room.roomId)}`, imageUrl: this.roomImage(room.code) }
+    return room ? { title: '来猜我的暗号，房间口令 ' + room.code, query: `code=${room.code}&roomId=${encodeURIComponent(room.roomId)}`, imageUrl: roomInviteImage }
       : { title: '你藏数字我来猜，看谁先破译暗号', imageUrl: shareImages[Math.floor(Math.random() * shareImages.length)] };
   };
   constructor(private wx: any, private room: () => Invitation | undefined, private incoming: (value: Invitation) => void) {}

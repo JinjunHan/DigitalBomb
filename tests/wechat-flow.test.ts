@@ -14,7 +14,8 @@ test('invite parsing preserves zeroes and rejects untrusted shape; only official
 test('cold and warm invitations dedupe; share has room identity; lifecycle unregisters',()=>{
  let show:any,share:any;const received:any[]=[];let payload:any;
  const wx={getLaunchOptionsSync:()=>({query:{code:'0012',roomId:'r'}}),onShow:(f:any)=>show=f,onShareAppMessage:(f:any)=>share=f,offShow:(f:any)=>assert.equal(f,show),offShareAppMessage:(f:any)=>assert.equal(f,share),shareAppMessage:(p:any)=>payload=p};
- const f=new WechatFlow(wx,()=>({code:'0012',roomId:'r'}),x=>received.push(x));f.start();assert.throws(()=>f.share(),/暂未开放/);f.setSharingEnabled(true);show({query:{code:'0012',roomId:'r'}});assert.equal(received.length,1);show({query:{code:'0099',roomId:'next'}});assert.equal(received.length,2);f.share();assert.equal(payload.query,'code=0012&roomId=r');f.destroy();
+ const f=new WechatFlow(wx,()=>({code:'0012',roomId:'r'}),x=>received.push(x));f.start();assert.throws(()=>f.share(),/暂未开放/);f.setSharingEnabled(true);show({query:{code:'0012',roomId:'r'}});assert.equal(received.length,1);show({query:{code:'0099',roomId:'next'}});assert.equal(received.length,2);f.share();assert.equal(payload.query,'code=0012&roomId=r');
+ assert.equal(payload.imageUrl,'share-invite.jpg');assert.match(payload.title,/0012/);f.destroy();
 });
 test('authorization denial preserves data; delayed callback cannot survive screen departure',async()=>{
  let tap:any,privacy:any,destroyed=0,created=0;const values:any[]=[];
