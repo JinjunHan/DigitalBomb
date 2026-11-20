@@ -139,6 +139,12 @@ export class Service {
         user.queue = undefined; const room = this.room(user), seat = room?.seats.find(s => s.profile.id === user.profile.id);
         if (seat?.online) { seat.online = false; seat.disconnectedAt = now; room!.version++; }
       }
+      // Keep disconnected room members and recent command receipts available for reconnects.
+      if (user.offlineAt !== undefined && now - user.offlineAt > 600000 && !user.roomId && !user.queue) {
+        this.users.delete(user.profile.id);
+        this.receipts.delete(user.profile.id);
+        this.attempts.delete(user.profile.id);
+      }
       if (user.queue && now >= user.queue.fallback) {
         const bot: Seat = { profile: { id: 'bot-' + randomUUID(), name: botProfiles[randomInt(botProfiles.length)], avatar: randomInt(8) }, bot: true, online: true, misses: 0 };
         const room = new Match('public', [this.seat(user), bot], now, undefined, { ...DEFAULT_RULES, digitCount: user.queue.digitCount }); room.nextBotAt = now + randomInt(2000, 5001); this.bind(room);

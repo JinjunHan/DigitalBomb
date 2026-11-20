@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, rmSync } from 'node:fs';
+import { DatabaseSync } from 'node:sqlite';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import WebSocket from 'ws';
@@ -9,7 +10,14 @@ import type { Snapshot, ServerMessage } from '../assets/scripts/shared/protocol'
 
 test('real HTTP + WebSocket: two clients join, lock, crack, reply, return to friend room, reconnect', { timeout: 20000 }, async () => {
   const folder = mkdtempSync(join(tmpdir(), 'digital-bomb-test-'));
-  const processChild = spawn(process.execPath, ['--import', resolve('node_modules/tsx/dist/loader.mjs'), resolve('server/index.ts')], { cwd: folder, env: { ...process.env, PORT: '18787', HOST: '127.0.0.1', NODE_ENV: 'test' }, stdio: ['ignore', 'pipe', 'pipe'] });
+  // Existing installations can have thousands of dormant accounts and the original schema.
+  mkdirSync(join(folder, 'data'));
+  const db = new DatabaseSync(join(folder, 'data/digital-bomb.sqlite'));
+  db.exec(`CREATE TABLE users (id TEXT PRIMARY KEY, token TEXT UNIQUE, name TEXT, avatar INTEGER);
+    WITH RECURSIVE seq(n) AS (VALUES(1) UNION ALL SELECT n + 1 FROM seq WHERE n < 5000)
+    INSERT INTO users SELECT 'old-' || n, 'token-' || n, '旧玩家' || n, 0 FROM seq`);
+  db.close();
+  const processChild = spawn(process.execPath, ['--import', resolve('node_modules/tsx/dist/loader.mjs'), resolve('server/index.ts')], { cwd: folder, env: { ...process.env, PORT: '18787', HOST: '127.0.0.1', NODE_ENV: 'test', ALLOW_GUEST_SIGNUP: '1', WECHAT_APP_SECRET: '' }, stdio: ['ignore', 'pipe', 'pipe'] });
   const clients: WebSocket[] = [];
   try {
     await new Promise<void>((resolveReady, reject) => { const timeout = setTimeout(() => reject(Error('server startup timeout')), 5000); processChild.stdout.on('data', chunk => { if (String(chunk).includes('local service:')) { clearTimeout(timeout); resolveReady(); } }); processChild.on('exit', code => { clearTimeout(timeout); reject(Error('server exited ' + code)); }); });
@@ -28,7 +36,10 @@ test('real HTTP + WebSocket: two clients join, lock, crack, reply, return to fri
     assert.equal(unavailable.status, 503);
     const denied = await fetch('http://127.0.0.1:18787/api/login', { method: 'POST', headers: { Origin: 'https://untrusted.example' }, body: '{}' });
     assert.equal(denied.status, 403);
+    const legacy = await client('token-5000');
+    assert.equal(legacy.state.value!.me.name, '旧玩家5000');
     const a = await client(), b = await client();
+    assert.equal(a.auth.me.name, '玩家5001');
     await a.command('create'); await a.until(() => !!a.state.value?.room?.code); const code = a.state.value!.room!.code;
     await b.command('join', { code }); await a.until(() => a.state.value?.room?.phase === 'preparing');
     await a.command('lock', { digits: '1122' }); await b.command('lock', { digits: '0123' });

@@ -21,7 +21,41 @@ db.exec('PRAGMA journal_mode=WAL; CREATE TABLE IF NOT EXISTS users (id TEXT PRIM
 db.exec('CREATE TABLE IF NOT EXISTS wechat_users (openid TEXT PRIMARY KEY, user_id TEXT UNIQUE)');
 if (!db.prepare('PRAGMA table_info(users)').all().some(row => row.name === 'avatar_url')) db.exec('ALTER TABLE users ADD COLUMN avatar_url TEXT');
 const service = new Service();
-for (const row of db.prepare('SELECT * FROM users').all()) service.add({ id: String(row.id), name: String(row.name), avatar: Number(row.avatar), avatarUrl: row.avatar_url ? String(row.avatar_url) : undefined }, String(row.token));
+const byToken = db.prepare('SELECT * FROM users WHERE token = ?');
+const byOpenId = db.prepare('SELECT users.* FROM users JOIN wechat_users ON users.id = wechat_users.user_id WHERE openid = ?');
+const nextNumber = db.prepare('SELECT COALESCE(MAX(rowid), 0) + 1 AS number FROM users');
+const insertUser = db.prepare('INSERT INTO users (id, token, name, avatar) VALUES (?, ?, ?, ?)');
+const bindOpenId = db.prepare('INSERT INTO wechat_users (openid, user_id) VALUES (?, ?)');
+const allowGuestSignup = process.env.ALLOW_GUEST_SIGNUP !== '0';
+
+function account(row: NonNullable<ReturnType<typeof byToken.get>>) {
+  return {
+    token: String(row.token),
+    profile: { id: String(row.id), name: String(row.name), avatar: Number(row.avatar), avatarUrl: row.avatar_url ? String(row.avatar_url) : undefined },
+  };
+}
+
+function createAccount(openid?: string) {
+  db.exec('BEGIN IMMEDIATE');
+  try {
+    // Another process may have completed the same WeChat login during code exchange.
+    const existing = openid ? byOpenId.get(openid) : undefined;
+    if (existing) {
+      db.exec('COMMIT');
+      return account(existing);
+    }
+    const number = Number(nextNumber.get()!.number);
+    const profile = { id: randomUUID(), name: '玩家' + String(number).padStart(4, '0'), avatar: (number - 1) % 8 };
+    const token = randomBytes(32).toString('hex');
+    insertUser.run(profile.id, token, profile.name, profile.avatar);
+    if (openid) bindOpenId.run(openid, profile.id);
+    db.exec('COMMIT');
+    return { profile, token };
+  } catch (error) {
+    db.exec('ROLLBACK');
+    throw error;
+  }
+}
 service.saveProfile = p => { db.prepare('UPDATE users SET name=?, avatar=?, avatar_url=? WHERE id=?').run(p.name, p.avatar, p.avatarUrl ?? null, p.id); };
 service.saveResult = r => db.prepare('INSERT OR IGNORE INTO results VALUES (?, ?, ?)').run(r.id, JSON.stringify({ result: r.result, players: r.seats.map(s => ({ id: s.profile.id, bot: s.bot })), turns: r.history.length }), Date.now());
 const sockets = new Map<string, WebSocket>(), fingerprints = new Map<string, string>();
@@ -51,7 +85,6 @@ const server = createServer(async (req, res) => {
     if (++rate.count > 120) { res.writeHead(429); res.end('{}'); return; }
     let data = ''; for await (const chunk of req) { data += chunk; if (data.length > 4096) throw Error('request too large'); }
     const input = JSON.parse(data || '{}');
-    let user = typeof input.token === 'string' ? [...service.users.values()].find(u => u.token === input.token) : undefined;
     let openid: string | undefined;
     if (typeof input.code === 'string') {
       if (!process.env.WECHAT_APP_SECRET) { res.writeHead(503); res.end(JSON.stringify({ error: '微信登录尚未配置，请稍后重试' })); return; }
@@ -60,16 +93,14 @@ const server = createServer(async (req, res) => {
       const session = await response.json() as { openid?: string; errcode?: number };
       if (!response.ok || session.errcode || !session.openid) throw Error('wechat login rejected');
       openid = session.openid;
-      const row = db.prepare('SELECT user_id FROM wechat_users WHERE openid=?').get(openid);
-      user = row ? service.users.get(String(row.user_id)) : undefined;
     }
-    if (!user) {
-      if (service.users.size >= 5000) { res.writeHead(503); res.end('{}'); return; }
-      const id = randomUUID(), token = randomBytes(32).toString('hex');
-      user = service.add({ id, name: '玩家' + String(service.users.size + 1).padStart(4, '0'), avatar: service.users.size % 8 }, token);
-      db.prepare('INSERT INTO users (id, token, name, avatar) VALUES (?, ?, ?, ?)').run(id, token, user.profile.name, user.profile.avatar);
+    const row = openid ? byOpenId.get(openid) : typeof input.token === 'string' ? byToken.get(input.token) : undefined;
+    if (!row && !openid && !allowGuestSignup) {
+      res.writeHead(403);
+      res.end(JSON.stringify({ error: '请使用微信登录' }));
+      return;
     }
-    if (openid) db.prepare('INSERT OR IGNORE INTO wechat_users VALUES (?, ?)').run(openid, user.profile.id);
+    const user = row ? account(row) : createAccount(openid);
     res.end(JSON.stringify({ token: user.token, me: user.profile }));
   } catch { res.writeHead(400); res.end(JSON.stringify({ error: '登录请求无效' })); }
 });
@@ -85,7 +116,10 @@ wss.on('connection', (ws, req) => {
       const msg = JSON.parse(String(raw));
       if (!user) {
         if (msg.action !== 'auth' || typeof msg.token !== 'string') throw Error('请先登录');
-        user = [...service.users.values()].find(u => u.token === msg.token); if (!user) throw Error('登录已失效');
+        const row = byToken.get(msg.token);
+        if (!row) throw Error('登录已失效');
+        const { profile, token } = account(row);
+        user = service.users.get(profile.id) ?? service.add(profile, token);
         const old = sockets.get(user.profile.id); if (old && old !== ws) old.close(4001, 'session replaced');
         sockets.set(user.profile.id, ws); fingerprints.delete(user.profile.id); service.heartbeat(user); clearTimeout(authTimer); service.changed(); return;
       }
