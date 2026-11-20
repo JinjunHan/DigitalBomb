@@ -1,3 +1,4 @@
+const enterTestLobby = require('./enter-test-lobby.cjs');
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const assert = require('node:assert/strict');
 const { mkdtempSync, writeFileSync } = require('node:fs');
@@ -10,12 +11,13 @@ const { join, resolve } = require('node:path');
     const errors = [], checks = [], frames = [], dir = mkdtempSync(join(tmpdir(), 'friend-return-'));
     page.on('pageerror', e => errors.push(e.message));
     await page.goto(process.env.PREVIEW_URL || 'http://127.0.0.1:8080');
+    await enterTestLobby(page);
     await page.waitForFunction(() => window.cc?.director?.getScene()?.getChildByName('Canvas')?.components.some(c => c.modalArtReady && c.friendArtReady && c.joinArtReady && c.net.online));
     await page.evaluate(() => { window.app = cc.director.getScene().getChildByName('Canvas').components.find(c => c.friendReturn); localStorage.setItem('db-motion', '1'); });
     const click = async name => {
       const p = await page.evaluate(name => {
         let match;
-        const walk = n => { if (n.name === name) match = n; n.children.forEach(walk); }; walk(app.node);
+        const walk = n => { if (n.activeInHierarchy && (n.name === name || n.name === 'LearningControl-' + name || n.getComponent(cc.Label)?.string === name)) match = n; n.children.forEach(walk); }; walk(app.node);
         if (!match) throw Error('Missing ' + name);
         const r = match.components.find(c => c.getBoundingBoxToWorld).getBoundingBoxToWorld();
         return { x: (r.x + r.width / 2) * innerWidth / 750, y: innerHeight - (r.y + r.height / 2) * innerHeight / app.screenHeight };
@@ -23,6 +25,7 @@ const { join, resolve } = require('node:path');
     };
     const create = async () => {
       await click('Join-create');
+      await click('创建房间');
       await page.waitForFunction(() => app.net.state.room?.phase === 'waiting' && !app.busy);
     };
     const ask = async () => { await click('Friend-back'); await page.waitForFunction(() => app.modals.interactive); };
@@ -47,7 +50,8 @@ const { join, resolve } = require('node:path');
       const before = app.friendReturn.elapsed; app.render(); return [before, app.friendReturn.elapsed];
     }); assert.equal(positionBefore[0], positionBefore[1]);
     await page.keyboard.press('7'); assert.equal(await page.evaluate(() => app.code), '');
-    await click('Join-create'); assert.equal(await page.evaluate(() => app.net.state.room), null);
+    await click('Join-create');
+    assert.equal(await page.evaluate(() => app.net.state.room), null);
     for (let i = 0; i < 12; i++) {
       const state = await page.evaluate(() => ({ at: performance.now(), elapsed: app.friendReturn.elapsed, active: app.friendReturn.active, page: app.page, room: app.net.state.room?.id ?? null, scene: app.scenery.view }));
       const file = join(dir, String(i).padStart(2, '0') + '.png'); await page.screenshot({ path: file }); frames.push({ ...state, file }); await page.waitForTimeout(25);

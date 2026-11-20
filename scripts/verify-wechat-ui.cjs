@@ -1,8 +1,11 @@
+const enterTestLobby = require('./enter-test-lobby.cjs');
 const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright'),assert=require('node:assert/strict');
 (async()=>{const browser=await chromium.launch({channel:'chrome',headless:true});try{
  const page=await browser.newPage({viewport:{width:390,height:844}}),errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.route('https://thirdwx.qlogo.cn/**',route=>route.fulfill({path:'assets/resources/art/profile/avatar-1.png',contentType:'image/png'}));
- await page.goto('http://127.0.0.1:8080');await page.waitForFunction(()=>window.cc?.director.getScene()?.getChildByName('Canvas')?.components.some(c=>c.feedbackArt?.ready&&c.friendArtReady&&c.net.state));
+ await page.goto('http://127.0.0.1:8080');
+ await enterTestLobby(page);
+ await page.waitForFunction(()=>window.cc?.director.getScene()?.getChildByName('Canvas')?.components.some(c=>c.feedbackArt?.ready&&c.friendArtReady&&c.net.state));
  await page.evaluate(()=>{window.app=cc.director.getScene().getChildByName('Canvas').components.find(c=>c.net?.state);window.base=JSON.parse(JSON.stringify(app.net.state));app.net.onState=()=>{};app.net.onStatus=()=>{};app.net.stop();});await page.waitForTimeout(250);
  await page.evaluate(()=>{
   window.native={destroyed:0};window.wx={getWindowInfo:()=>({windowWidth:innerWidth,windowHeight:innerHeight,screenHeight:innerHeight}),getMenuButtonBoundingClientRect:()=>({bottom:32}),requirePrivacyAuthorize:o=>o.success(),createUserInfoButton:o=>{native.rect=o.style;return{onTap:f=>native.tap=f,show:()=>{},destroy:()=>native.destroyed++};},openPrivacyContract:()=>native.privacy=true,shareAppMessage:o=>native.share=o};

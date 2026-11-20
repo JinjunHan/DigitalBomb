@@ -1,9 +1,11 @@
 /** Local browser fixtures. No test hooks are shipped in the client. */
+const enterTestLobby = require('./enter-test-lobby.cjs');
 const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
 const assert=require('node:assert/strict'),fs=require('node:fs');
 (async()=>{const browser=await chromium.launch({channel:'chrome',headless:true});try{
  const page=await browser.newPage({viewport:{width:390,height:844}}),errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.goto('http://127.0.0.1:8080');
+ await enterTestLobby(page);
  await page.waitForFunction(()=>window.cc?.director.getScene()?.getChildByName('Canvas')?.components.some(c=>c.feedbackArt?.ready&&c.net.state));
  await page.evaluate(()=>{
   window.app=cc.director.getScene().getChildByName('Canvas').components.find(c=>c.feedbackArt?.ready);window.base=JSON.parse(JSON.stringify(app.net.state));
@@ -24,18 +26,16 @@ const assert=require('node:assert/strict'),fs=require('node:fs');
   await page.evaluate(([p,r,w])=>fixture(p,r,w),[phase,reason,winner]);await shot(name);
  }
  await click('FeedbackArt-home');assert.equal(await page.evaluate(()=>command.action),'leave');
- await page.evaluate(()=>fixture('finished'));await click('FeedbackArt-rematch');assert.equal(await page.evaluate(()=>command.action),'rematch');
- await click('FeedbackArt-match');assert.equal(await page.evaluate(()=>command.action),'queue');
- await click('FeedbackArt-records');assert.equal(await page.evaluate(()=>app.overlay),'resultRecords');await page.waitForTimeout(600);await shot('empty-records');
+ await page.evaluate(()=>fixture('finished'));
+ await click('FeedbackArt-match');await page.waitForFunction(()=>app.learning.visible);
+ await click('LearningControl-开始匹配');assert.equal(await page.evaluate(()=>command.action),'queue');
+ await page.evaluate(()=>fixture('finished'));await click('FeedbackArt-records');assert.equal(await page.evaluate(()=>app.overlay),'resultRecords');await page.waitForTimeout(600);await shot('empty-records');
  await click('ModalArt-result-done');await page.waitForTimeout(500);assert.equal(await page.evaluate(()=>app.overlay),'');
- await page.evaluate(()=>{fixture('finished');app.net.state.room.rematch=[base.me.id];app.render();});await shot('rematch');
  await page.evaluate(()=>{fixture();app.toast('确认超时，请查看同步后的状态');});await shot('notice');
  await page.evaluate(()=>{fixture();app.suppressFeedback=true;app.net.state.room.history=[{playerId:'peer',turn:6,digits:'1234',hits:3}];app.stateChanged();});assert.equal(await page.evaluate(()=>app.effects.children.length),0);
- for(const kind of ['win','expired-invite','peer-left','timeout-end','startup','login-failed']) {
+ for(const kind of ['win','timeout-end','startup','login-failed']) {
   await page.evaluate(kind=>{
    fixture('finished','cracked',kind==='win'?base.me.id:'peer');
-   if(kind==='expired-invite')app.rematchNotice='再战邀请已过期，请重新匹配';
-   if(kind==='peer-left')app.rematchNotice='对方已离开，请重新匹配';
    if(kind==='startup'||kind==='login-failed'){app.net.state=null;app.loginFailed=kind==='login-failed';}
    if(kind==='timeout-end'){fixture();app.net.state.room.phase='finished';app.net.state.room.result={winner:'peer',reason:'timeout'};app.stateChanged();}else app.render();
   },kind);await shot(kind);
@@ -67,5 +67,5 @@ const assert=require('node:assert/strict'),fs=require('node:fs');
   assert.ok(bottom>=36,'notice must clear bottom safe inset: '+bottom);
  }
  await shot('audit-short-notice');
- assert.deepEqual(errors,[]);console.log('PASS: opponent input remains usable; reply, timeout, terminal, cancellation, empty records, rematch, toast; buttons; reconnect suppression; tall/short screens; real motion frames; motion disabled.');
+ assert.deepEqual(errors,[]);console.log('PASS: opponent input remains usable; reply, timeout, terminal, cancellation, empty records, match mode selection, toast; buttons; reconnect suppression; tall/short screens; real motion frames; motion disabled.');
 }finally{await browser.close();}})().catch(e=>{console.error(e);process.exit(1);});

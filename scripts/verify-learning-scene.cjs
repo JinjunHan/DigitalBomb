@@ -1,3 +1,4 @@
+const enterTestLobby = require('./enter-test-lobby.cjs');
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -7,10 +8,11 @@ const fs = require('node:fs');
     const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
     const errors = []; page.on('pageerror', error => errors.push(error.message));
     await page.goto('http://127.0.0.1:8080');
+    await enterTestLobby(page, { disconnect: true });
     await page.waitForFunction(() => window.cc?.director.getScene()?.getChildByName('Canvas')?.components.some(c => c.lobbyArt?.has('machine')));
     await page.evaluate(() => {
       window.app = cc.director.getScene().getChildByName('Canvas').components.find(c => c.net);
-      app.net.onState = () => {}; app.net.onStatus = () => {}; app.net.stop(); app.net.online = true;
+      app.net.online = true;
       app.net.state = { me: { id: 'scene-fixture', name: '背景验证', avatar: 0 }, room: null, queuedAt: null, serverNow: Date.now() };
       app.startupEntered = true; app.releaseStartup(); app.dismissNotice(); app.page = 'lobby';
       window.originalScenery = app.scenery;

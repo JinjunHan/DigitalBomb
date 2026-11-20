@@ -2,6 +2,7 @@
  * PLAYWRIGHT_MODULE may point at an existing Playwright installation.
  * Fixtures are injected into the browser only; no debug routes ship in the game.
  */
+const enterTestLobby = require('./enter-test-lobby.cjs');
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const assert = require('node:assert/strict');
 const { mkdirSync, writeFileSync } = require('node:fs');
@@ -13,6 +14,7 @@ const { resolve } = require('node:path');
     const errors = [], checks = [];
     page.on('pageerror', e => errors.push(e.message));
     await page.goto(process.env.PREVIEW_URL || 'http://127.0.0.1:8080');
+    await enterTestLobby(page);
     await page.waitForFunction(() => window.cc?.director?.getScene()?.getChildByName('Canvas')?.components.some(c => c.modalArtReady && c.net.state));
     await page.evaluate(() => {
       window.app = cc.director.getScene().getChildByName('Canvas').components.find(c => c.modalArt);

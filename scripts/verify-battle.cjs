@@ -1,10 +1,12 @@
 /** Browser fixtures only. Run after build:web with preview and server listening. */
+const enterTestLobby = require('./enter-test-lobby.cjs');
 const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
 const assert=require('node:assert/strict');
 (async()=>{const browser=await chromium.launch({channel:'chrome',headless:true});try{
  const page=await browser.newPage({viewport:{width:390,height:693}}),errors=[];
  page.on('pageerror',e=>errors.push(e.message));
  await page.goto('http://127.0.0.1:8080');
+ await enterTestLobby(page);
  await page.waitForFunction(()=>window.cc?.director.getScene()?.getChildByName('Canvas')?.components.some(c=>c.battleArtReady&&c.net.state));
  await page.evaluate(()=>{
   window.app=cc.director.getScene().getChildByName('Canvas').components.find(c=>c.battleArtReady);window.base=JSON.parse(JSON.stringify(app.net.state));base.me.avatar=0;base.me.name='半杯柠檬';

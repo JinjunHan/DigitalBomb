@@ -1,9 +1,12 @@
 /** Visual bounds and identity regression checks against the built Cocos client. */
+const enterTestLobby = require('./enter-test-lobby.cjs');
 const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
 const assert=require('node:assert/strict'),fs=require('node:fs');
 (async()=>{const browser=await chromium.launch({channel:'chrome',headless:true});try{
  const page=await browser.newPage({viewport:{width:390,height:844}});const errors=[];page.on('pageerror',e=>errors.push(e.message));
- await page.goto('http://127.0.0.1:8080');await page.waitForFunction(()=>window.cc?.director.getScene()?.getChildByName('Canvas')?.components.some(c=>c.feedbackArt?.ready&&c.battleArtReady&&c.net.state));
+ await page.goto('http://127.0.0.1:8080');
+ await enterTestLobby(page);
+ await page.waitForFunction(()=>window.cc?.director.getScene()?.getChildByName('Canvas')?.components.some(c=>c.feedbackArt?.ready&&c.battleArtReady&&c.net.state));
  await page.evaluate(()=>{window.app=cc.director.getScene().getChildByName('Canvas').components.find(c=>c.net?.state);app.net.onState=()=>{};app.net.onStatus=()=>{};app.net.stop();localStorage.setItem('db-motion','0');});await page.waitForTimeout(250);
  fs.mkdirSync('docs/verification/page-details',{recursive:true});
  await page.evaluate(()=>{app.net.online=true;app.net.state.me.avatar=7;app.net.state.me.avatarUrl='';app.openProfile();});
