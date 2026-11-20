@@ -742,7 +742,7 @@ export class GameApp extends Component {
     this.header('好友对战', () => { this.page = 'lobby'; this.render(); });
     this.text('输入房间口令', 375, 340, 38); this.text('四位口令，加入好友的牌桌', 375, 402, 23, C.gold);
     this.cards(this.code, 520, 100); this.button('加入房间', 375, 680, 560, 85, () => this.act('join', { code: this.code }), true, this.code.length === 4 && !this.busy);
-    this.button('自己创建房间', 375, 782, 560, 70, () => this.selectMode('friend'), false, !this.busy); this.keypad(925, 'join');
+    this.button('自己创建房间', 375, 782, 560, 70, () => this.createFriendRoom(), false, !this.busy); this.keypad(925, 'join');
   }
   private joinArtwork() {
     // Fit the complete 941px source composition, including the keyboard, inside safe bounds.
@@ -780,7 +780,7 @@ export class GameApp extends Component {
       const opacity = glow.addComponent(UIOpacity); opacity.opacity = 0; this.joinGlows.push(opacity);
     }
     this.joinButton = art('join', [221, 716, 723, 842], () => this.act('join', { code: this.code }), this.code.length === 4 && !this.busy && this.net.online);
-    art('create', [244, 849, 699, 949], () => this.selectMode('friend'), !this.busy && this.net.online);
+    art('create', [244, 849, 699, 949], () => this.createFriendRoom(), !this.busy && this.net.online);
     art('keyboard', [0, 1047, 941, 1632]);
     const keys: [string, number[]][] = [
       ['1', [103,1100,341,1200]], ['2', [353,1100,591,1200]], ['3', [604,1100,842,1200]],
@@ -1632,6 +1632,14 @@ export class GameApp extends Component {
     this.net.onState = () => this.stateChanged(); this.net.onStatus = () => { if (!this.net.online) this.suppressFeedback = true; this.render(); }; this.net.onError = s => this.toast(s);
     this.render();
     try { await this.connect(); } finally { this.reconnecting = false; this.render(); }
+  }
+  private createFriendRoom() {
+    const state = this.net.state;
+    if (!state || !this.net.online || this.busy) return;
+    if (!this.code) { this.selectMode('friend'); return; }
+    if (!/^\d{4}$/.test(this.code)) { this.toast('请输入完整的四位房间口令'); return; }
+    const digitCount = rememberedDigitCount(read(modePreferenceKey(state.me.id, 'friend'), ''));
+    void this.act('createOrJoin', { code: this.code, digitCount });
   }
   private selectMode(mode: MatchMode) {
     const state=this.net.state;if(!state||!this.net.online||this.busy)return;

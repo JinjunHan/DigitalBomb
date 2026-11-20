@@ -74,6 +74,14 @@ test('real HTTP + WebSocket: two clients join, lock, crack, reply, return to fri
     await a.until(() => a.state.value?.room?.phase === 'playing'); assert.notEqual(a.state.value!.room!.first, oldFirst);
     const currentRoom = a.state.value!.room!.id; a.ws.close();
     const reconnected = await client(a.auth.token); assert.equal(reconnected.state.value!.room!.id, currentRoom); assert.equal(reconnected.state.value!.room!.ownSecret, '0000');
+    const challenger = await client();
+    const customCode = code === '0012' ? '0013' : '0012';
+    await Promise.all([legacy, challenger].map(player => player.command('createOrJoin', { code: customCode })));
+    for (const player of [legacy, challenger]) {
+      await player.until(() => player.state.value?.room?.phase === 'preparing');
+      assert.equal(player.state.value!.room!.code, customCode);
+    }
+    assert.equal(legacy.state.value!.room!.id, challenger.state.value!.room!.id);
   } finally {
     for (const ws of clients) ws.close(); processChild.kill('SIGTERM');
     await new Promise<void>(resolveExit => { if (processChild.exitCode !== null) resolveExit(); else processChild.on('exit', () => resolveExit()); });

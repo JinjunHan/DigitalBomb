@@ -108,3 +108,31 @@ test('friend joins and return-to-room preserve the host rule and four-digit room
   const next = service.room(a)!; assert.equal(next.digitCount, 2); assert.equal(next.code, room.code);
   assert.equal(next.seats[0].profile.id, a.profile.id); assert.equal(next.history.length, 0);
 });
+
+test('自定义好友口令按顺序建房、入房、提示满员，并保留原房间规则', () => {
+  const service = new Service(() => 1000);
+  const players = ['甲', '乙', '丙', '丁'].map(id => service.add({ id, name: id, avatar: 0 }, id));
+  const [host, guest, extra, other] = players;
+  for (const code of ['1', '12345', 'abcd', 12]) {
+    assert.throws(() => service.perform(host, 'createOrJoin', { code }), /四位/);
+  }
+  const command = { id: 'clicked', action: 'createOrJoin', payload: { code: '0012', digitCount: 3 } };
+  assert.equal(service.command(host, command).error, undefined);
+  assert.equal(service.command(host, command).error, undefined);
+  const room = service.room(host)!;
+  assert.equal(room.code, '0012');
+  assert.equal(room.digitCount, 3);
+  service.perform(guest, 'createOrJoin', { code: '0012', digitCount: 2 });
+  assert.equal(service.room(guest), room);
+  assert.equal(room.phase, 'preparing');
+  for (const action of ['createOrJoin', 'join']) {
+    assert.throws(() => service.perform(extra, action, { code: '0012' }), /房间已满/);
+  }
+  assert.equal(service.rooms.size, 1);
+  assert.equal(service.room(extra), undefined);
+  assert.throws(() => service.perform(other, 'join', { code: '0000' }), /无效/);
+  service.perform(other, 'createOrJoin', { code: '0000' });
+  service.perform(other, 'leave', { roomId: other.roomId });
+  service.tick();
+  assert.throws(() => service.perform(extra, 'createOrJoin', { code: '0000' }), /刚刚关闭/);
+});

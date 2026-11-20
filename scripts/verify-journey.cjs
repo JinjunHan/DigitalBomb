@@ -3,7 +3,7 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright'),assert=req
 (async()=>{const browser=await chromium.launch({channel:'chrome',headless:true});try{
  fs.mkdirSync('docs/verification/journey',{recursive:true});const errors=[];
  async function player(){const context=await browser.newContext({viewport:{width:390,height:844}});const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));await page.addInitScript(()=>localStorage.setItem('db-motion','0'));await page.goto('http://127.0.0.1:8080');await page.waitForFunction(()=>window.cc?.director.getScene()?.getChildByName('Canvas')?.components.some(c=>c.feedbackArt?.ready&&c.battleArtReady&&c.friendArtReady&&c.modalArtReady&&c.net.state));await page.evaluate(()=>window.app=cc.director.getScene().getChildByName('Canvas').components.find(c=>c.net?.state));return page;}
- const a=await player(),b=await player();
+ const a=await player(),b=await player(), spectator=await player();
  async function click(page, name) {
    const point = await page.evaluate(name => {
      let target;
@@ -20,7 +20,7 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright'),assert=req
    await page.mouse.click(point.x, point.y);
    await page.waitForTimeout(150);
  }
- for (const page of [a, b]) {
+ for (const page of [a, b, spectator]) {
    await page.waitForFunction(() => app.startupEntered && app.learning.ready && app.learning.visible);
    await click(page, '先去大厅');
  }
@@ -30,8 +30,21 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright'),assert=req
  await a.evaluate(()=>app.openProfile());await shot(a,'02-profile');await a.evaluate(()=>{app.nicknameEditBox.string='流程测试甲';return app.saveProfile();});assert.equal(await a.evaluate(()=>app.net.state.me.name),'流程测试甲');
  await a.evaluate(()=>{app.toast('可关闭的提示');window.lobbyNode=app.root.getChildByName('Lobby-title');app.noticeUntil=0;app.updateTimer();if(window.lobbyNode!==app.root.getChildByName('Lobby-title'))throw Error('toast expiration rebuilt page');});
  await a.evaluate(()=>app.toast('点击关闭提示'));await click(a,'FeedbackArt-warning');assert.equal(await a.evaluate(()=>app.notice),'');
- await click(a,'Lobby-friend-full');await shot(a,'03-join');await click(a,'Join-create');await click(a,'创建房间');await phase(a,'waiting');await shot(a,'04-waiting');
- const code=await a.evaluate(()=>app.net.state.room.code);await click(b,'Lobby-friend-full');for(const digit of code)await click(b,'Join-key-'+digit);await click(b,'Join-join');await phase(a,'preparing');await phase(b,'preparing');await shot(a,'05-prepare');
+ const code='0'+require('node:crypto').randomInt(1000).toString().padStart(3,'0');
+ await click(a,'Lobby-friend-full');await shot(a,'03-join');
+ await click(a,'Join-key-0');await click(a,'Join-create');
+ assert.match(await a.evaluate(()=>app.notice),/完整的四位/);
+ for(const digit of code.slice(1))await click(a,'Join-key-'+digit);
+ await click(a,'Join-create');await phase(a,'waiting');
+ assert.equal(await a.evaluate(()=>app.net.state.room.code),code);await shot(a,'04-waiting');
+ for(const page of [b,spectator]){
+   await click(page,'Lobby-friend-full');
+   for(const digit of code)await click(page,'Join-key-'+digit);
+   await click(page,'Join-create');
+   if(page===b)await phase(b,'preparing');
+ }
+ await spectator.waitForFunction(()=>app.notice.includes('房间已满')&&!app.net.state.room);
+ await phase(a,'preparing');await shot(a,'05-prepare');
  for(const [page,secret]of [[a,'1122'],[b,'0123']]){for(const digit of secret)await click(page,'Battle-prep-'+digit);await click(page,'Battle-lock');await click(page,'ModalArt-lock-confirm');}
  await phase(a,'playing');await a.waitForFunction(()=>app.net.now()>=app.net.state.room.startAt);await shot(a,'06-playing');
  const firstA=await a.evaluate(()=>app.net.state.room.current===app.net.state.me.id);const first=firstA?a:b,second=firstA?b:a;

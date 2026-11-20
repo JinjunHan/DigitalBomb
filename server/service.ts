@@ -34,6 +34,11 @@ export class Service {
     user.roomId = undefined;
   }
   bind(room: Match) { this.rooms.set(room.id, room); for (const s of room.seats) { const u = this.users.get(s.profile.id); if (u) { u.roomId = room.id; u.queue = undefined; } } }
+  private createFriendRoom(user: User, code: string, digitCount: DigitCount, now: number) {
+    const room = new Match('friend', [this.seat(user)], now, code, { ...DEFAULT_RULES, digitCount });
+    this.codes.set(code, room.id);
+    this.bind(room);
+  }
   allocateCode() {
     const now = this.now(), start = randomInt(10000);
     for (let n = 0; n < 10000; n++) { const c = String((start + n) % 10000).padStart(4, '0'); if (!this.codes.has(c) && (this.cooldown.get(c) ?? 0) <= now) return c; }
@@ -70,16 +75,25 @@ export class Service {
     }
     if (action === 'create') {
       const digitCount = requestedDigitCount(p.digitCount);
-      this.available(user); const code = this.allocateCode(); const room = new Match('friend', [this.seat(user)], now, code, { ...DEFAULT_RULES, digitCount }); this.codes.set(code, room.id); this.bind(room); return;
+      this.available(user);
+      this.createFriendRoom(user, this.allocateCode(), digitCount, now);
+      return;
     }
-    if (action === 'join') {
+    if (action === 'join' || action === 'createOrJoin') {
       if (p.inviteRoomId !== undefined && !this.wechatSharingEnabled) throw Error('微信分享暂未开放，请手动输入房间口令');
       this.available(user);
       const recent = (this.attempts.get(user.profile.id) ?? []).filter(t => now - t < 60000);
       if (recent.length >= 10) throw Error('尝试太频繁，请稍后再试'); recent.push(now); this.attempts.set(user.profile.id, recent);
       if (typeof p.code !== 'string' || !/^\d{4}$/.test(p.code)) throw Error('请输入四位房间口令');
-      const room = this.rooms.get(this.codes.get(p.code) ?? ''); if (!room) throw Error('口令无效或房间已关闭');
+      const room = this.rooms.get(this.codes.get(p.code) ?? '');
+      if (!room) {
+        if (action === 'join' || p.inviteRoomId !== undefined) throw Error('口令无效或房间已关闭');
+        if ((this.cooldown.get(p.code) ?? 0) > now) throw Error('该口令刚刚关闭，请稍后再试或更换口令');
+        this.createFriendRoom(user, p.code, requestedDigitCount(p.digitCount), now);
+        return;
+      }
       if (p.inviteRoomId !== undefined && p.inviteRoomId !== room.id) throw Error('邀请已过期，请向好友索取新邀请');
+      if (room.seats.length >= 2) throw Error('房间已满，请更换口令');
       const previousId = [...this.returnedRooms].find(([, nextId]) => nextId === room.id)?.[0];
       const previous = previousId ? this.rooms.get(previousId) : undefined;
       if (previous?.seats.some(s => this.users.get(s.profile.id)?.roomId === previous.id)) throw Error('好友正在查看结算，请稍后加入');
