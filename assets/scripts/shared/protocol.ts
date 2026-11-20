@@ -11,7 +11,9 @@ export interface RoomView {
   deadline: number; startAt: number; history: Guess[]; ownSecret?: string;
   revealed?: Record<string, string>; result?: Result; rematch: string[];
 }
+export interface ShareImage { imageUrlId: string; imageUrl: string }
 export interface Snapshot {
+  wechatShareImages?: ShareImage[];
   me: Profile; room: RoomView | null; queuedAt: number | null;
   wechatSharingEnabled?: boolean;
   supportedDigitCounts?: DigitCount[];

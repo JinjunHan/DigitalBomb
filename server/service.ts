@@ -3,7 +3,7 @@ import type { DigitCount } from '../assets/scripts/shared/deduction';
 import { avatarUrl, nicknameError } from '../assets/scripts/shared/wechat-flow';
 import { randomInt, randomUUID } from 'node:crypto';
 import { Match, botGuess, secret, DEFAULT_RULES, type Seat } from './game';
-import type { Profile, Command, Snapshot } from '../assets/scripts/shared/protocol';
+import type { Profile, Command, ShareImage, Snapshot } from '../assets/scripts/shared/protocol';
 
 export interface User { profile: Profile; token: string; roomId?: string; lastSeen: number; offlineAt?: number; queue?: { at: number; fallback: number; digitCount: DigitCount }; notice?: string }
 const prefixes = ['半杯', '晚风', '山间', '橘子', '薄荷', '雨后', '南山', '小岛', '凌晨', '云边', '青柠', '暮色', '风里', '夏日', '白桃', '海盐', '星河', '落日', '森林', '月下'];
@@ -11,6 +11,7 @@ const suffixes = ['乌龙', '来信', '漫步', '汽水', '小熊', '旅人', '�
 export const botProfiles = prefixes.flatMap(a => suffixes.map(b => a + b));
 export class Service {
   wechatSharingEnabled = false;
+  wechatShareImages: ShareImage[] = [];
   users = new Map<string, User>(); rooms = new Map<string, Match>(); codes = new Map<string, string>(); cooldown = new Map<string, number>();
   private returnedRooms = new Map<string, string>();
   receipts = new Map<string, Map<string, string | null>>(); attempts = new Map<string, number[]>();
@@ -19,7 +20,7 @@ export class Service {
   add(profile: Profile, token: string) { const user: User = { profile, token, lastSeen: this.now() }; this.users.set(profile.id, user); return user; }
   room(user: User) { return user.roomId ? this.rooms.get(user.roomId) : undefined; }
   seat(user: User): Seat { return { profile: { ...user.profile }, online: true, misses: 0, bot: false }; }
-  snapshot(user: User): Snapshot { return { wechatSharingEnabled: this.wechatSharingEnabled, me: { ...user.profile }, room: this.room(user)?.view(user.profile.id) ?? null, supportedDigitCounts: [2, 3, 4], queuedAt: user.queue?.at ?? null, queuedDigitCount: user.queue?.digitCount, serverNow: this.now(), notice: user.notice }; }
+  snapshot(user: User): Snapshot { return { wechatShareImages: this.wechatShareImages, wechatSharingEnabled: this.wechatSharingEnabled, me: { ...user.profile }, room: this.room(user)?.view(user.profile.id) ?? null, supportedDigitCounts: [2, 3, 4], queuedAt: user.queue?.at ?? null, queuedDigitCount: user.queue?.digitCount, serverNow: this.now(), notice: user.notice }; }
   heartbeat(user: User) {
     user.lastSeen = this.now(); user.offlineAt = undefined;
     const room = this.room(user); const seat = room?.seats.find(s => s.profile.id === user.profile.id);

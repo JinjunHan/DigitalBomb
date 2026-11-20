@@ -1,3 +1,5 @@
+import type { ShareImage } from './protocol';
+
 /** Platform-only controller, injected so lifecycle and authorization can be tested without Cocos. */
 export interface Invitation { code: string; roomId: string }
 export function invitation(query: unknown): Invitation | undefined {
@@ -27,21 +29,20 @@ export function wechatProfile(value: any): { name?: string; avatarUrl?: string }
   if (!nickname && !url) return;
   return { name: nickname, avatarUrl: url };
 }
-const roomInviteImage = 'share-invite.jpg';
-const shareImages = [roomInviteImage, 'share-guess.jpg', 'share-rematch.jpg'];
 
 export class WechatFlow {
   private button: any;
   private alive = true;
   private generation = 0;
+  private images: ShareImage[] = [];
   private sharingEnabled = false;
   private lastInvitation = '';
   private onShow = (options: any) => this.receive(options?.query);
   private onShare = () => {
     if (!this.sharingEnabled) return;
     const room = this.room();
-    return room ? { title: '来猜我的暗号，房间口令 ' + room.code, query: `code=${room.code}&roomId=${encodeURIComponent(room.roomId)}`, imageUrl: roomInviteImage }
-      : { title: '你藏数字我来猜，看谁先破译暗号', imageUrl: shareImages[Math.floor(Math.random() * shareImages.length)] };
+    return room ? { title: '来猜我的暗号，房间口令 ' + room.code, query: `code=${room.code}&roomId=${encodeURIComponent(room.roomId)}`, ...this.images[0] }
+      : { title: '你藏数字我来猜，看谁先破译暗号', ...this.images[Math.floor(Math.random() * this.images.length)] };
   };
   constructor(private wx: any, private room: () => Invitation | undefined, private incoming: (value: Invitation) => void) {}
   start() {
@@ -50,7 +51,8 @@ export class WechatFlow {
     this.wx.onShow?.(this.onShow);
     this.receive(this.wx.getLaunchOptionsSync?.()?.query);
   }
-  setSharingEnabled(enabled: boolean) {
+  setSharingEnabled(enabled: boolean, images: ShareImage[] = []) {
+    this.images = images;
     if (!this.wx || this.sharingEnabled === enabled) return;
     this.sharingEnabled = enabled;
     if (enabled) {

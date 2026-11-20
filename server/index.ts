@@ -6,7 +6,7 @@ import { WebSocketServer, WebSocket } from 'ws';
 import { Service } from './service';
 import { DEFAULT_RULES } from './game';
 import type { User } from './service';
-import type { Command } from '../assets/scripts/shared/protocol';
+import type { Command, ShareImage } from '../assets/scripts/shared/protocol';
 
 const port = Number(process.env.PORT ?? 8787), host = process.env.HOST ?? '127.0.0.1';
 const preview = process.env.DEPLOYMENT_MODE === 'preview';
@@ -70,9 +70,22 @@ service.changed = () => {
 const sharingConfig = 'config/wechat-sharing.json';
 function refreshSharingConfig() {
   let enabled = false;
-  try { enabled = JSON.parse(readFileSync(sharingConfig, 'utf8'))?.enabled === true; }
+  const images: ShareImage[] = [];
+  try {
+    const config = JSON.parse(readFileSync(sharingConfig, 'utf8'));
+    enabled = config?.enabled === true;
+    if (Array.isArray(config?.images)) {
+      for (const item of config.images) {
+        if (item?.approved === true && typeof item.imageUrlId === 'string' && item.imageUrlId.trim()
+          && typeof item.imageUrl === 'string' && /^https:\/\/mmocgame\.qpic\.cn\/wechatgame\/[A-Za-z0-9_/-]+$/.test(item.imageUrl)) {
+          images.push({ imageUrlId: item.imageUrlId.trim(), imageUrl: item.imageUrl });
+        }
+      }
+    }
+  }
   catch { /* Missing or incomplete configuration keeps sharing closed. */ }
-  if (service.wechatSharingEnabled === enabled) return;
+  if (service.wechatSharingEnabled === enabled && JSON.stringify(service.wechatShareImages) === JSON.stringify(images)) return;
+  service.wechatShareImages = images;
   service.wechatSharingEnabled = enabled;
   service.changed();
 }

@@ -54,6 +54,10 @@ test('real HTTP + WebSocket: two clients join, lock, crack, reply, return to fri
     writeFileSync(sharing, '{"enabled":true}');
     await b.until(() => b.state.value?.wechatSharingEnabled === true);
     await assert.rejects(b.command('join', { code, inviteRoomId: 'expired' }), /邀请已过期/);
+    const image = {imageUrlId:'approved-id',imageUrl:'https://mmocgame.qpic.cn/wechatgame/test/0'};
+    writeFileSync(sharing, JSON.stringify({enabled:true,images:[{approved:false,...image},{approved:true,...image}]}));
+    await b.until(() => b.state.value?.wechatShareImages?.length === 1);
+    assert.deepEqual(b.state.value!.wechatShareImages,[image]);
     writeFileSync(sharing, '{');
     await b.until(() => b.state.value?.wechatSharingEnabled === false);
     await assert.rejects(b.command('join', invitation), /分享暂未开放/);

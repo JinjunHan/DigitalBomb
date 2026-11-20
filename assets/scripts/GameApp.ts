@@ -274,7 +274,7 @@ export class GameApp extends Component {
   private stateChanged() {
     clearTimeout(this.loginDeadline);
     const s = this.net.state!, r = s.room;
-    this.wxFlow.setSharingEnabled(s.wechatSharingEnabled === true);
+    this.wxFlow.setSharingEnabled(s.wechatSharingEnabled === true, s.wechatShareImages);
     this.consumeInvitation();
     const event = r ? feedbackEvent(r, s.me.id, { roomId: this.lastRoom, phase: this.lastPhase, guesses: this.seenGuesses }, this.suppressFeedback) : undefined;
     if (r && this.suppressFeedback) this.roundRoll.sync(r.id, r.round, false, true);
