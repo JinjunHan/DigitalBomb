@@ -1,0 +1,18 @@
+{
+  "name": "digital-bomb",
+  "version": "0.1.0",
+  "private": true,
+  "uuid": "542a07b6-5cca-46af-b2fd-5c713d3f2bc3",
+  "creator": { "version": "3.8.8" },
+  "scripts": {
+    "server": "tsx server/index.ts",
+    "test": "tsx --test tests/*.test.ts",
+    "typecheck": "tsc -p tsconfig.server.json --noEmit",
+    "typecheck:client": "tsc -p tsconfig.json --noEmit",
+    "build:web": "node scripts/build.mjs web-mobile",
+    "build:wechat": "node scripts/build.mjs wechatgame",
+    "preview": "node scripts/preview.mjs"
+  },
+  "dependencies": { "ws": "^8.18.3" },
+  "devDependencies": { "@types/node": "^22.19.0", "@types/ws": "^8.18.1", "tsx": "^4.20.6", "typescript": "~5.9.3" }
+}

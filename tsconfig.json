@@ -1,0 +1,21 @@
+{
+  "extends": "./temp/tsconfig.cocos.json",
+  "compilerOptions": {
+    "strict": true,
+    "skipLibCheck": true,
+    "types": [],
+    "lib": [
+      "ES2020",
+      "DOM"
+    ]
+  },
+  "include": [
+    "assets/**/*.ts",
+    "temp/declarations/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "server",
+    "tests"
+  ]
+}

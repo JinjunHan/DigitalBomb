@@ -1,0 +1,14 @@
+{
+  "ver": "1.2.0",
+  "importer": "directory",
+  "imported": true,
+  "uuid": "105e8357-4fe7-4b2d-bd3e-fe973adc4557",
+  "files": [],
+  "subMetas": {},
+  "userData": {
+    "isBundle": true,
+    "bundleConfigID": "wechat-resources",
+    "bundleName": "resources",
+    "priority": 8
+  }
+}

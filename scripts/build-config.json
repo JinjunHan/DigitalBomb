@@ -1,0 +1,20 @@
+{
+  "name": "猜数字暗号",
+  "platform": "web-mobile",
+  "buildPath": "project://build",
+  "outputName": "web-mobile",
+  "debug": false,
+  "sourceMaps": false,
+  "startScene": "627cf419-4791-4833-8c57-9719aba456cd",
+  "scenes": [
+    {
+      "url": "db://assets/scenes/Main.scene",
+      "uuid": "627cf419-4791-4833-8c57-9719aba456cd"
+    }
+  ],
+  "orientation": "portrait",
+  "polyfills": {
+    "asyncFunctions": true
+  },
+  "packages": {}
+}

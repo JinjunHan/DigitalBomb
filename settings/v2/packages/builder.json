@@ -1,0 +1,49 @@
+{
+  "__version__": "1.3.9",
+  "common": {
+    "mainBundleCompressionType": "merge_dep",
+    "startScene": "627cf419-4791-4833-8c57-9719aba456cd",
+    "scenes": [
+      {
+        "url": "db://assets/scenes/Main.scene",
+        "uuid": "627cf419-4791-4833-8c57-9719aba456cd"
+      }
+    ]
+  },
+  "bundleConfig": {
+    "custom": {
+      "wechat-resources": {
+        "displayName": "微信资源分包",
+        "configs": {
+          "miniGame": {
+            "configMode": "overwrite",
+            "overwriteSettings": {
+              "wechatgame": {
+                "compressionType": "subpackage",
+                "isRemote": false
+              }
+            },
+            "fallbackOptions": {
+              "compressionType": "merge_dep",
+              "isRemote": false
+            }
+          },
+          "web": {
+            "configMode": "fallback",
+            "fallbackOptions": {
+              "compressionType": "merge_dep",
+              "isRemote": false
+            }
+          },
+          "native": {
+            "configMode": "fallback",
+            "fallbackOptions": {
+              "compressionType": "merge_dep",
+              "isRemote": false
+            }
+          }
+        }
+      }
+    }
+  }
+}
