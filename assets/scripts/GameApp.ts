@@ -234,7 +234,7 @@ export class GameApp extends Component {
   }
   onDestroy() { this.finishMatchingMotion(); this.opponentCard?.destroy(); clearTimeout(this.loginDeadline); this.releaseStartup(); this.wxFlow?.destroy(); if (this.feedbackArt) this.feedbackArt.disposed = true; this.friendReturn?.destroy(); this.modals?.destroy(); this.stopJoinMotion(); this.scenery?.destroy(); view.off('canvas-resize', this.resizeLayout, this); this.audio.dispose(); if (this.profilePanel) Tween.stopAllByTarget(this.profilePanel); this.clearEffects(); this.net.stop(); input.off(Input.EventType.KEY_DOWN, this.onKey, this); game.off(Game.EVENT_SHOW, this.onShow, this); game.off(Game.EVENT_HIDE, this.onHide, this); }
   private onHide() { this.wxFlow?.clearButton();this.audio.background(true); }
-  private onShow() { this.audio.background(false); if (this.net.online) this.net.command('sync').catch(() => {}); }
+  private onShow() { this.audio.background(false); if (this.net.online) { void this.net.refreshSharing(); this.net.command('sync').catch(() => {}); } }
   private loadStartupTexture(path: string, loaded: (texture: Texture2D) => void) {
     this.startupAssets.add(path, () => new Promise<void>((resolve, reject) => {
       resources.load(path, Texture2D, (error, texture) => {

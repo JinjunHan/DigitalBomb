@@ -59,10 +59,11 @@ function createAccount(openid?: string) {
 service.saveProfile = p => { db.prepare('UPDATE users SET name=?, avatar=?, avatar_url=? WHERE id=?').run(p.name, p.avatar, p.avatarUrl ?? null, p.id); };
 service.saveResult = r => db.prepare('INSERT OR IGNORE INTO results VALUES (?, ?, ?)').run(r.id, JSON.stringify({ result: r.result, players: r.seats.map(s => ({ id: s.profile.id, bot: s.bot })), turns: r.history.length }), Date.now());
 const sockets = new Map<string, WebSocket>(), fingerprints = new Map<string, string>();
+const sharingViaHttp = new WeakSet<WebSocket>();
 const send = (ws: WebSocket, data: unknown) => { if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(data)); };
 service.changed = () => {
   for (const [id, ws] of sockets) {
-    const u = service.users.get(id)!; const state = service.snapshot(u);
+    const u = service.users.get(id)!; const state = service.snapshot(u, !sharingViaHttp.has(ws));
     const key = JSON.stringify({ ...state, serverNow: 0 });
     if (fingerprints.get(id) !== key) { fingerprints.set(id, key); send(ws, { type: 'state', state }); }
   }
@@ -87,7 +88,6 @@ function loadSharingConfig() {
   service.wechatShareImages = images;
   service.wechatSharingEnabled = enabled;
 }
-loadSharingConfig();
 const allowedOrigin = (origin?: string) => !origin || (preview && origin === 'https://bomb.aiforevery.cn') || /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
 const loginRates = new Map<string, { at: number; count: number }>();
 const server = createServer(async (req, res) => {
@@ -96,6 +96,12 @@ const server = createServer(async (req, res) => {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type'); res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
   if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
   res.setHeader('Content-Type', 'application/json');
+  if (req.method === 'GET' && req.url === '/api/wechat-sharing') {
+    loadSharingConfig();
+    res.setHeader('Cache-Control', 'no-store');
+    res.end(JSON.stringify({enabled: service.wechatSharingEnabled, images: service.wechatShareImages}));
+    return;
+  }
   if (req.url === '/health') { res.end(JSON.stringify({ ok: true, mode: preview ? 'preview' : 'local-development', wechatConfigured: Boolean(process.env.WECHAT_APP_SECRET) })); return; }
   if (req.url !== '/api/login' || req.method !== 'POST') { res.writeHead(404); res.end('{}'); return; }
   try {
@@ -139,13 +145,17 @@ wss.on('connection', (ws, req) => {
         if (msg.action !== 'auth' || typeof msg.token !== 'string') throw Error('请先登录');
         const row = byToken.get(msg.token);
         if (!row) throw Error('登录已失效');
+        if (msg.sharingViaHttp === true) sharingViaHttp.add(ws);
+        else loadSharingConfig(); // Older clients receive configuration in the auth snapshot.
         const { profile, token } = account(row);
         user = service.users.get(profile.id) ?? service.add(profile, token);
         const old = sockets.get(user.profile.id); if (old && old !== ws) old.close(4001, 'session replaced');
         sockets.set(user.profile.id, ws); fingerprints.delete(user.profile.id); service.heartbeat(user); clearTimeout(authTimer); service.changed(); return;
       }
       if (sockets.get(user.profile.id) !== ws) { ws.close(4001); return; }
-      if (msg.action === 'heartbeat') { service.heartbeat(user); send(ws, { type: 'state', state: service.snapshot(user) }); return; }
+      if (msg.action === 'heartbeat') { service.heartbeat(user); send(ws, { type: 'state', state: service.snapshot(user, !sharingViaHttp.has(ws)) }); return; }
+      // A cached client may still show an invitation after the operator disables sharing.
+      if ((msg.action === 'join' || msg.action === 'createOrJoin') && msg.payload?.inviteRoomId !== undefined) loadSharingConfig();
       const result = service.command(user, msg as Command);
       send(ws, { type: result.error ? 'error' : 'ack', id: msg.id, message: result.error });
     } catch { send(ws, { type: 'error', message: '请求无效或会话过期' }); }

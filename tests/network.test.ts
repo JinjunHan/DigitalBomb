@@ -25,12 +25,12 @@ test('real HTTP + WebSocket: two clients join, lock, crack, reply, return to fri
   const clients: WebSocket[] = [];
   try {
     await new Promise<void>((resolveReady, reject) => { const timeout = setTimeout(() => reject(Error('server startup timeout')), 5000); processChild.stdout.on('data', chunk => { if (String(chunk).includes('local service:')) { clearTimeout(timeout); resolveReady(); } }); processChild.on('exit', code => { clearTimeout(timeout); reject(Error('server exited ' + code)); }); });
-    async function client(token = '') {
+    async function client(token = '', sharingViaHttp = false) {
       const auth = await (await fetch('http://127.0.0.1:18787/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token }) })).json() as any;
       const ws = new WebSocket('ws://127.0.0.1:18787/ws'); clients.push(ws);
       const state = { value: null as Snapshot | null }; const waiting = new Map<string, { resolve: () => void; reject: (e: Error) => void }>();
       ws.on('message', raw => { const m: ServerMessage = JSON.parse(String(raw)); if (m.type === 'state') state.value = m.state!; if (m.id) { const q = waiting.get(m.id); if (q) { m.type === 'error' ? q.reject(Error(m.message)) : q.resolve(); waiting.delete(m.id); } } });
-      await new Promise<void>(resolveOpen => ws.on('open', () => { ws.send(JSON.stringify({ action: 'auth', token: auth.token })); resolveOpen(); }));
+      await new Promise<void>(resolveOpen => ws.on('open', () => { ws.send(JSON.stringify({ action: 'auth', token: auth.token, sharingViaHttp })); resolveOpen(); }));
       const until = async (fn: () => boolean) => { const end = Date.now() + 5000; while (!fn()) { if (Date.now() > end) throw Error('state timeout'); await new Promise(r => setTimeout(r, 20)); } };
       await until(() => !!state.value);
       const command = (action: string, payload: any = {}, id = Math.random().toString()) => new Promise<void>((resolveCommand, reject) => { waiting.set(id, { resolve: resolveCommand, reject }); ws.send(JSON.stringify({ id, action, payload: { roomId: state.value?.room?.id, ...payload } })); });
@@ -53,9 +53,19 @@ test('real HTTP + WebSocket: two clients join, lock, crack, reply, return to fri
     const invitation = { code, inviteRoomId: a.state.value!.room!.id };
     assert.equal(b.state.value!.wechatSharingEnabled, true);
     assert.deepEqual(b.state.value!.wechatShareImages, [image]);
-    writeFileSync(sharing, '{"enabled":false}');
+    const sharingUrl = 'http://127.0.0.1:18787/api/wechat-sharing';
+    const getSharing = async () => {
+      const response = await fetch(sharingUrl);
+      assert.equal(response.status, 200);
+      assert.equal(response.headers.get('cache-control'), 'no-store');
+      return response.json();
+    };
+    assert.deepEqual(await getSharing(), {enabled:true,images:[image]});
     await assert.rejects(b.command('join', { code, inviteRoomId: 'expired' }), /邀请已过期/);
-    await b.command('join', invitation); await a.until(() => a.state.value?.room?.phase === 'preparing');
+    writeFileSync(sharing, '{"enabled":false}');
+    await assert.rejects(b.command('join', invitation), /分享暂未开放/);
+    assert.deepEqual(await getSharing(), {enabled:false,images:[]});
+    await b.command('join', {code}); await a.until(() => a.state.value?.room?.phase === 'preparing');
     await a.command('lock', { digits: '1122' }); await b.command('lock', { digits: '0123' });
     await a.until(() => a.state.value?.room?.phase === 'playing'); await b.until(() => b.state.value?.room?.phase === 'playing');
     assert.equal(a.state.value!.room!.revealed, undefined); assert.equal(a.state.value!.room!.ownSecret, '1122');
@@ -72,9 +82,9 @@ test('real HTTP + WebSocket: two clients join, lock, crack, reply, return to fri
     await a.until(() => a.state.value?.room?.phase === 'playing'); assert.notEqual(a.state.value!.room!.first, oldFirst);
     const currentRoom = a.state.value!.room!.id; a.ws.close();
     const reconnected = await client(a.auth.token); assert.equal(reconnected.state.value!.room!.id, currentRoom); assert.equal(reconnected.state.value!.room!.ownSecret, '0000');
-    const challenger = await client();
-    assert.equal(challenger.state.value!.wechatSharingEnabled, true);
-    assert.deepEqual(challenger.state.value!.wechatShareImages, [image]);
+    const challenger = await client('', true);
+    assert.equal(challenger.state.value!.wechatSharingEnabled, undefined);
+    assert.equal(challenger.state.value!.wechatShareImages, undefined);
     const customCode = code === '0012' ? '0013' : '0012';
     await Promise.all([legacy, challenger].map(player => player.command('createOrJoin', { code: customCode })));
     for (const player of [legacy, challenger]) {

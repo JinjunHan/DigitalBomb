@@ -11,10 +11,10 @@ export function apiBase() {
   const query = new URLSearchParams(globalThis.location?.search ?? '');
   return query.get('api') ?? read('api', globalThis.location?.hostname === 'bomb.aiforevery.cn' ? globalThis.location.origin : 'http://127.0.0.1:8787');
 }
-export function post(url: string, data: unknown): Promise<any> {
+export function requestJson(url: string, method: 'GET' | 'POST', data?: unknown): Promise<any> {
   return new Promise((resolve, reject) => {
-    if (wechat()) { wechat().request({ url, method: 'POST', data, success: (r: any) => r.statusCode === 200 ? resolve(r.data) : reject(Error('服务连接失败')), fail: () => reject(Error('网络不可用')) }); return; }
-    const xhr = new XMLHttpRequest(); xhr.open('POST', url); xhr.setRequestHeader('Content-Type', 'application/json'); xhr.timeout = 8000;
+    if (wechat()) { wechat().request({ url, method, data, timeout: method === 'GET' ? 3000 : 8000, success: (r: any) => r.statusCode === 200 ? resolve(r.data) : reject(Error('服务连接失败')), fail: () => reject(Error('网络不可用')) }); return; }
+    const xhr = new XMLHttpRequest(); xhr.open(method, url); if (method === 'POST') xhr.setRequestHeader('Content-Type', 'application/json'); xhr.timeout = method === 'GET' ? 3000 : 8000;
     xhr.onload = () => { try { if (xhr.status !== 200) throw Error(); resolve(JSON.parse(xhr.responseText)); } catch { reject(Error('服务连接失败')); } };
     xhr.onerror = xhr.ontimeout = () => reject(Error('无法连接本地服务，请先运行 npm run server'));
     xhr.send(JSON.stringify(data));

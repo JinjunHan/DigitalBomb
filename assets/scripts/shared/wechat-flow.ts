@@ -30,6 +30,20 @@ export function wechatProfile(value: any): { name?: string; avatarUrl?: string }
   return { name: nickname, avatarUrl: url };
 }
 
+export interface SharingConfig { enabled: boolean; images: ShareImage[] }
+export function validSharingConfig(config: any): config is SharingConfig {
+  return typeof config?.enabled === 'boolean' && Array.isArray(config.images) && config.images.every((image: any) =>
+    typeof image?.imageUrlId === 'string' && !!image.imageUrlId && typeof image.imageUrl === 'string'
+    && /^https:\/\/mmocgame\.qpic\.cn\/wechatgame\//.test(image.imageUrl));
+}
+export function cachedSharingConfig(raw: string, now: number): SharingConfig | undefined {
+  try {
+    const entry = JSON.parse(raw);
+    const age = now - entry.savedAt;
+    if (Number.isFinite(entry.savedAt) && age >= 0 && age < 3600000 && validSharingConfig(entry.config)) return entry.config;
+  } catch { /* Missing or invalid cache is a cache miss. */ }
+}
+
 export class WechatFlow {
   private button: any;
   private alive = true;

@@ -29,7 +29,7 @@
 - 宝塔站点：bomb.aiforevery.cn，静态目录 /www/wwwroot/bomb.aiforevery.cn。
 - 后端：/www/wwwroot/digital-bomb-service，Node.js 24.18.0，用户 www。
 - systemd：digital-bomb.service，开机启动、异常自动重启，监听 127.0.0.1:8787。没有开放后端端口。
-- 宝塔 Nginx 将 /api/login、/ws、/health 转发到后端，其余为 Cocos 静态构建；HTTP 重定向 HTTPS。
+- 宝塔 Nginx 将 /api/login、/api/wechat-sharing、/ws、/health 转发到后端，其余为 Cocos 静态构建；HTTP 重定向 HTTPS。
 - Nginx 配置：/www/server/panel/vhost/nginx/bomb.aiforevery.cn.conf。
 - 反代规则：/www/server/panel/vhost/rewrite/bomb.aiforevery.cn.conf。
 - 证书：引用 /www/server/panel/vhost/cert/47.116.177.107/ 的现有泛域名证书；有效期至 2027-01-17。后续由主站续期维护，未复制或输出私钥。
@@ -117,10 +117,10 @@ AppID：wx3f231fcad8d0170f。
 
 ## 微信分享开关
 
-在宝塔「文件」中打开 `/www/wwwroot/digital-bomb-service/config/wechat-sharing.json`。默认内容为 `{"enabled": false}`。微信侧开通分享后，将值设为 `true` 可开启，设为 `false` 可关闭。服务只在启动时读取配置。修改开关或图片后，保存文件并在合适的窗口执行 `systemctl restart digital-bomb.service` 使其生效。重启会断开连接，进行中的对局无法恢复。缺少文件、JSON 无效或值不是布尔值 true 时按关闭处理。
+在宝塔「文件」中打开 `/www/wwwroot/digital-bomb-service/config/wechat-sharing.json`。默认内容为 `{"enabled": false}`。微信侧开通分享后，将值设为 `true` 可开启，设为 `false` 可关闭。独立接口 `GET /api/wechat-sharing` 每次请求读取文件。新版小游戏在启动和回到前台时优先使用本地缓存，满 1 小时再请求。保存文件后，下次请求即可取得新值。通过分享邀请入房时后端会再次检查开关。缺少文件、JSON 无效或值不是布尔值 true 时按关闭处理。
 
 关闭时，新版小游戏隐藏右上角转发菜单与等待房的「邀请微信好友」，已有分享卡片不会自动入房。玩家仍可复制口令并手动加入。旧客户端的分享界面需更新小游戏包才会隐藏，服务端会拒绝带邀请房间 ID 的入房请求。
 
 2026-11-20 已通过 baota-mcp 部署此开关，公网 HTTPS 登录及 WSS 会话实测下发 `wechatSharingEnabled=false`。旧代码备份在 `/www/backup/digital-bomb-sharing-20261120T064521Z/original/`。当时的热切换与手动口令入房在本地隔离服务验证。
 
-服务启动时从同一个 JSON 的 `images` 数组加载分享图。每项包含 `approved`、`imageUrlId` 和 `imageUrl`；只有明确标记已审核、编号非空且地址为微信素材 CDN 的记录会下发。数组中第一张可用图供房间邀请使用，普通分享从可用图中随机选取。待审素材保留地址，审核后补上编号并把该项的 `approved` 改为 `true`。总开关独立控制分享入口。无可用素材时使用微信默认分享画面。首次需发布支持该配置的客户端。
+配置接口从同一个 JSON 的 `images` 数组加载分享图。每项包含 `approved`、`imageUrlId` 和 `imageUrl`；只有明确标记已审核、编号非空且地址为微信素材 CDN 的记录会下发。数组中第一张可用图供房间邀请使用，普通分享从可用图中随机选取。待审素材保留地址，审核后补上编号并把该项的 `approved` 改为 `true`。总开关独立控制分享入口。无可用素材时使用微信默认分享画面。首次需发布支持该配置的客户端。

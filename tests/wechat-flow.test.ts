@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {WechatFlow,invitation,avatarUrl,wechatProfile,nicknameError} from '../assets/scripts/shared/wechat-flow';
+import {cachedSharingConfig,WechatFlow,invitation,avatarUrl,wechatProfile,nicknameError} from '../assets/scripts/shared/wechat-flow';
 import {Service} from '../server/service';
 const url='https://thirdwx.qlogo.cn/mmopen/vi_32/abc/132';
 test('invite parsing preserves zeroes and rejects untrusted shape; only official avatar hosts',()=>{
@@ -95,4 +95,14 @@ test('a delayed granted profile read cannot update a closed page', async () => {
   flow.clearButton();
   respond();
   await pending;
+});
+
+test('sharing cache is valid for one hour and rejects invalid or future entries', () => {
+  const config = {enabled:true,images:[]};
+  const entry = JSON.stringify({savedAt:1000,config});
+  assert.deepEqual(cachedSharingConfig(entry, 3600999), config);
+  assert.equal(cachedSharingConfig(entry, 3601000), undefined);
+  assert.equal(cachedSharingConfig(entry, 999), undefined);
+  assert.equal(cachedSharingConfig('invalid', 1000), undefined);
+  assert.equal(cachedSharingConfig(JSON.stringify({savedAt:1000,config:{enabled:'true'}}), 1000), undefined);
 });

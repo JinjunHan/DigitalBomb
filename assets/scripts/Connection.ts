@@ -1,6 +1,7 @@
 import type { Snapshot, ServerMessage, Command } from './shared/protocol';
 import { getWechatLoginCode } from './shared/wechat-login';
-import { apiBase, post, read, write, wechat } from './Platform';
+import { cachedSharingConfig, validSharingConfig, type SharingConfig } from './shared/wechat-flow';
+import { apiBase, requestJson, read, write, wechat } from './Platform';
 export class Connection {
   state: Snapshot | null = null; online = false; offset = 0;
   onState: () => void = () => {}; onStatus: () => void = () => {}; onError: (s: string) => void = () => {};
@@ -8,24 +9,46 @@ export class Connection {
   private pending = new Map<string, { cmd: Command; resolve: () => void; reject: (e: Error) => void; timeout: ReturnType<typeof setTimeout> }>();
   private sequence = 0;
   now() { return Date.now() + this.offset; }
+  private sharing: SharingConfig = {enabled: false, images: []};
+  private sharingRequest?: Promise<void>;
+  refreshSharing(): Promise<void> {
+    if (this.sharingRequest) return this.sharingRequest;
+    const base = apiBase();
+    const key = 'sharing-v1-' + base;
+    const cached = cachedSharingConfig(read(key), Date.now());
+    if (cached) { this.applySharing(cached); return Promise.resolve(); }
+    this.sharingRequest = requestJson(base + '/api/wechat-sharing', 'GET').then(config => {
+      if (!validSharingConfig(config)) throw Error('Invalid sharing configuration');
+      write(key, JSON.stringify({savedAt: Date.now(), config}));
+      this.applySharing(config);
+    }).catch(() => this.applySharing({enabled: false, images: []})).finally(() => { this.sharingRequest = undefined; });
+    return this.sharingRequest;
+  }
+  private applySharing(config: SharingConfig) {
+    this.sharing = config;
+    if (this.stopped || !this.state) return;
+    this.state.wechatSharingEnabled = config.enabled;
+    this.state.wechatShareImages = config.images;
+    this.onState();
+  }
   async start() {
     this.stopped = false;
     const base = apiBase(); if (!base) throw Error('微信真机需要配置后端地址和正式登录，当前可在浏览器体验本地版本');
     const wx = wechat();
     const code = wx ? await getWechatLoginCode(wx) : undefined;
     if (this.stopped) return;
-    const auth = await post(base + '/api/login', { token: read('token'), code });
+    const [auth] = await Promise.all([requestJson(base + '/api/login', 'POST', { token: read('token'), code }), this.refreshSharing()]);
     if (this.stopped) return;
     this.token = auth.token; write('token', auth.token); this.open();
   }
   private open() {
     if (this.stopped) return;
     const url = apiBase().replace(/^http/, 'ws') + '/ws';
-    const opened = () => { this.send({ action: 'auth', token: this.token }); };
+    const opened = () => { this.send({ action: 'auth', token: this.token, sharingViaHttp: true }); };
     const message = (event: any) => {
       let m: ServerMessage; try { m = JSON.parse(event.data); } catch { return; }
       if (m.type === 'state' && m.state) {
-        const wasOffline = !this.online; this.online = true; this.offset = m.state.serverNow - Date.now(); this.state = m.state;
+        const wasOffline = !this.online; this.online = true; this.offset = m.state.serverNow - Date.now(); this.state = { ...m.state, wechatSharingEnabled: this.sharing.enabled, wechatShareImages: this.sharing.images };
         if (wasOffline) { for (const p of this.pending.values()) this.send(p.cmd); this.onStatus(); }
         this.onState(); return;
       }
