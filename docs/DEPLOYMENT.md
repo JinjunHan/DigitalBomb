@@ -117,10 +117,10 @@ AppID：wx3f231fcad8d0170f。
 
 ## 微信分享开关
 
-在宝塔「文件」中打开 `/www/wwwroot/digital-bomb-service/config/wechat-sharing.json`。默认内容为 `{"enabled": false}`。微信侧开通分享后，将值改为 `true` 并保存即可开启；改回 `false` 可关闭。服务每秒检查文件变化，向已连接的新版客户端下发状态，无需重启或重新打包。缺少文件、JSON 无效或值不是布尔值 true 时按关闭处理。
+在宝塔「文件」中打开 `/www/wwwroot/digital-bomb-service/config/wechat-sharing.json`。默认内容为 `{"enabled": false}`。微信侧开通分享后，将值设为 `true` 可开启，设为 `false` 可关闭。服务只在启动时读取配置。修改开关或图片后，保存文件并在合适的窗口执行 `systemctl restart digital-bomb.service` 使其生效。重启会断开连接，进行中的对局无法恢复。缺少文件、JSON 无效或值不是布尔值 true 时按关闭处理。
 
 关闭时，新版小游戏隐藏右上角转发菜单与等待房的「邀请微信好友」，已有分享卡片不会自动入房。玩家仍可复制口令并手动加入。旧客户端的分享界面需更新小游戏包才会隐藏，服务端会拒绝带邀请房间 ID 的入房请求。
 
-2026-11-20 已通过 baota-mcp 部署此开关，公网 HTTPS 登录及 WSS 会话实测下发 `wechatSharingEnabled=false`。旧代码备份在 `/www/backup/digital-bomb-sharing-20261120T064521Z/original/`。热切换与手动口令入房在本地隔离服务验证。
+2026-11-20 已通过 baota-mcp 部署此开关，公网 HTTPS 登录及 WSS 会话实测下发 `wechatSharingEnabled=false`。旧代码备份在 `/www/backup/digital-bomb-sharing-20261120T064521Z/original/`。当时的热切换与手动口令入房在本地隔离服务验证。
 
-分享图也从同一个 JSON 的 `images` 数组热更新。每项包含 `approved`、`imageUrlId` 和 `imageUrl`；只有明确标记已审核、编号非空且地址为微信素材 CDN 的记录会下发。数组中第一张可用图供房间邀请使用，普通分享从可用图中随机选取。待审素材保留地址，审核后补上编号并把该项的 `approved` 改为 `true`。总开关独立控制分享入口。无可用素材时使用微信默认分享画面。首次需发布支持该配置的客户端。
+服务启动时从同一个 JSON 的 `images` 数组加载分享图。每项包含 `approved`、`imageUrlId` 和 `imageUrl`；只有明确标记已审核、编号非空且地址为微信素材 CDN 的记录会下发。数组中第一张可用图供房间邀请使用，普通分享从可用图中随机选取。待审素材保留地址，审核后补上编号并把该项的 `approved` 改为 `true`。总开关独立控制分享入口。无可用素材时使用微信默认分享画面。首次需发布支持该配置的客户端。

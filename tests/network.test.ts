@@ -17,6 +17,10 @@ test('real HTTP + WebSocket: two clients join, lock, crack, reply, return to fri
     WITH RECURSIVE seq(n) AS (VALUES(1) UNION ALL SELECT n + 1 FROM seq WHERE n < 5000)
     INSERT INTO users SELECT 'old-' || n, 'token-' || n, '旧玩家' || n, 0 FROM seq`);
   db.close();
+  mkdirSync(join(folder, 'config'));
+  const sharing = join(folder, 'config/wechat-sharing.json');
+  const image = {imageUrlId:'approved-id',imageUrl:'https://mmocgame.qpic.cn/wechatgame/test/0'};
+  writeFileSync(sharing, JSON.stringify({enabled:true,images:[{approved:false,...image},{approved:true,...image}]}));
   const processChild = spawn(process.execPath, ['--import', resolve('node_modules/tsx/dist/loader.mjs'), resolve('server/index.ts')], { cwd: folder, env: { ...process.env, PORT: '18787', HOST: '127.0.0.1', NODE_ENV: 'test', ALLOW_GUEST_SIGNUP: '1', WECHAT_APP_SECRET: '' }, stdio: ['ignore', 'pipe', 'pipe'] });
   const clients: WebSocket[] = [];
   try {
@@ -47,21 +51,11 @@ test('real HTTP + WebSocket: two clients join, lock, crack, reply, return to fri
     assert.equal((await restored.json()).me.name, '小羊🌟');
     await a.command('create'); await a.until(() => !!a.state.value?.room?.code); const code = a.state.value!.room!.code;
     const invitation = { code, inviteRoomId: a.state.value!.room!.id };
-    assert.equal(b.state.value!.wechatSharingEnabled, false);
-    await assert.rejects(b.command('join', invitation), /分享暂未开放/);
-    mkdirSync(join(folder, 'config'));
-    const sharing = join(folder, 'config/wechat-sharing.json');
-    writeFileSync(sharing, '{"enabled":true}');
-    await b.until(() => b.state.value?.wechatSharingEnabled === true);
+    assert.equal(b.state.value!.wechatSharingEnabled, true);
+    assert.deepEqual(b.state.value!.wechatShareImages, [image]);
+    writeFileSync(sharing, '{"enabled":false}');
     await assert.rejects(b.command('join', { code, inviteRoomId: 'expired' }), /邀请已过期/);
-    const image = {imageUrlId:'approved-id',imageUrl:'https://mmocgame.qpic.cn/wechatgame/test/0'};
-    writeFileSync(sharing, JSON.stringify({enabled:true,images:[{approved:false,...image},{approved:true,...image}]}));
-    await b.until(() => b.state.value?.wechatShareImages?.length === 1);
-    assert.deepEqual(b.state.value!.wechatShareImages,[image]);
-    writeFileSync(sharing, '{');
-    await b.until(() => b.state.value?.wechatSharingEnabled === false);
-    await assert.rejects(b.command('join', invitation), /分享暂未开放/);
-    await b.command('join', { code }); await a.until(() => a.state.value?.room?.phase === 'preparing');
+    await b.command('join', invitation); await a.until(() => a.state.value?.room?.phase === 'preparing');
     await a.command('lock', { digits: '1122' }); await b.command('lock', { digits: '0123' });
     await a.until(() => a.state.value?.room?.phase === 'playing'); await b.until(() => b.state.value?.room?.phase === 'playing');
     assert.equal(a.state.value!.room!.revealed, undefined); assert.equal(a.state.value!.room!.ownSecret, '1122');
@@ -79,6 +73,8 @@ test('real HTTP + WebSocket: two clients join, lock, crack, reply, return to fri
     const currentRoom = a.state.value!.room!.id; a.ws.close();
     const reconnected = await client(a.auth.token); assert.equal(reconnected.state.value!.room!.id, currentRoom); assert.equal(reconnected.state.value!.room!.ownSecret, '0000');
     const challenger = await client();
+    assert.equal(challenger.state.value!.wechatSharingEnabled, true);
+    assert.deepEqual(challenger.state.value!.wechatShareImages, [image]);
     const customCode = code === '0012' ? '0013' : '0012';
     await Promise.all([legacy, challenger].map(player => player.command('createOrJoin', { code: customCode })));
     for (const player of [legacy, challenger]) {

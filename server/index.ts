@@ -1,6 +1,6 @@
 import { createServer } from 'node:http';
 import { randomBytes, randomUUID } from 'node:crypto';
-import { mkdirSync, readFileSync, watchFile } from 'node:fs';
+import { mkdirSync, readFileSync } from 'node:fs';
 import { DatabaseSync } from 'node:sqlite';
 import { WebSocketServer, WebSocket } from 'ws';
 import { Service } from './service';
@@ -68,7 +68,7 @@ service.changed = () => {
   }
 };
 const sharingConfig = 'config/wechat-sharing.json';
-function refreshSharingConfig() {
+function loadSharingConfig() {
   let enabled = false;
   const images: ShareImage[] = [];
   try {
@@ -84,13 +84,10 @@ function refreshSharingConfig() {
     }
   }
   catch { /* Missing or incomplete configuration keeps sharing closed. */ }
-  if (service.wechatSharingEnabled === enabled && JSON.stringify(service.wechatShareImages) === JSON.stringify(images)) return;
   service.wechatShareImages = images;
   service.wechatSharingEnabled = enabled;
-  service.changed();
 }
-refreshSharingConfig();
-watchFile(sharingConfig, { interval: 1000, persistent: false }, refreshSharingConfig);
+loadSharingConfig();
 const allowedOrigin = (origin?: string) => !origin || (preview && origin === 'https://bomb.aiforevery.cn') || /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
 const loginRates = new Map<string, { at: number; count: number }>();
 const server = createServer(async (req, res) => {
