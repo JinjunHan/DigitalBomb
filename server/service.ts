@@ -10,6 +10,7 @@ const prefixes = ['半杯', '晚风', '山间', '橘子', '薄荷', '雨后', '�
 const suffixes = ['乌龙', '来信', '漫步', '汽水', '小熊', '旅人', '微光', '晴天', '拿铁', '奶糖', '向晚', '松果', '听雨', '花园', '橙子'];
 export const botProfiles = prefixes.flatMap(a => suffixes.map(b => a + b));
 export class Service {
+  wechatSharingEnabled = false;
   users = new Map<string, User>(); rooms = new Map<string, Match>(); codes = new Map<string, string>(); cooldown = new Map<string, number>();
   private returnedRooms = new Map<string, string>();
   receipts = new Map<string, Map<string, string | null>>(); attempts = new Map<string, number[]>();
@@ -18,7 +19,7 @@ export class Service {
   add(profile: Profile, token: string) { const user: User = { profile, token, lastSeen: this.now() }; this.users.set(profile.id, user); return user; }
   room(user: User) { return user.roomId ? this.rooms.get(user.roomId) : undefined; }
   seat(user: User): Seat { return { profile: { ...user.profile }, online: true, misses: 0, bot: false }; }
-  snapshot(user: User): Snapshot { return { me: { ...user.profile }, room: this.room(user)?.view(user.profile.id) ?? null, supportedDigitCounts: [2, 3, 4], queuedAt: user.queue?.at ?? null, queuedDigitCount: user.queue?.digitCount, serverNow: this.now(), notice: user.notice }; }
+  snapshot(user: User): Snapshot { return { wechatSharingEnabled: this.wechatSharingEnabled, me: { ...user.profile }, room: this.room(user)?.view(user.profile.id) ?? null, supportedDigitCounts: [2, 3, 4], queuedAt: user.queue?.at ?? null, queuedDigitCount: user.queue?.digitCount, serverNow: this.now(), notice: user.notice }; }
   heartbeat(user: User) {
     user.lastSeen = this.now(); user.offlineAt = undefined;
     const room = this.room(user); const seat = room?.seats.find(s => s.profile.id === user.profile.id);
@@ -72,6 +73,7 @@ export class Service {
       this.available(user); const code = this.allocateCode(); const room = new Match('friend', [this.seat(user)], now, code, { ...DEFAULT_RULES, digitCount }); this.codes.set(code, room.id); this.bind(room); return;
     }
     if (action === 'join') {
+      if (p.inviteRoomId !== undefined && !this.wechatSharingEnabled) throw Error('微信分享暂未开放，请手动输入房间口令');
       this.available(user);
       const recent = (this.attempts.get(user.profile.id) ?? []).filter(t => now - t < 60000);
       if (recent.length >= 10) throw Error('尝试太频繁，请稍后再试'); recent.push(now); this.attempts.set(user.profile.id, recent);

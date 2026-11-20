@@ -274,6 +274,7 @@ export class GameApp extends Component {
   private stateChanged() {
     clearTimeout(this.loginDeadline);
     const s = this.net.state!, r = s.room;
+    this.wxFlow.setSharingEnabled(s.wechatSharingEnabled === true);
     this.consumeInvitation();
     const event = r ? feedbackEvent(r, s.me.id, { roomId: this.lastRoom, phase: this.lastPhase, guesses: this.seenGuesses }, this.suppressFeedback) : undefined;
     if (r && this.suppressFeedback) this.roundRoll.sync(r.id, r.round, false, true);
@@ -939,8 +940,9 @@ export class GameApp extends Component {
       digit.fontFamily = 'serif'; digit.isBold = !this.friendDigitFont;
       digit.lineHeight = 112; digit.enableWrapText = false;
     }
-    art('copy', wechat()?290:470.5, 872.5, wechat()?320:397, wechat()?85:105, () => { if (r.code) { this.copyRoomCode(r.code); } });
-    if(wechat()){const invite=label('邀请微信好友 ›',660,872,28,C.ink,310,85);invite.node.name='WechatInvite';invite.node.on(Node.EventType.TOUCH_END,()=>{try{this.wxFlow.share();}catch(e){this.toast((e as Error).message);}});}
+    const canShare = !!wechat() && this.net.state?.wechatSharingEnabled === true;
+    art('copy', canShare?290:470.5, 872.5, canShare?320:397, canShare?85:105, () => { if (r.code) { this.copyRoomCode(r.code); } });
+    if(canShare){const invite=label('邀请微信好友 ›',660,872,28,C.ink,310,85);invite.node.name='WechatInvite';invite.node.on(Node.EventType.TOUCH_END,()=>{try{this.wxFlow.share();}catch(e){this.toast((e as Error).message);}});}
     this.timerLabel = label('', 569, 1024, 27, C.ink, 88, 40);
     const me = this.net.state!.me;
     // Actual player portrait, followed by the existing hollow decorative rim.
@@ -1382,6 +1384,7 @@ export class GameApp extends Component {
   private consumeInvitation() {
     const invite=this.pendingInvitation,s=this.net.state;
     if(!invite||!s||!this.net.online||this.joiningInvitation)return;
+    if (s.wechatSharingEnabled !== true) { this.pendingInvitation = undefined; this.wxFlow.allowInvitationAgain(); return; }
     if(s.room?.id===invite.roomId){this.pendingInvitation=undefined;return;}
     if(s.room||s.queuedAt!==null){this.pendingInvitation=undefined;this.wxFlow.allowInvitationAgain();this.toast('已收到好友邀请，请先结束当前对局或匹配，再打开邀请');return;}
     this.pendingInvitation=undefined;this.joiningInvitation=true;

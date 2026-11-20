@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
-import { mkdtempSync, mkdirSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { DatabaseSync } from 'node:sqlite';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
@@ -46,6 +46,17 @@ test('real HTTP + WebSocket: two clients join, lock, crack, reply, return to fri
     });
     assert.equal((await restored.json()).me.name, '小羊🌟');
     await a.command('create'); await a.until(() => !!a.state.value?.room?.code); const code = a.state.value!.room!.code;
+    const invitation = { code, inviteRoomId: a.state.value!.room!.id };
+    assert.equal(b.state.value!.wechatSharingEnabled, false);
+    await assert.rejects(b.command('join', invitation), /分享暂未开放/);
+    mkdirSync(join(folder, 'config'));
+    const sharing = join(folder, 'config/wechat-sharing.json');
+    writeFileSync(sharing, '{"enabled":true}');
+    await b.until(() => b.state.value?.wechatSharingEnabled === true);
+    await assert.rejects(b.command('join', { code, inviteRoomId: 'expired' }), /邀请已过期/);
+    writeFileSync(sharing, '{');
+    await b.until(() => b.state.value?.wechatSharingEnabled === false);
+    await assert.rejects(b.command('join', invitation), /分享暂未开放/);
     await b.command('join', { code }); await a.until(() => a.state.value?.room?.phase === 'preparing');
     await a.command('lock', { digits: '1122' }); await b.command('lock', { digits: '0123' });
     await a.until(() => a.state.value?.room?.phase === 'playing'); await b.until(() => b.state.value?.room?.phase === 'playing');

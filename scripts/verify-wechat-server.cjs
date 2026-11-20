@@ -1,7 +1,8 @@
 // Isolated database + real HTTP/WS server, including a restart. No credentials are printed.
-const {spawn}=require('node:child_process'),{mkdtempSync,mkdirSync,rmSync}=require('node:fs'),{tmpdir}=require('node:os'),{resolve,join}=require('node:path'),assert=require('node:assert/strict');
+const {spawn}=require('node:child_process'),{mkdtempSync,mkdirSync,rmSync,writeFileSync}=require('node:fs'),{tmpdir}=require('node:os'),{resolve,join}=require('node:path'),assert=require('node:assert/strict');
 const {DatabaseSync}=require('node:sqlite'),WebSocket=require('ws');
 const root=mkdtempSync(join(tmpdir(),'digital-bomb-wx-')),entry=resolve('temp/wechat-service/server/index.js'),base='http://127.0.0.1:18987';
+mkdirSync(join(root,'config'));writeFileSync(join(root,'config/wechat-sharing.json'),JSON.stringify({enabled:true}));
 mkdirSync(join(root,'data'));const db=new DatabaseSync(join(root,'data/digital-bomb.sqlite'));db.exec('CREATE TABLE users(id TEXT PRIMARY KEY,token TEXT UNIQUE,name TEXT,avatar INTEGER)');db.close();
 let processHandle;const sockets=[];
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));

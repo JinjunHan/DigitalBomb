@@ -14,7 +14,7 @@ test('invite parsing preserves zeroes and rejects untrusted shape; only official
 test('cold and warm invitations dedupe; share has room identity; lifecycle unregisters',()=>{
  let show:any,share:any;const received:any[]=[];let payload:any;
  const wx={getLaunchOptionsSync:()=>({query:{code:'0012',roomId:'r'}}),onShow:(f:any)=>show=f,onShareAppMessage:(f:any)=>share=f,offShow:(f:any)=>assert.equal(f,show),offShareAppMessage:(f:any)=>assert.equal(f,share),shareAppMessage:(p:any)=>payload=p};
- const f=new WechatFlow(wx,()=>({code:'0012',roomId:'r'}),x=>received.push(x));f.start();show({query:{code:'0012',roomId:'r'}});assert.equal(received.length,1);show({query:{code:'0099',roomId:'next'}});assert.equal(received.length,2);f.share();assert.equal(payload.query,'code=0012&roomId=r');f.destroy();
+ const f=new WechatFlow(wx,()=>({code:'0012',roomId:'r'}),x=>received.push(x));f.start();assert.throws(()=>f.share(),/暂未开放/);f.setSharingEnabled(true);show({query:{code:'0012',roomId:'r'}});assert.equal(received.length,1);show({query:{code:'0099',roomId:'next'}});assert.equal(received.length,2);f.share();assert.equal(payload.query,'code=0012&roomId=r');f.destroy();
 });
 test('authorization denial preserves data; delayed callback cannot survive screen departure',async()=>{
  let tap:any,privacy:any,destroyed=0,created=0;const values:any[]=[];
@@ -31,6 +31,8 @@ test('profile persists validated URL, clears to built-in; old room invitation ca
  assert.throws(()=>s.perform(a,'profile',{name:'新名字',avatar:2,avatarUrl:'https://evil.test/a'}),/头像地址/);
  s.perform(a,'profile',{name:'新名字',avatar:2,avatarUrl:''});assert.equal(saved.avatarUrl,undefined);
  s.perform(a,'create',{});const room=s.room(a)!;
+ assert.throws(()=>s.perform(b,'join',{code:room.code,inviteRoomId:room.id}),/暂未开放/);
+ s.wechatSharingEnabled=true;
  assert.throws(()=>s.perform(b,'join',{code:room.code,inviteRoomId:'old-room'}),/邀请已过期/);assert.equal(room.seats.length,1);
  s.perform(b,'join',{code:room.code,inviteRoomId:room.id});assert.equal(room.seats.length,2);
 });

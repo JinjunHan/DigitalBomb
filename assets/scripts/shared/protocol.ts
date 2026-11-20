@@ -13,6 +13,7 @@ export interface RoomView {
 }
 export interface Snapshot {
   me: Profile; room: RoomView | null; queuedAt: number | null;
+  wechatSharingEnabled?: boolean;
   supportedDigitCounts?: DigitCount[];
   queuedDigitCount?: DigitCount; serverNow: number; notice?: string;
 }

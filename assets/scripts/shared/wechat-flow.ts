@@ -31,9 +31,11 @@ export class WechatFlow {
   private button: any;
   private alive = true;
   private generation = 0;
+  private sharingEnabled = false;
   private lastInvitation = '';
   private onShow = (options: any) => this.receive(options?.query);
   private onShare = () => {
+    if (!this.sharingEnabled) return;
     const room = this.room();
     return room ? { title: '来猜我的四位暗号，等你入座', query: `code=${room.code}&roomId=${encodeURIComponent(room.roomId)}`, imageUrl: 'logo.png' }
       : { title: '猜数字暗号 · 四位密码，一场智力对决', imageUrl: 'logo.png' };
@@ -41,9 +43,21 @@ export class WechatFlow {
   constructor(private wx: any, private room: () => Invitation | undefined, private incoming: (value: Invitation) => void) {}
   start() {
     if (!this.wx) return;
-    this.wx.showShareMenu?.({ menus: ['shareAppMessage'] });
-    this.wx.onShareAppMessage?.(this.onShare);this.wx.onShow?.(this.onShow);
+    this.wx.hideShareMenu?.({ menus: ['shareAppMessage', 'shareTimeline'] });
+    this.wx.onShow?.(this.onShow);
     this.receive(this.wx.getLaunchOptionsSync?.()?.query);
+  }
+  setSharingEnabled(enabled: boolean) {
+    if (!this.wx || this.sharingEnabled === enabled) return;
+    this.sharingEnabled = enabled;
+    if (enabled) {
+      this.wx.onShareAppMessage?.(this.onShare);
+      this.wx.showShareMenu?.({ menus: ['shareAppMessage'] });
+    } else {
+      this.wx.hideShareMenu?.({ menus: ['shareAppMessage', 'shareTimeline'] });
+      this.wx.offShareAppMessage?.(this.onShare);
+      this.lastInvitation = '';
+    }
   }
   private receive(query: unknown) {
     const value=invitation(query);if(!value)return;
@@ -52,6 +66,7 @@ export class WechatFlow {
   }
   allowInvitationAgain() { this.lastInvitation = ''; }
   share() {
+    if (!this.sharingEnabled) throw Error('微信分享暂未开放，可复制房间口令');
     if(!this.wx?.shareAppMessage)throw Error('请在微信中邀请好友，也可以复制口令');
     if(!this.room())throw Error('房间已变化，请重新创建邀请');
     // WeChat provides no reliable share-success signal. Never display a fake success or grant rewards.

@@ -114,3 +114,11 @@ AppID：wx3f231fcad8d0170f。
 备份位于 `/www/backup/digital-bomb-776f10c-20261120T063942Z/original/`。部署前确认后端端口已建立的连接数为 0，核对旧文件和候选文件哈希并检查语法。替换后服务 active，健康接口正常。公网 HTTPS/WSS 测试创建了一个独立测试账号，保存单字昵称“韩”收到确认，再登录读回相同用户和昵称。测试账号保留。
 
 本次使用原 SQLite 库。回退本次代码时，停服后按相对路径恢复该备份的三个文件再启动服务即可。
+
+## 微信分享开关
+
+在宝塔「文件」中打开 `/www/wwwroot/digital-bomb-service/config/wechat-sharing.json`。默认内容为 `{"enabled": false}`。微信侧开通分享后，将值改为 `true` 并保存即可开启；改回 `false` 可关闭。服务每秒检查文件变化，向已连接的新版客户端下发状态，无需重启或重新打包。缺少文件、JSON 无效或值不是布尔值 true 时按关闭处理。
+
+关闭时，新版小游戏隐藏右上角转发菜单与等待房的「邀请微信好友」，已有分享卡片不会自动入房。玩家仍可复制口令并手动加入。旧客户端的分享界面需更新小游戏包才会隐藏，服务端会拒绝带邀请房间 ID 的入房请求。
+
+2026-11-20 已通过 baota-mcp 部署此开关，公网 HTTPS 登录及 WSS 会话实测下发 `wechatSharingEnabled=false`。旧代码备份在 `/www/backup/digital-bomb-sharing-20261120T064521Z/original/`。热切换与手动口令入房在本地隔离服务验证。
