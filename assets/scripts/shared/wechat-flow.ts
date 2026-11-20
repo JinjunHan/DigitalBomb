@@ -10,11 +10,22 @@ export function avatarUrl(value: unknown): string | undefined {
   if (typeof value !== 'string' || value.length > 1024) return;
   return /^https:\/\/(?:thirdwx|wx)\.qlogo\.cn\/[A-Za-z0-9_\-/]+(?:\?[A-Za-z0-9_=&%-]*)?$/.test(value) ? value : undefined;
 }
-export function wechatProfile(value: any): { name: string; avatarUrl: string } | undefined {
+// Count emoji modifiers, joined emoji and combining marks with their base on both runtimes.
+const nicknameUnit = /\p{Regional_Indicator}{2}|[^\p{C}\p{Z}\p{M}](?:[\p{M}\p{Emoji_Modifier}]|\u200d\p{Extended_Pictographic})*| /gu;
+export function nicknameError(value: unknown): string | undefined {
+  if (typeof value !== 'string' || !value.trim()) return '请填写昵称';
+  const name = value.trim();
+  const units = name.match(nicknameUnit);
+  if (!units || units.join('') !== name || !/[^\p{Default_Ignorable_Code_Point}\p{Z}]/u.test(name))
+    return '昵称含换行或不可见字符，请修改后保存';
+  if (units.length > 12) return '昵称最多 12 个字符，请缩短后保存';
+}
+export function wechatProfile(value: any): { name?: string; avatarUrl?: string } | undefined {
   const name = typeof value?.nickName === 'string' ? value.nickName.trim() : '';
   const url = avatarUrl(value?.avatarUrl);
-  if (!name || name === '微信用户' || !url) return;
-  return { name: Array.from(name).slice(0, 12).join(''), avatarUrl: url };
+  const nickname = name && name !== '微信用户' ? name : undefined;
+  if (!nickname && !url) return;
+  return { name: nickname, avatarUrl: url };
 }
 export class WechatFlow {
   private button: any;

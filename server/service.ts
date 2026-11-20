@@ -1,6 +1,6 @@
 import { requestedDigitCount } from '../assets/scripts/shared/game-mode';
 import type { DigitCount } from '../assets/scripts/shared/deduction';
-import { avatarUrl } from '../assets/scripts/shared/wechat-flow';
+import { avatarUrl, nicknameError } from '../assets/scripts/shared/wechat-flow';
 import { randomInt, randomUUID } from 'node:crypto';
 import { Match, botGuess, secret, DEFAULT_RULES, type Seat } from './game';
 import type { Profile, Command, Snapshot } from '../assets/scripts/shared/protocol';
@@ -52,10 +52,12 @@ export class Service {
     const now = this.now(); this.heartbeat(user); user.notice = undefined;
     if (action === 'sync') return;
     if (action === 'profile') {
-      if (typeof p.name !== 'string' || !/^[\p{L}\p{N} _·-]{2,12}$/u.test(p.name.trim())) throw Error('昵称需为 2–12 个中文、字母或数字');
+      const name = typeof p.name === 'string' ? p.name.trim() : '';
+      const issue = nicknameError(name);
+      if (issue) throw Error(issue);
       if (!Number.isInteger(p.avatar) || Number(p.avatar) < 0 || Number(p.avatar) > 7) throw Error('请选择头像');
       if (p.avatarUrl !== undefined && p.avatarUrl !== '' && !avatarUrl(p.avatarUrl)) throw Error('微信头像地址无效');
-      user.profile = { ...user.profile, name: p.name.trim(), avatar: Number(p.avatar), avatarUrl: p.avatarUrl === undefined ? user.profile.avatarUrl : avatarUrl(p.avatarUrl) }; this.saveProfile(user.profile); return;
+      user.profile = { ...user.profile, name, avatar: Number(p.avatar), avatarUrl: p.avatarUrl === undefined ? user.profile.avatarUrl : avatarUrl(p.avatarUrl) }; this.saveProfile(user.profile); return;
     }
     if (action === 'queue') {
       const digitCount = requestedDigitCount(p.digitCount);

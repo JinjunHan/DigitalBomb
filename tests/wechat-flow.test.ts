@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {WechatFlow,invitation,avatarUrl,wechatProfile} from '../assets/scripts/shared/wechat-flow';
+import {WechatFlow,invitation,avatarUrl,wechatProfile,nicknameError} from '../assets/scripts/shared/wechat-flow';
 import {Service} from '../server/service';
 const url='https://thirdwx.qlogo.cn/mmopen/vi_32/abc/132';
 test('invite parsing preserves zeroes and rejects untrusted shape; only official avatar hosts',()=>{
@@ -8,7 +8,8 @@ test('invite parsing preserves zeroes and rejects untrusted shape; only official
  for(const q of [{code:12,roomId:'r'},{code:'0012'},{code:'0012',roomId:'<script>'}])assert.equal(invitation(q),undefined);
  assert.equal(avatarUrl(url),url);
  for(const u of ['http://thirdwx.qlogo.cn/a','https://thirdwx.qlogo.cn.evil.test/a','https://thirdwx.qlogo.cn@evil.test/a','file:///a'])assert.equal(avatarUrl(u),undefined);
- assert.equal(wechatProfile({nickName:'微信用户',avatarUrl:url}),undefined);
+ assert.deepEqual(wechatProfile({nickName:'微信用户',avatarUrl:url}),{name:undefined,avatarUrl:url});
+ assert.equal(wechatProfile({nickName:'微信用户'}),undefined);
 });
 test('cold and warm invitations dedupe; share has room identity; lifecycle unregisters',()=>{
  let show:any,share:any;const received:any[]=[];let payload:any;
@@ -32,4 +33,19 @@ test('profile persists validated URL, clears to built-in; old room invitation ca
  s.perform(a,'create',{});const room=s.room(a)!;
  assert.throws(()=>s.perform(b,'join',{code:room.code,inviteRoomId:'old-room'}),/邀请已过期/);assert.equal(room.seats.length,1);
  s.perform(b,'join',{code:room.code,inviteRoomId:room.id});assert.equal(room.seats.length,2);
+});
+
+test('WeChat and manual profiles preserve names independently of the avatar', () => {
+  assert.equal(wechatProfile({ nickName: ' 小羊🌟 ' })?.name, '小羊🌟');
+  const service = new Service();
+  const user = service.add({ id: 'profile', name: '旧昵称', avatar: 0 }, 'local');
+  for (const name of ['韩', '🌟', '小羊·A！', '👩🏽‍💻'.repeat(12), '🇨🇳'.repeat(12), 'e\u0301'.repeat(12)]) {
+    assert.equal(nicknameError(name), undefined);
+    service.perform(user, 'profile', { name, avatar: 0 });
+    assert.equal(user.profile.name, name);
+  }
+  for (const name of [' ', '🌟'.repeat(13), 'a\nb', 'a\u202eb', '\u200d']) {
+    assert.ok(nicknameError(name));
+    assert.throws(() => service.perform(user, 'profile', { name, avatar: 0 }));
+  }
 });

@@ -40,6 +40,11 @@ test('real HTTP + WebSocket: two clients join, lock, crack, reply, return to fri
     assert.equal(legacy.state.value!.me.name, '旧玩家5000');
     const a = await client(), b = await client();
     assert.equal(a.auth.me.name, '玩家5001');
+    await a.command('profile', { name: '小羊🌟', avatar: 1 });
+    const restored = await fetch('http://127.0.0.1:18787/api/login', {
+      method: 'POST', body: JSON.stringify({ token: a.auth.token }),
+    });
+    assert.equal((await restored.json()).me.name, '小羊🌟');
     await a.command('create'); await a.until(() => !!a.state.value?.room?.code); const code = a.state.value!.room!.code;
     await b.command('join', { code }); await a.until(() => a.state.value?.room?.phase === 'preparing');
     await a.command('lock', { digits: '1122' }); await b.command('lock', { digits: '0123' });

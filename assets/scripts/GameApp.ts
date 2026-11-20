@@ -2,7 +2,7 @@ import { rememberedDigitCount, modePreferenceKey, modeLabel, type MatchMode } fr
 import type { DigitCount } from './shared/deduction';
 import { LearningPanel } from './LearningPanel';
 import { STANDARD_ROUNDS } from './shared/deduction';
-import { WechatFlow, avatarUrl, type Invitation } from './shared/wechat-flow';
+import { WechatFlow, avatarUrl, nicknameError, type Invitation } from './shared/wechat-flow';
 import { _decorator, Component, Node, UITransform, Label, Graphics, Color, Layers, view, ResolutionPolicy, resources, SpriteFrame, Sprite, Texture2D, profiler, tween, Tween, UIOpacity, Vec3, EditBox, input, Input, EventKeyboard, KeyCode, game, Game, BlockInputEvents, ScrollView, Mask, Vec2, Font, Rect, assetManager, ImageAsset } from 'cc';
 import { StartupAssets } from './shared/startup-assets';
 import { RoundRoll } from './shared/round-roll';
@@ -1352,8 +1352,16 @@ export class GameApp extends Component {
     try { await this.wxFlow.authorize({left:rect.x/visible.width*window.windowWidth,top:(visible.height-rect.y-rect.height)/visible.height*window.windowHeight,width:rect.width/visible.width*window.windowWidth,height:rect.height/visible.height*window.windowHeight},(profile,message)=>{
       if(!this.isValid||this.page!=='profile')return;
       if(profile){
-        const valid=/^[\p{L}\p{N} _·-]{2,12}$/u.test(profile.name);
-        if (valid) this.nickname = profile.name;
+        // Show the returned name immediately, including an overlong draft the player can edit.
+        if (profile.name) {
+          this.nickname = profile.name;
+          if (this.nicknameEditBox?.isValid) this.nicknameEditBox.string = profile.name;
+        }
+        const issue = profile.name ? nicknameError(profile.name) : '微信未返回真实昵称，可手动填写';
+        if (!profile.avatarUrl) {
+          this.toast(issue ?? '微信昵称已填入，点击保存修改后生效');
+          return;
+        }
         const request = { url: profile.avatarUrl };
         this.pendingProfileAvatar = request;
         this.toast('正在加载微信头像…');
@@ -1366,7 +1374,7 @@ export class GameApp extends Component {
             return;
           }
           this.draftAvatarUrl = request.url;
-          this.toast(valid ? '微信资料已填入，点击保存修改后生效' : '微信头像已更新，保留当前昵称，可编辑后保存');
+          this.toast(issue ?? '微信资料已填入，点击保存修改后生效');
         });
       }else this.toast(message!);
     }); }catch(e){this.toast((e as Error).message);}
@@ -1402,7 +1410,8 @@ export class GameApp extends Component {
     this.finishNicknameEditing();
     if (this.pendingProfileAvatar) { this.toast('微信头像加载中，请稍后保存'); return; }
     const name = this.nickname.trim();
-    if (!/^[\p{L}\p{N} _·-]{2,12}$/u.test(name)) { this.toast('昵称需为 2–12 个中文、字母或数字'); return; }
+    const issue = nicknameError(name);
+    if (issue) { this.toast(issue); return; }
     this.busy = true; this.render();
     try {
       await this.net.command('profile', { name, avatar: this.avatar, avatarUrl: this.draftAvatarUrl });
@@ -1496,7 +1505,7 @@ export class GameApp extends Component {
       const l = label.addComponent(Label); l.fontSize = 30; l.lineHeight = 38;
       l.color = new Color(C.ink); l.horizontalAlign = Label.HorizontalAlign.LEFT;
       l.verticalAlign = Label.VerticalAlign.CENTER; l.enableWrapText = false; l.overflow = Label.Overflow.CLAMP;
-      eb.textLabel = l; eb.maxLength = 12; eb.string = this.nickname; eb.enabled = !this.profileMotion && !this.busy;
+      eb.textLabel = l; eb.maxLength = -1; eb.string = this.nickname; eb.enabled = !this.profileMotion && !this.busy;
       labelTransform.setContentSize(350, 75); label.setPosition(-197, 37.5);
       // Capture touch before the platform opens its keyboard (and can synchronously resize the canvas).
       n.on(Node.EventType.TOUCH_START, () => { if (eb.enabled) this.nicknameSession.begin(); }, this, true);
@@ -1504,7 +1513,7 @@ export class GameApp extends Component {
       n.on('editing-did-began', () => { this.nicknameEditingBegan = true; this.nicknameSession.begin(); });
       n.on('text-changed', (edit: EditBox) => { this.nickname = edit.string; });
       n.on('editing-did-ended', (edit: EditBox) => this.nicknameEditingEnded(edit));
-      this.text('2–12 个字符', 326, 657, 23, '#8D714E', 220, 40);
+      this.text('1–12 个字符', 326, 657, 23, '#8D714E', 220, 40);
       this.wechatProfileNode=this.profileButton('wechat', '使用微信头像昵称', 375, 745, 560, 114, () => this.authorizeProfile());
       const privacy=this.text('隐私保护指引',375,1100,24,C.ink,300,50);privacy.node.on(Node.EventType.TOUCH_END,()=>{try{this.wxFlow.openPrivacy();}catch(e){this.toast((e as Error).message);}});
       this.text('—  选择头像  —', 375, 840, 29, C.ink, 550, 50);
