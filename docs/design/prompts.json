@@ -1,0 +1,81 @@
+{
+  "generator": "built-in image_gen",
+  "created": "2026-10-26",
+  "styleReference": "/Users/hanjinjun/.codex/generated_images/01a176ec-83e6-7210-bad4-d489be51d4ba/exec-1a2c23bb-338b-4bcd-a18e-0b8150b3573b.png",
+  "prompts": [
+    {
+      "name": "05-gameplay",
+      "prompt": "Use case: ui-mockup. Create one polished full-screen portrait 9:16 mobile WeChat casual deduction game UI design, no phone bezel, no presentation board. Game 数字炸弹. Cohesive art direction: warm walnut tabletop, deep teal felt, cream cards, restrained coral-orange primary buttons, amber lighting, tactile illustrated 2.5D game art made feasible with layered 2D sprites. Beautiful readable Simplified Chinese typography, large digits, clear touch targets, generous safe top and bottom areas. Friendly intimate tabletop duel, not casino/gambling; no chips, money, ads, currency, promotional badges or AI badges. All profile names and avatar illustrations are fictional. SCREEN: active gameplay, first-person sitting at near edge of table, opponent sits at far/top edge. Top opponent small illustrated bust, nickname 林间晚风 and four overlapping card BACKS only. Perspective tabletop recedes upward. Header 第3轮 / 20. Center little charming mechanical numeric bomb verifier with amber display 命中 2/4 and small text 上次猜测 0453. A clear four-slot editable slip labeled 本次猜测 shows 0 1 8 3. At near edge above keypad the player's hand holds four cream cards labeled 我的底牌 · 已锁定, digits 1 1 2 2 facing viewer, these are visibly separate from guess slip. Small player portrait and nickname 半杯柠檬. A side notebook tab 记录. Turn label 轮到你了 and timer 24s. Bottom compact numeric keypad rows 1 2 3 / 4 5 6 / 7 8 9 / 删除 0, and wide orange 确认猜测 button. Composition allocates enough room for all controls without overlapping the hand. Show a functional legible premium mobile game screen, make the scene immersive rather than flat form panels. Do not reveal opponent secret digits or highlight any correct digit positions."
+    },
+    {
+      "name": "01-lobby",
+      "prompt": "Use case: ui-mockup. Create one polished full-screen portrait 9:16 mobile WeChat casual deduction game UI design, no phone bezel, no presentation board. Game 数字炸弹. Cohesive art direction: warm walnut tabletop, deep teal felt, cream cards, restrained coral-orange primary buttons, amber lighting, tactile illustrated 2.5D game art made feasible with layered 2D sprites. Beautiful readable Simplified Chinese typography, large digits, clear touch targets, generous safe top and bottom areas. Friendly intimate tabletop duel, not casino/gambling; no chips, money, ads, currency, promotional badges or AI badges. All profile names and avatar illustrations are fictional. Use the attached gameplay screen ONLY as visual style reference: preserve palette, illustrated room, tactile cards and control materials, but completely redesign layout for the requested page. SCREEN: home lobby. Top left player's round fictional illustrated female avatar and name 半杯柠檬, top right small settings gear and safe empty capsule area. Large beautiful Chinese game logo 数字炸弹, subtitle 四位密码，一场智力对决. Warm illustrated room and perspective green felt tabletop, hero mechanical bomb verifier with four cream cards bearing 0 1 2 3; no opponent seated yet. Lower half two very prominent stacked accessible buttons 在线匹配 in coral orange and 好友对战 in cream. Small bottom notebook-shaped 怎么玩 button, subtle sound icon. Clear focused hierarchy, no keyboard, no currencies, no ads. Retain material style of reference but much simpler lobby composition."
+    },
+    {
+      "name": "02-profile",
+      "prompt": "Use case: ui-mockup. Create one polished full-screen portrait 9:16 mobile WeChat casual deduction game UI design, no phone bezel, no presentation board. Game 数字炸弹. Cohesive art direction: warm walnut tabletop, deep teal felt, cream cards, restrained coral-orange primary buttons, amber lighting, tactile illustrated 2.5D game art made feasible with layered 2D sprites. Beautiful readable Simplified Chinese typography, large digits, clear touch targets, generous safe top and bottom areas. Friendly intimate tabletop duel, not casino/gambling; no chips, money, ads, currency, promotional badges or AI badges. All profile names and avatar illustrations are fictional. Use the attached gameplay screen ONLY as visual style reference: preserve palette, illustrated room, tactile cards and control materials, but completely redesign layout for the requested page. SCREEN: personal profile page in same game world. Header 返回 and 个人资料. A handsome cream-paper profile folio on teal tabletop, fictional illustrated female avatar, small 更换头像 button. Editable nickname field 昵称 and 半杯柠檬, small text 2–12个字符. Secondary button 使用微信头像昵称. A neat row of four original illustrated selectable avatar thumbnails, current one outlined amber. Bottom prominent orange 保存修改 and smaller 取消. Modest stationery detail, no real personal data, no keyboard needed. Entire form highly readable, tactile game menu rather than generic enterprise app."
+    },
+    {
+      "name": "03-friend-room",
+      "prompt": "Use case: ui-mockup. Create one polished full-screen portrait 9:16 mobile WeChat casual deduction game UI design, no phone bezel, no presentation board. Game 数字炸弹. Cohesive art direction: warm walnut tabletop, deep teal felt, cream cards, restrained coral-orange primary buttons, amber lighting, tactile illustrated 2.5D game art made feasible with layered 2D sprites. Beautiful readable Simplified Chinese typography, large digits, clear touch targets, generous safe top and bottom areas. Friendly intimate tabletop duel, not casino/gambling; no chips, money, ads, currency, promotional badges or AI badges. All profile names and avatar illustrations are fictional. Use the attached gameplay screen ONLY as visual style reference: preserve palette, illustrated room, tactile cards and control materials, but completely redesign layout for the requested page. SCREEN: waiting in a created friend room. Header 返回 and 好友房. Perspective table in same room, empty chair across table. Two seat badges: near seat fictional avatar 半杯柠檬 with 已入座, far seat outline avatar 等待好友. Center elegant large cream invite card labelled 房间口令 showing exactly four large digits 3 8 1 6, button 复制口令. Instruction 告诉好友口令，即可加入. Small timer 房间有效期 09:42. Bottom clear secondary 关闭房间. No other four-digit secret cards yet, no QR code or share icon, no keyboard, show two-seat capacity 1/2."
+    },
+    {
+      "name": "04-preparation",
+      "prompt": "Use case: ui-mockup. Create one polished full-screen portrait 9:16 mobile WeChat casual deduction game UI design, no phone bezel, no presentation board. Game 数字炸弹. Cohesive art direction: warm walnut tabletop, deep teal felt, cream cards, restrained coral-orange primary buttons, amber lighting, tactile illustrated 2.5D game art made feasible with layered 2D sprites. Beautiful readable Simplified Chinese typography, large digits, clear touch targets, generous safe top and bottom areas. Friendly intimate tabletop duel, not casino/gambling; no chips, money, ads, currency, promotional badges or AI badges. All profile names and avatar illustrations are fictional. Use the attached gameplay screen ONLY as visual style reference: preserve palette, illustrated room, tactile cards and control materials, but completely redesign layout for the requested page. SCREEN: set secret / preparation at first-person table. Opponent illustrated male bust 林间晚风 at far top and four face-down cards, status 对手已准备. Heading 设置你的四位密码, timer 45s. Near foreground the player's two hands holding exactly four large cream digit cards with 0 1 2 3, second card lightly lifted/selected; these cards ARE the editable secret before lock. Small help 允许重复，允许0开头. No guess slip, no guess feedback, no extra second set of local cards. Bottom well-proportioned keypad digits 1 2 3 /4 5 6 /7 8 9 /删除 0 随机生成. Large orange 锁定并准备. Small warning 锁定后本局不可修改. Tactile warm materials, clean Chinese."
+    },
+    {
+      "name": "06-result",
+      "prompt": "Use case: ui-mockup. Create one polished full-screen portrait 9:16 mobile WeChat casual deduction game UI design, no phone bezel, no presentation board. Game 数字炸弹. Cohesive art direction: warm walnut tabletop, deep teal felt, cream cards, restrained coral-orange primary buttons, amber lighting, tactile illustrated 2.5D game art made feasible with layered 2D sprites. Beautiful readable Simplified Chinese typography, large digits, clear touch targets, generous safe top and bottom areas. Friendly intimate tabletop duel, not casino/gambling; no chips, money, ads, currency, promotional badges or AI badges. All profile names and avatar illustrations are fictional. Use the attached gameplay screen ONLY as visual style reference: preserve palette, illustrated room, tactile cards and control materials, but completely redesign layout for the requested page. SCREEN: final victory result at the same first-person table, after both players completed equal opportunity. Warm restrained amber confetti and large 胜利 title, subtitle 对手补猜未命中. Opponent far side 林间晚风 with four REVEALED cards 0 1 2 3 in clear left-to-right reading order. Local near side four revealed cards 1 1 2 2. Center cream score slip labelled 本局回顾 with rows 我的猜测 7次, 对手猜测 7次, 对局用时 04:26. Small labelled rows 对手密码 0123 and 我的底牌 1122 if needed to make ownership clear, no excessive duplicates. Prominent orange 再来一局 and cream 返回大厅 buttons, small 查看记录 notebook link. No currency prizes, rank, ads or AI label. Celebratory but elegant, no large explosion."
+    },
+    {
+      "name": "07-matching",
+      "prompt": "Use case: ui-mockup. Create one polished full-screen portrait 9:16 mobile WeChat casual deduction game UI design, no phone bezel, no presentation board. Game 数字炸弹. Cohesive art direction: warm walnut tabletop, deep teal felt, cream cards, restrained coral-orange primary buttons, amber lighting, tactile illustrated 2.5D game art made feasible with layered 2D sprites. Beautiful readable Simplified Chinese typography, large digits, clear touch targets, generous safe top and bottom areas. Friendly intimate tabletop duel, not casino/gambling; no chips, money, ads, currency, promotional badges or AI badges. All profile names and avatar illustrations are fictional. Reference image is visual STYLE only, redesign layout entirely for this page. Online matching screen. Same tabletop room with empty far chair, warm lamp and green felt. Large title 正在寻找对手. A tactile circular brass hourglass mechanism at center with subtle rotating marks, timer 00:12. Near bottom player fictional round female avatar 半杯柠檬; far side anonymous empty circular seat placeholder, no named fake opponent before matched. Small phrase 准备好迎接挑战了吗. Bottom single large cream 取消匹配 button. No progress percentage, AI labels, low-population notice, countdown to bot, currency or ads. Focused calm waiting UI."
+    },
+    {
+      "name": "08-join-room",
+      "prompt": "Use case: ui-mockup. Create one polished full-screen portrait 9:16 mobile WeChat casual deduction game UI design, no phone bezel, no presentation board. Game 数字炸弹. Cohesive art direction: warm walnut tabletop, deep teal felt, cream cards, restrained coral-orange primary buttons, amber lighting, tactile illustrated 2.5D game art made feasible with layered 2D sprites. Beautiful readable Simplified Chinese typography, large digits, clear touch targets, generous safe top and bottom areas. Friendly intimate tabletop duel, not casino/gambling; no chips, money, ads, currency, promotional badges or AI badges. All profile names and avatar illustrations are fictional. Reference image is visual STYLE only, redesign layout entirely for this page. Friend room entry screen. Same warm teal tabletop setting. Header 好友对战 with 返回. A cream-paper invitation panel heading 输入房间口令. Exactly four large input slots show 3 8 1 6. Supporting text 四位口令，加入好友的牌桌. Below an orange 加入房间 button, then clear cream secondary 自己创建房间. Bottom numeric keypad rows 1 2 3 / 4 5 6 /7 8 9 /清空 0 删除. No secret cards, no characters already seated, no room waiting timer, no currency or AI label. Readable functional mobile screen."
+    }
+  ],
+  "images": [
+    {
+      "name": "01-lobby",
+      "source": "/Users/hanjinjun/.codex/generated_images/01a176ec-83e6-7210-bad4-d489be51d4ba/exec-23ef724c-d415-4e06-9b1e-07ae6f19c582.png",
+      "file": "01-lobby.png"
+    },
+    {
+      "name": "02-profile",
+      "source": "/Users/hanjinjun/.codex/generated_images/01a176ec-83e6-7210-bad4-d489be51d4ba/exec-71daa1e7-3cf2-4f33-98df-d0fe9a5ed02f.png",
+      "file": "02-profile.png"
+    },
+    {
+      "name": "03-friend-room",
+      "source": "/Users/hanjinjun/.codex/generated_images/01a176ec-83e6-7210-bad4-d489be51d4ba/exec-3f39f87b-b242-48a0-b55e-e608800bc148.png",
+      "file": "03-friend-room.png"
+    },
+    {
+      "name": "04-preparation",
+      "source": "/Users/hanjinjun/.codex/generated_images/01a176ec-83e6-7210-bad4-d489be51d4ba/exec-8ab45007-8720-4625-b5dd-b15bac13cc0f.png",
+      "file": "04-preparation.png"
+    },
+    {
+      "name": "05-gameplay",
+      "source": "/Users/hanjinjun/.codex/generated_images/01a176ec-83e6-7210-bad4-d489be51d4ba/exec-1a2c23bb-338b-4bcd-a18e-0b8150b3573b.png",
+      "file": "05-gameplay.png"
+    },
+    {
+      "name": "06-result",
+      "source": "/Users/hanjinjun/.codex/generated_images/01a176ec-83e6-7210-bad4-d489be51d4ba/exec-fd313b56-53f6-489b-bd38-3a9f5157e941.png",
+      "file": "06-result.png"
+    },
+    {
+      "name": "07-matching",
+      "source": "/Users/hanjinjun/.codex/generated_images/01a176ec-83e6-7210-bad4-d489be51d4ba/exec-f0035cee-bab5-4b76-98c2-83f5bb079ef7.png",
+      "file": "07-matching.png"
+    },
+    {
+      "name": "08-join-room",
+      "source": "/Users/hanjinjun/.codex/generated_images/01a176ec-83e6-7210-bad4-d489be51d4ba/exec-afc86715-2c4c-4d5e-b1e6-59f65bdf8e00.png",
+      "file": "08-join-room.png"
+    }
+  ]
+}

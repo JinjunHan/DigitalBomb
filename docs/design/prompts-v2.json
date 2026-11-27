@@ -1,0 +1,17 @@
+{
+  "generator": "built-in image_gen",
+  "jobs": [
+    {
+      "name": "01-lobby-v2",
+      "ref": "01-lobby.png",
+      "prompt": "Edit this existing portrait Chinese mobile game lobby UI. Preserve its art style, warm wood, teal felt, title 数字炸弹, all primary buttons and composition. Critical correction: remove BOTH the settings gear AND the long empty dark plaque at the upper right; replace them seamlessly with room background. Entire upper-right 40 percent width by top 12 percent height must contain ONLY noninteractive decorative background, no buttons, labels, fake capsule or custom controls, reserved for WeChat native menu overlay. Keep player avatar at upper left. Relocate settings as a small tasteful round gear button at lower LEFT of screen, horizontally alongside existing bottom 怎么玩 and sound controls, not in the upper right. Preserve Chinese readability and portrait size. This is a targeted edit, not a redesign.",
+      "source": "/Users/hanjinjun/.codex/generated_images/01a176ec-83e6-7210-bad4-d489be51d4ba/exec-c377ed76-9b93-4c95-8d9d-00f7443587e3.png"
+    },
+    {
+      "name": "05-gameplay-v2",
+      "ref": "05-gameplay.png",
+      "prompt": "Redesign this portrait mobile tabletop deduction game screen to make guess history permanently visible for reasoning while preserving its exact warm wood/teal/cream 2.5D illustration style, first-person view, distant opponent with FOUR face-down cards and nearby player's FOUR locked cards 1 1 2 2. Leave upper-right 40% width x top 12% height background-only for WeChat capsule. Header now 第4轮 / 20. Main change: substantially SHRINK the huge brass bomb verifier to a small accent and shrink local hand cards, using saved vertical space for a central wide cream-paper notebook panel BETWEEN opponent cards and current guess slip. Notebook title 我的猜测, subtle header action 全部记录. Show exactly three neatly aligned history rows, no position highlighting: 第1次   4567   0/4 ; 第2次   0453   2/4 ; 第3次   0183   3/4. Rows all neutral identical digits, compact amber count badges only. These rows are compatible with hidden secret 0123, do NOT reveal that secret on opponent cards. Below history panel, separate clear 本次猜测 slip with four input slots 0 1 2 8. Remove all tiny up/down arrows, input by keypad only. Local locked hand of 1 1 2 2 remains near bottom but takes only ~12% of screen height. Label 我的底牌 · 已锁定. Keep 轮到你了 and 24s visible above bottom numeric keypad, full digits 1 2 3 /4 5 6 /7 8 9 /删除 0 确认猜测. No notebook protruding off side, since records are now central. History panel and input area must coexist, no modal blocking keypad. Legible large Chinese labels, clean visual hierarchy, practical touch target sizes. No AI tag, ads or currency. No changed secret or partial reveal.",
+      "source": "/Users/hanjinjun/.codex/generated_images/01a176ec-83e6-7210-bad4-d489be51d4ba/exec-5cbc7d4f-b1fa-46f0-8608-9cd67db44e6a.png"
+    }
+  ]
+}

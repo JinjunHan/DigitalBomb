@@ -1,0 +1,18 @@
+{
+  "generator": "built-in image_gen",
+  "reference": "../02-profile.png",
+  "jobs": [
+    {
+      "name": "portrait-frame",
+      "prompt": "Create ONE isolated circular portrait FRAME sprite based precisely on the large profile portrait's narrow brass rim in the supplied Chinese game UI reference. Thin polished warm antique brass double concentric rim, delicate cream inner highlight, dark brown outer edge, understated amber shading, premium illustrated 2.5D material. Perfect front facing circle, no perspective. Outer diameter about 88 percent of square canvas; ring thickness only 4 percent of outer diameter. Entire central opening MUST be genuinely TRANSPARENT alpha; outside ring also transparent. No portrait, no fill inside circle, no check mark, no compass, no background, no text, no extra ornaments, no rectangular border. Centered square 512x512 composition. This is only the narrow rim layer for compositing over arbitrary avatars."
+    },
+    {
+      "name": "portrait-background",
+      "prompt": "Create ONE isolated profile avatar BACKGROUND sprite closely matching the faint gold compass rose printed behind the large round portrait in the provided parchment profile design. A circular warm ivory parchment medallion in the center, diameter 64 percent of square canvas, subtle fine paper grain. Behind it, thin muted antique-gold concentric circles, delicate eight-point compass rose and thin horizontal/vertical axis lines, overall diameter 90 percent canvas. Refined low contrast ochre linework, few small diamond markers, no letters or numbers, no nautical labels. Match the original understated parchment print, not metallic 3D object. No portrait, no thick outer rim, no check mark, no UI. Transparent alpha everywhere outside the printed lines and central parchment disc. Centered symmetrical square 512x512 composition. Layer sits beneath portrait frame and portrait; all compass points fully visible."
+    },
+    {
+      "name": "avatar-selected",
+      "prompt": "Extract/reconstruct as ONE isolated game selection BADGE the small round golden checkmark at lower-right of the selected avatar in the provided profile design. Match reference exactly: amber brown circular filled medallion, warm golden orange rim with thin bright cream edge, tasteful soft golden halo, ONE bold clear cream white tick centered inside, slightly rounded stroke. Premium painted 2.5D casual game UI, light from upper left. Front-facing perfect circle, centered at 70 percent of square canvas leaving transparent padding for halo. The tick is a checkmark, not an X and not letters. No portrait, no avatar ring, no compass, no paper, no text, no scene. Genuine transparent alpha background outside badge and fading halo. Square 256x256 composition, readable at 28px display size."
+    }
+  ]
+}

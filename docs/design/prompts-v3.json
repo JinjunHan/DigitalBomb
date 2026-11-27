@@ -1,0 +1,11 @@
+{
+  "generator": "built-in image_gen",
+  "date": "2026-10-27",
+  "jobs": [
+    {
+      "name": "01-lobby-v3",
+      "ref": "01-lobby-v2.png",
+      "prompt": "Use case: ui-mockup. Create an updated high fidelity portrait 9:16 Chinese mobile game home screen based on the supplied 01-lobby-v2.png as the visual reference and edit target. Preserve the luxurious cozy illustrated 2.5D warm wooden study at night, teal felt tabletop, brass and cream-paper materials, sleepy cat on right, cup and lantern, upper-left illustrated player avatar and name 半杯柠檬. The game has been renamed: replace the old four-character title 数字炸弹 completely with the EXACT five Chinese characters 猜数字暗号. Design an elegant bold dimensional cream and amber title, visually balanced for five characters, clearly legible and prominent. Keep the exact subtitle 四位密码，一场智力对决 beneath. Replace the bomb and explosion behind the title with tasteful brass combination-lock and small number-card motifs; replace the bomb icon on primary button with a small brass key icon. Keep the central four-card brass code machine reading 0 1 2 3, but make it a polished mechanical code lock with no explosive fuse or wires. Preserve all layout and controls: large orange 在线匹配 button above cream 好友对战 button, both with right chevrons; bottom left round settings gear, bottom center leather 怎么玩 control, bottom right round audio control. Maintain generous touch areas, original detailed material quality, warm lighting, cinematic depth and coherent restrained ornament. Top-right 40% width by top 12% height must contain only room background for the WeChat native capsule; do not draw a capsule. Full bleed screen only, no phone frame, no added copy, no watermark. All Chinese lettering must be correct. The old title 数字炸弹 must not appear anywhere."
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+{
+  "generator": "built-in image_gen",
+  "reference": "02-profile.png",
+  "prompt": "Extract/reconstruct ONLY the large cream parchment profile sheet with leather brown backing from the reference. Transparent background true alpha. Preserve the exact warm ivory paper grain, gold subtle ornamental border, rounded raised top-center crest and brown leather backing, front facing upright, entire silhouette with no cropping. Remove all UI/content from paper: portrait, avatar frame, button, nickname field, ALL text, all icons, all avatar choices, divider lines and compass behind portrait. Reconstruct blank subtly textured paper. Remove all scene objects including book occluding right edge and leaves occluding left edge, restore paper behind them. No scene, no title plaque, no buttons, no letters, no numbers. One isolated blank parchment panel, approximately width 900 height1040, with subtle contact shadow at bottom edge. Match reference materials and colors."
+}
