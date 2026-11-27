@@ -1,0 +1,11 @@
+{
+  "source": "docs/design/turn-plaque/source-master.jpg",
+  "output": "assets/resources/art/battle/turn.png",
+  "size": [
+    400,
+    83
+  ],
+  "visualCenterY": 39.0,
+  "sizeBytes": 12423,
+  "notes": "Reconstructed antique dark-walnut & burnished brass-gold turn plaque with clean transparent contour and soft felt contact shadow; replaces old cropped tray remnant."
+}

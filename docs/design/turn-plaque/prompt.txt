@@ -1,0 +1,12 @@
+Asset: Redesigned turn banner plaque (reconstructed / generated asset)
+Generator: image-generator -> docs/design/turn-plaque/source-master.jpg
+Build script: scripts/build-turn-plaque.py -> assets/resources/art/battle/turn.png
+
+Prompt:
+Generate a single, crisp, front-facing flat 2D UI plaque/nameplate banner for a vintage warm tabletop card game ("Digital Bomb" / cozy antique mystery study aesthetic) to replace the poorly cropped "turn" banner sitting on dark teal felt above a wooden keypad tray.
+Horizontal symmetric burnished antique bronze-gold beveled rim with gently scalloped/notched pointed left & right endcaps, subtle inner pinstripe, tiny antique brass diamond rivet centered in each endcap, and smooth empty dark espresso-walnut matte interior (#26160D) isolated on a pure solid flat #FFFFFF white background. Zero perspective tilt, zero cast shadow, zero text, zero wooden corner remnants.
+
+Post-processing (scripts/build-turn-plaque.py):
+- Corner flood-fill pure-white extraction + 4px un-premultiplied de-fringing.
+- Horizontal 3-slice preserving 24% scalloped endcaps and stretching the flat center strip to 396x74 inside a 400x83 canvas (matching BATTLE_RECTS.turn) with a subtle dark teal-compatible soft contact shadow.
+- pngquant quality 90-100 compression -> 12.1 KB shipping PNG.

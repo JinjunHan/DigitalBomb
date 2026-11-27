@@ -1249,7 +1249,7 @@ export class GameApp extends Component {
     for (const side of [-1, 1]) {
       const index = side < 0 ? 0 : count - 1;
       const gripX = center + side * ((count - 1) * spacing / 2 + (preparing ? 55 : 35));
-      const gripY = (preparing ? 752 + 25 + 45 : 1018 + 14 + 26) - (preparing && selected === index ? 18 : 0);
+      const gripY = (preparing ? 752 + 25 + 45 : 1018 + 14 + 26) - (preparing && selected === index ? 24 : 0);
       const edge = 470.5 + side * (375 / sceneScale + 40);
       const tail = (sourceWidth - thumbX) * handScale;
       const width = Math.max(sourceWidth, (Math.abs(edge - gripX) + tail) / handScale);
@@ -1309,7 +1309,7 @@ export class GameApp extends Component {
     this.playerPortrait(group, opponent, 0, -65, 126);
     const nameplate=art('nameplate',[355,134,586,179]);
     touch(nameplate,()=>this.toast(opponent.name+(opponent.online?'':' · 连接中')));
-    label(shortName(opponent.name,7),472,156,29,208,C.cream,38).node.name='OpponentNickname';
+    label(shortName(opponent.name,7),472,150,29,208,C.cream,38).node.name='OpponentNickname';
     if (count === 4) this.opponentBacksNode = art('card-backs');
     else {
       if (!this.opponentCard) { this.opponentCard = new SpriteFrame(); this.opponentCard.texture = this.battleArt.get('card-backs')!.texture; this.opponentCard.rect = new Rect(214,0,94,128); }
@@ -1334,7 +1334,7 @@ export class GameApp extends Component {
     const nav = art('round');
     const navText = (value: string, x: number, width: number, parent = nav) => {
       const item = this.text(value,375,667,30,C.cream,width,44,parent);
-      item.node.setPosition(x,0);item.lineHeight=36;item.enableWrapText=false;
+      item.node.setPosition(x, parent === nav ? 6 : 0);item.lineHeight=36;item.enableWrapText=false;
       return item;
     };
     navText('‹',105,22);
@@ -1344,7 +1344,7 @@ export class GameApp extends Component {
     } else {
       label(`${count} 位密码`,150,139,25,240,C.cream,42);
       navText('第',-78,32);navText(`轮 / ${r.roundLimit ?? STANDARD_ROUNDS}`,32,94);
-      const clip = this.n('RoundDigitViewport',375,667,50,42,nav);clip.setPosition(-40,0);
+      const clip = this.n('RoundDigitViewport',375,667,50,42,nav);clip.setPosition(-40,4.5);
       clip.addComponent(Mask).type=Mask.Type.GRAPHICS_RECT;
       this.roundRoll.sync(r.id,r.round,read('motion','1')==='1');
       const oldDigit=navText(String(this.roundRoll.previous),0,50,clip);
@@ -1357,14 +1357,16 @@ export class GameApp extends Component {
     touch(nav, () => { if (prep) this.ask('leave',()=>this.act('leave')); else { this.overlay='gameMenu';this.render(); } });
     const editable = !this.busy && this.net.online && (prep ? !r.ownSecret : ['playing', 'reply'].includes(r.phase) && r.current === me.id && this.net.now() >= r.startAt);
     if (prep) {
-      art('status',[355,299,586,344]); label(opponent.ready ? '对手已准备' : '对手正在设置',470,323,28,215,C.cream);
+      art('status',[355,299,586,344]); label(opponent.ready ? '对手已准备' : '对手正在设置',470,316,28,215,C.cream);
       if(count===4)art('heading');
       else {art('mode-heading',[179,362,762,463],this.modalArt.get('tab-off')??this.profileArt.get('input'));label(`设置你的 ${count} 位密码`,470,411,40,530,C.ink,70);}
       this.timerEffects = SpriteEffects.attach(art('timer').getComponent(Sprite)!);
-      this.timerLabel=label('',497,489,40,70,'#FFD978',54);
+      this.timerLabel=label('',488,492,38,84,'#FFD978',52);
+      this.timerLabel.horizontalAlign = Label.HorizontalAlign.RIGHT;
       if (this.friendDigitFont) this.timerLabel.font = this.friendDigitFont; else this.timerLabel.isBold = true;
-      this.timerLabel.lineHeight=46;
-      label('s',540,493,29,20,'#FFD978',38);
+      this.timerLabel.lineHeight=44;
+      const unit = label('s',544,496,27,22,'#FFD978',38);
+      unit.horizontalAlign = Label.HorizontalAlign.LEFT; unit.isBold = true;
       const rules=art('rules',[243,523,699,589]); touch(rules,()=>this.openLearning('rules'));
       const value=r.ownSecret ?? this.draft;
       // Draw the fan first; the complete grip silhouettes overlap its outer corners.
@@ -1372,9 +1374,8 @@ export class GameApp extends Component {
       const order=Array.from({length:count},(_,i)=>i).sort((a,b)=>Number(a===selected)-Number(b===selected));
       const paper=this.battleArt.get('card-paper')!,ratio=paper.originalSize.height/paper.originalSize.width;
       for(const i of order) {
-        const active=i===selected,x=471.5+(i-(count-1)/2)*149,y=752+(i===0||i===count-1?25:0)-(active?18:0);
+        const active=i===selected,x=471.5+(i-(count-1)/2)*149,y=752+(i===0||i===count-1?25:0)-(active?24:0);
         const cardGroup=this.n('SecretCard-'+i,375,667,202,202*ratio,group);cardGroup.setPosition(0,0);
-        if(active){const edge=art('card-selected',[x-102,y-102*ratio,x+102,y+102*ratio],undefined,cardGroup);edge.angle=count===4?[14,5,-5,-14][i]:((count-1)/2-i)*10;}
         const card=art('card-paper',[x-96,y-96*ratio,x+96,y+96*ratio],paper,cardGroup);card.angle=count===4?[14,5,-5,-14][i]:((count-1)/2-i)*10;
         const ch = value[i] ?? '';
         if (ch) this.addCardDigit(card, ch, 0, 0, Math.round(192 * ratio * 0.65), 'ink');
@@ -1383,7 +1384,7 @@ export class GameApp extends Component {
       this.battleHands(group, count, true, scale, selected);
       const lock=art('lock');touch(lock,()=>this.lockSecret(),editable&&this.draft.length===count);
       art('status',[230,1546,711,1603]);
-      label(r.ownSecret ? '底牌已锁定，等待对手' : 'ⓘ 锁定后本局不可修改',470,1572,29,650,C.gold);
+      label(r.ownSecret ? '底牌已锁定，等待对手' : 'ⓘ 锁定后本局不可修改',470,1568,29,650,C.gold);
     } else {
       art('records');
       const records=art('all-records');touch(records,()=>{this.recordsOpponent=false;this.overlay='guessRecords';this.render();});
@@ -1515,19 +1516,19 @@ export class GameApp extends Component {
       const rim=this.profileArt.get('portrait-frame');
       if(rim) art('portrait-frame',[37,1055,169,1187],rim);
       art('nameplate',[16,1162,190,1194]);
-      label(shortName(me.name,6),103,1178,24,162,C.cream);
+      label(shortName(me.name,6),103,1173,24,162,C.cream);
       const secretStatus=art('status',[295,1096,646,1148]);
       touch(secretStatus,()=>{this.hideSecret=!this.hideSecret;this.render();});
-      label(this.hideSecret?'底牌已隐藏 · 点击查看':'我的底牌 · 已锁定',470,1122,26,340,C.cream);
+      label(this.hideSecret?'底牌已隐藏 · 点击查看':'我的底牌 · 已锁定',470,1116,26,340,C.cream);
       if (r.phase === 'reply' && r.current === me.id) {
-        const aura = place(this.n('ReplyAura', 375, 667, 424, 102, group), 470, 1192);
+        const aura = place(this.n('ReplyAura', 375, 667, 424, 92, group), 470, 1190);
         const ag = aura.addComponent(Graphics);
-        ag.strokeColor = new Color('#FF6A3D'); ag.lineWidth = 6;
-        ag.roundRect(-208, -46, 416, 92, 46); ag.stroke();
+        ag.strokeColor = new Color('#FF6A3D'); ag.lineWidth = 5;
+        ag.roundRect(-206, -42, 412, 84, 42); ag.stroke();
         this.replyAura = aura.addComponent(UIOpacity); this.replyAura.opacity = 180;
       }
       this.timerEffects = SpriteEffects.attach(art('turn').getComponent(Sprite)!);
-      this.timerLabel=label('',470,1190,28,330,r.phase==='reply'&&r.current===me.id?'#FFD87A':C.cream,48);
+      this.timerLabel=label('',470,1187,28,330,r.phase==='reply'&&r.current===me.id?'#FFD87A':C.cream,48);
     }
     if(this.opponentFeedbackActive)this.setOpponentSeatVisible(false);
     const prefix=prep?'prep-':'play-';
@@ -1651,12 +1652,12 @@ export class GameApp extends Component {
     if (win) {
       const titleNode = art('victory-title', 0, 174, 670, undefined, headerGroup);
       titleSprite = titleNode.getComponent(Sprite);
-      const cap = label(resultCaption(r, meId), 0, 304, 420, 44, 26, '#FFF0C8', headerGroup);
+      const cap = label(resultCaption(r, meId), 0, 297, 420, 44, 26, '#FFF0C8', headerGroup);
       cap.isBold = true;
     } else if (!draw) {
       const titleNode = art('defeat-title', 0, 178, 740, undefined, headerGroup);
       titleSprite = titleNode.getComponent(Sprite);
-      label(resultCaption(r, meId), 0, 294, 460, 44, 26, C.ink, headerGroup);
+      label(resultCaption(r, meId), 0, 299, 460, 44, 26, C.ink, headerGroup);
     } else {
       const titleNode = art('draw-title', 0, 146, 470, undefined, headerGroup);
       titleSprite = titleNode.getComponent(Sprite);
@@ -1665,7 +1666,7 @@ export class GameApp extends Component {
       const pg = pill.addComponent(Graphics);
       pg.fillColor = new Color('#261A13'); pg.roundRect(-220, -23, 440, 46, 23); pg.fill();
       pg.strokeColor = new Color('#D8A856'); pg.lineWidth = 2.2; pg.roundRect(-219, -22, 438, 44, 22); pg.stroke();
-      const cap = label(resultCaption(r, meId), 0, 332, 410, 40, 24, '#FFF0C8', headerGroup);
+      const cap = label(resultCaption(r, meId), 0, 330, 410, 40, 24, '#FFF0C8', headerGroup);
       cap.isBold = true;
     }
 
