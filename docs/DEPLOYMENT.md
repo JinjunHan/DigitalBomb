@@ -123,7 +123,15 @@ AppID：wx3f231fcad8d0170f。
 
 2026-11-20 已通过 baota-mcp 部署此开关，公网 HTTPS 登录及 WSS 会话实测下发 `wechatSharingEnabled=false`。旧代码备份在 `/www/backup/digital-bomb-sharing-20261120T064521Z/original/`。当时的热切换与手动口令入房在本地隔离服务验证。
 
-配置接口从同一个 JSON 的 `images` 数组加载分享图。每项包含 `approved`、`imageUrlId` 和 `imageUrl`；只有明确标记已审核、编号非空且地址为微信素材 CDN 的记录会下发。数组中第一张可用图供房间邀请使用，普通分享从可用图中随机选取。待审素材保留地址，审核后补上编号并把该项的 `approved` 改为 `true`。总开关独立控制分享入口。无可用素材时使用微信默认分享画面。首次需发布支持该配置的客户端。
+配置接口从同一个 JSON 的 `images` 数组加载分享图。每项包含 `approved`、`imageUrlId` 和 `imageUrl`；只有明确标记已审核、编号非空且地址为微信素材 CDN 的记录会下发。数组中第一张可用图供房间邀请使用，普通分享及每日一题/战绩分享从可用图中随机选取。待审素材保留地址，审核后补上编号并把该项的 `approved` 改为 `true`。总开关独立控制分享入口。无可用素材时使用微信默认分享画面。首次需发布支持该配置的客户端。
+
+当前仓库 `docs/promotion/` 备有 6 张微信 5:4（`500×400` JPG）分享素材可供按需提交微信后台审核并加入 `images` 数组：
+- `share-invite.jpg`（来猜我的暗号，房间邀请）
+- `share-guess.jpg`（下一猜，你来，推理挑战）
+- `share-rematch.jpg`（再猜一局？，好友再战）
+- `share-daily.jpg`（今日暗号谁先破，每日一题）
+- `share-rank.jpg`（几步能猜中？，步数竞速/晒战绩）
+- `share-vault.jpg`（四位密码等你破，经典复古密码箱）
 
 
 ## 2026-11-27 移除公网 Web 游戏并部署每日一题与排行榜后端

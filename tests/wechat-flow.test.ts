@@ -122,4 +122,10 @@ test('shareCustom shares via WeChat only when sharing is enabled and returns fal
   assert.equal(shared.length, 1);
   assert.equal(shared[0].title, '我用 4 步破译了今日暗号');
   assert.equal(shared[0].imageUrlId, 'id-1');
+  flow.setSharingEnabled(true, [
+    { imageUrlId: 'id-1', imageUrl: 'https://mmocgame.qpic.cn/wechatgame/demo1.png' },
+    { imageUrlId: 'id-2', imageUrl: 'https://mmocgame.qpic.cn/wechatgame/demo2.png' },
+  ]);
+  assert.equal(flow.shareCustom('战绩分享'), true);
+  assert.ok(['id-1', 'id-2'].includes(shared[1].imageUrlId));
 });

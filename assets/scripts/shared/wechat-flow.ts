@@ -94,7 +94,7 @@ export class WechatFlow {
   /** Share a battle or daily recap via WeChat when enabled; returns false when caller should fall back to clipboard copy. */
   shareCustom(title: string, query = ''): boolean {
     if (!this.sharingEnabled || !this.wx?.shareAppMessage) return false;
-    const img = this.images[0] ?? {};
+    const img = this.images.length ? this.images[Math.floor(Math.random() * this.images.length)] : {};
     this.wx.shareAppMessage({ title, ...(query ? { query } : {}), ...img });
     return true;
   }
