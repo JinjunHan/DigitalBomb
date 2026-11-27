@@ -84,6 +84,7 @@ export class GameApp extends Component {
   private modalArt = new Map<string, SpriteFrame>();
   private modalArtReady = false;
   private modalArtFailed = false;
+  private sharedButtons = new Map<string, SpriteFrame>();
   private reconnecting = false;
   private confirmation?: ConfirmationContext;
   private lobbyArt = new Map<string, SpriteFrame>();
@@ -268,6 +269,15 @@ export class GameApp extends Component {
         const frame = new SpriteFrame(); frame.texture = texture; this.matchingArt.set(name, frame);
         if (name === 'hourglass-sheet') frame.rect = new Rect(0,0,320,320);
         if (matchingNames.every(key => this.matchingArt.has(key))) { this.matchingArtReady = true; this.render(); }
+      });
+    }
+    for (const name of ['btn-secondary', 'btn-emerald']) {
+      resources.load('art/learning-v2/' + name + '/texture', Texture2D, (err, texture) => {
+        if (err || !this.isValid) return;
+        const sf = new SpriteFrame(); sf.texture = texture;
+        sf.insetLeft = 64; sf.insetRight = 64; sf.insetTop = 24; sf.insetBottom = 26;
+        this.sharedButtons.set(name, sf);
+        if (this.net.state?.room?.phase === 'finished') this.render();
       });
     }
     const modalNames = Object.keys(MODAL_RECTS);
@@ -1967,6 +1977,8 @@ export class GameApp extends Component {
       shouldAnimate,
       feedbackArt: this.feedbackArt,
       cardPaper: this.battleArt.get('card-paper') ?? this.joinArt.get('digit-slot') ?? null,
+      btnSecondary: this.sharedButtons.get('btn-secondary'),
+      btnEmerald: this.sharedButtons.get('btn-emerald'),
       friendDigitFont: this.friendDigitFont,
       inkColor: C.ink,
       bindPressEffect: node => this.bindPressEffect(node),

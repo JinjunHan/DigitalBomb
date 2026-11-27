@@ -7,7 +7,7 @@ import { Practice, Tutorial } from './shared/learning';
 import type { RoomView } from './shared/protocol';
 import { modeLabel, type MatchMode } from './shared/game-mode';
 
-const LEARNING_ART = ["paper", "back", "title-online", "title-friend", "title-hub", "title-tutorial", "mode-2", "mode-3", "mode-4", "check", "match", "create", "start", "practice-2", "practice-3", "practice-4", "rules", "home", "hint", "key-1", "key-2", "key-3", "key-4", "key-5", "key-6", "key-7", "key-8", "key-9", "key-0", "key-delete", "key-submit", "tab-positions", "tab-positions-off", "tab-history", "tab-history-off", "baseline", "copy", "return", "card", "answer", "panel", "banner", "subtitle"];
+const LEARNING_ART = ["paper", "back", "title-online", "title-friend", "title-hub", "title-tutorial", "mode-2", "mode-3", "mode-4", "check", "match", "create", "start", "practice-2", "practice-3", "practice-4", "rules", "home", "hint", "key-1", "key-2", "key-3", "key-4", "key-5", "key-6", "key-7", "key-8", "key-9", "key-0", "key-delete", "key-submit", "tab-positions", "tab-positions-off", "tab-history", "tab-history-off", "baseline", "copy", "return", "card", "answer", "panel", "banner", "subtitle", "btn-primary", "btn-secondary", "btn-emerald"];
 
 interface Context {
   parent: Node; height: number; top: number; bottom: number;
@@ -133,7 +133,7 @@ export class LearningPanel {
     // Publish the whole batch atomically: network redraws never expose half a skin.
     resources.load(LEARNING_ART.map(name => name === 'paper' ? 'art/profile/paper/texture' : 'art/learning-v2/' + name + '/texture'), Texture2D, (error, textures) => {
       if (error) { this.failed = true; this.loading = false; }
-      else textures.forEach((texture, i) => { const frame = new SpriteFrame(); frame.texture = texture; const name = LEARNING_ART[i]; if (name === 'paper') { frame.insetLeft=110; frame.insetRight=110; frame.insetTop=160; frame.insetBottom=130; } if (['answer','subtitle','banner','card'].includes(name)) { const x=name==='answer'?52:name==='card'?12:name==='banner'?56:30; const y=name==='answer'?38:name==='card'?12:22; frame.insetLeft=x; frame.insetRight=x; frame.insetTop=y; frame.insetBottom=name==='banner'?24:y; } this.frames.set(name, frame); });
+      else textures.forEach((texture, i) => { const frame = new SpriteFrame(); frame.texture = texture; const name = LEARNING_ART[i]; if (name === 'paper') { frame.insetLeft=110; frame.insetRight=110; frame.insetTop=160; frame.insetBottom=130; } if (['answer','subtitle','banner','card'].includes(name)) { const x=name==='answer'?52:name==='card'?12:name==='banner'?56:30; const y=name==='answer'?38:name==='card'?12:22; frame.insetLeft=x; frame.insetRight=x; frame.insetTop=y; frame.insetBottom=name==='banner'?24:y; } if (name.startsWith('btn-')) { frame.insetLeft=64; frame.insetRight=64; frame.insetTop=24; frame.insetBottom=26; } this.frames.set(name, frame); });
       if (this.visible && this.context.parent.isValid) this.refresh();
     });
   }
@@ -146,8 +146,37 @@ export class LearningPanel {
     w ??= frame.originalSize.width; h ??= w * frame.originalSize.height / frame.originalSize.width;
     const node = this.node('LearningArt-' + name, x, y, w, h);
     const sprite = node.addComponent(Sprite); sprite.spriteFrame = frame; sprite.sizeMode = Sprite.SizeMode.CUSTOM;
-    if (['paper','answer','subtitle','banner','card'].includes(name)) sprite.type = Sprite.Type.SLICED;
+    if (['paper','answer','subtitle','banner','card','btn-primary','btn-secondary','btn-emerald'].includes(name)) sprite.type = Sprite.Type.SLICED;
     node.getComponent(UITransform)!.setContentSize(w, h); return node;
+  }
+  /** Render a real 9-sliced scalloped brass-beveled tabletop button (never flat Graphics rectangles). */
+  private artButton(
+    tone: 'primary' | 'secondary' | 'emerald',
+    label: string,
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    action: () => void,
+    enabled = true,
+    fontSize = 27,
+  ) {
+    const node = this.art('btn-' + tone, x, y, w, h);
+    const sp = node.getComponent(Sprite)!;
+    if (!enabled) sp.grayscale = true;
+    const textColor = !enabled
+      ? (tone === 'secondary' ? '#4F4236' : '#F3E9D8')
+      : (tone === 'secondary' ? '#3B1E08' : '#FFF6DF');
+    const lbl = this.text(label, x, y, Math.max(80, w - 68), Math.max(28, h - 14), fontSize, textColor);
+    lbl.isBold = true;
+    lbl.node.setParent(node);
+    lbl.node.setPosition(0, 3);
+    const ctrl = this.touch(node, label, action, enabled);
+    if (!enabled) {
+      const op = ctrl.getComponent(UIOpacity);
+      if (op) op.opacity = 165;
+    }
+    return ctrl;
   }
   private text(value: string, x: number, y: number, w = 700, h = 70, size = 34, color = '#3D1D08') {
     const node = this.node('Learning-' + value.slice(0, 24), x, y, w, h);
@@ -244,12 +273,8 @@ export class LearningPanel {
     this.trapezoidPanel(470.5, 760, 420, 22, new Color(148, 92, 28, 22), new Color(182, 134, 66, 165), 1.8);
     this.cards(pending.digits,470,690,140);
     this.text(pending.kind==='lock'?'锁定后本局不可修改。':'这组数字已经猜过，仍会消耗一次机会。',470,895,620,100,34,'#4A2A10');
-    const cancelBtn = this.boxPanel(292, 1180, 266, 108, new Color(116, 70, 26, 26), new Color(172, 126, 66, 175), 16, 2.0);
-    const cancelLbl = this.text('取消', 292, 1178, 240, 64, 34, '#4A2B11'); cancelLbl.isBold = true;
-    this.touch(cancelBtn, '取消', pending.cancel);
-    const okBtn = this.boxPanel(648, 1180, 266, 108, '#C84218', '#F0BE62', 16, 2.4);
-    const okLbl = this.text('确认', 648, 1178, 240, 64, 34, '#FFF6DF'); okLbl.isBold = true;
-    this.touch(okBtn, '确认', pending.accept);
+    this.artButton('secondary', '取消', 292, 1180, 290, 96, pending.cancel, true, 32);
+    this.artButton('primary', '确认', 648, 1180, 290, 96, pending.accept, true, 32);
   }
   update(now: number) {
     if (!this.timer?.isValid || !this.timerRoom) return;
@@ -463,21 +488,10 @@ export class LearningPanel {
         this.text(`第 ${stepNo} 步   ${'■'.repeat(hits)}${'□'.repeat(4 - hits)}   ${hits}/4`, 470, y, 560, 32, 24, hits === 4 ? '#1E7037' : '#4B2E14');
       });
 
-      const shareBtn = this.boxPanel(318, 1140, 276, 90, '#C84218', '#F0BE62', 16, 2.2);
-      const shareLbl = this.text('分享今日战绩', 318, 1138, 250, 56, 28, '#FFF6DF'); shareLbl.isBold = true;
-      this.touch(shareBtn, 'daily-share', () => this.context.onDailyShare?.());
-
-      const lbBtn = this.boxPanel(622, 1140, 276, 90, '#2C7546', '#DFB362', 16, 2.2);
-      const lbLbl = this.text('查看今日排行', 622, 1138, 250, 56, 28, '#FFF6DF'); lbLbl.isBold = true;
-      this.touch(lbBtn, 'daily-leaderboard', () => { this.leaderboardTab = 'daily'; this.context.onOpenLeaderboard?.(); });
-
-      const notesBtn = this.boxPanel(318, 1266, 276, 76, new Color(116, 70, 26, 24), new Color(172, 126, 66, 175), 14, 1.8);
-      const notesLbl = this.text('查看推理笔记', 318, 1264, 240, 50, 25, '#4A2B11'); notesLbl.isBold = true;
-      this.touch(notesBtn, 'daily-clues', () => { this.tab = 'history'; this.cluesSource = 'daily'; this.go('clues'); });
-
-      const homeBtn = this.boxPanel(622, 1266, 276, 76, new Color(116, 70, 26, 24), new Color(172, 126, 66, 175), 14, 1.8);
-      const homeLbl = this.text('返回大厅', 622, 1264, 240, 50, 25, '#4A2B11'); homeLbl.isBold = true;
-      this.touch(homeBtn, 'daily-home', () => { this.close(); this.refresh(); });
+      this.artButton('primary', '分享今日战绩', 316, 1142, 292, 88, () => this.context.onDailyShare?.(), true, 27);
+      this.artButton('emerald', '查看今日排行', 624, 1142, 292, 88, () => { this.leaderboardTab = 'daily'; this.context.onOpenLeaderboard?.(); }, true, 27);
+      this.artButton('secondary', '查看推理笔记', 316, 1264, 292, 82, () => { this.tab = 'history'; this.cluesSource = 'daily'; this.go('clues'); }, true, 25);
+      this.artButton('secondary', '返回大厅', 624, 1264, 292, 82, () => { this.close(); this.refresh(); }, true, 25);
       return;
     }
 
@@ -515,21 +529,10 @@ export class LearningPanel {
     const titleLbl = this.text('全服排行榜', 470, 211, 510, 66, 41, '#FFE5A9');
     titleLbl.isBold = true;
 
-    // Twin vintage tabs: 今日排行 (Daily) vs 总胜排行 (Career)
+    // Twin beveled vintage tabs: 今日排行 (Daily) vs 总胜排行 (Career)
     const isDaily = this.leaderboardTab === 'daily';
-    const drawTab = (label: string, cx: number, active: boolean, onClick: () => void) => {
-      const btn = this.boxPanel(
-        cx, 312, 294, 66,
-        active ? '#C84218' : new Color(116, 70, 26, 22),
-        active ? '#F0BE62' : new Color(168, 126, 70, 155),
-        14, active ? 2.2 : 1.5,
-      );
-      const t = this.text(label, cx, 310, 260, 48, 29, active ? '#FFF6DF' : '#4E2E12');
-      t.isBold = true;
-      this.touch(btn, 'lb-tab-' + label, onClick);
-    };
-    drawTab('今日排行', 314, isDaily, () => { this.leaderboardTab = 'daily'; this.leaderboardPage = 0; this.refresh(); });
-    drawTab('总胜排行', 626, !isDaily, () => { this.leaderboardTab = 'career'; this.leaderboardPage = 0; this.refresh(); });
+    this.artButton(isDaily ? 'primary' : 'secondary', '今日排行', 314, 312, 302, 74, () => { this.leaderboardTab = 'daily'; this.leaderboardPage = 0; this.refresh(); }, true, 28);
+    this.artButton(!isDaily ? 'primary' : 'secondary', '总胜排行', 626, 312, 302, 74, () => { this.leaderboardTab = 'career'; this.leaderboardPage = 0; this.refresh(); }, true, 28);
 
     const lb = this.context.leaderboard;
     const sumY = 394, sumW = this.paperSafeWidth(sumY, 22), sumLeft = 470.5 - sumW / 2, sumRight = 470.5 + sumW / 2;
@@ -537,7 +540,7 @@ export class LearningPanel {
     const sumText = !lb
       ? (this.context.leaderboardLoading ? '正在同步最新榜单…' : '暂无榜单数据，点击刷新重试')
       : isDaily
-        ? `${lb.dateKey} 每日一题 · 共 ${lb.dailySolverCount} 人破译`
+        ? `${lb.dateKey} 每日一题 · 共 ${lb.dailySolverCount ?? lb.daily.length} 人破译`
         : '全服对战总胜榜 · 优先胜场与最快步数';
     const sumLbl = this.text(sumText, sumLeft + (sumW - 110) / 2, sumY - 1, sumW - 120, 40, 23, '#523214');
     sumLbl.isBold = true;
@@ -607,13 +610,9 @@ export class LearningPanel {
     }
 
     if (totalPages > 1) {
-      const prevBtn = this.boxPanel(274, 1134, 140, 48, new Color(116, 70, 26, 24), new Color(172, 126, 66, 165), 12, 1.4);
-      this.text('上一页', 274, 1133, 120, 36, 22, '#4A2B11');
-      this.touch(prevBtn, 'lb-prev', () => { this.leaderboardPage--; this.refresh(); }, this.leaderboardPage > 0);
+      this.artButton('secondary', '上一页', 272, 1134, 200, 68, () => { this.leaderboardPage--; this.refresh(); }, this.leaderboardPage > 0, 23);
       this.text(`${this.leaderboardPage + 1} / ${totalPages}`, 470, 1133, 120, 36, 23, '#5E3E1F');
-      const nextBtn = this.boxPanel(666, 1134, 140, 48, new Color(116, 70, 26, 24), new Color(172, 126, 66, 165), 12, 1.4);
-      this.text('下一页', 666, 1133, 120, 36, 22, '#4A2B11');
-      this.touch(nextBtn, 'lb-next', () => { this.leaderboardPage++; this.refresh(); }, this.leaderboardPage + 1 < totalPages);
+      this.artButton('secondary', '下一页', 668, 1134, 200, 68, () => { this.leaderboardPage++; this.refresh(); }, this.leaderboardPage + 1 < totalPages, 23);
     }
 
     // Sticky bottom "我的排名" 2.5D trapezoid strip
@@ -630,22 +629,15 @@ export class LearningPanel {
     } else {
       const unranked = this.text(isDaily ? '我的排名：今日尚未破译' : '我的排名：暂未上榜', 470, myY - 18, 600, 38, 26, '#5D3C1C');
       unranked.isBold = true;
-      this.text(isDaily ? '点击下方「去挑战今日一题」，破译即自动上榜' : '赢下一场对局或完成每日一题即可登榜', 470, myY + 20, 620, 34, 22, '#7B5A38');
+      this.text(isDaily ? '点击下方「挑战今日一题」，破译即自动上榜' : '赢下一场对局或完成每日一题即可登榜', 470, myY + 20, 620, 34, 22, '#7B5A38');
     }
 
-    // Bottom twin actions (cleanly clear of bottom gold filigree diamond)
+    // Bottom twin beveled vintage actions (cleanly clear of bottom gold filigree diamond)
     if (isDaily) {
-      const goDaily = this.boxPanel(322, 1396, 286, 84, '#C84218', '#F0BE62', 16, 2.2);
-      const goDailyLbl = this.text('挑战今日一题', 322, 1394, 250, 52, 28, '#FFF6DF'); goDailyLbl.isBold = true;
-      this.touch(goDaily, 'lb-go-daily', () => this.context.onOpenDaily?.());
-
-      const backHome = this.boxPanel(622, 1396, 264, 84, new Color(116, 70, 26, 26), new Color(172, 126, 66, 175), 16, 1.8);
-      const backHomeLbl = this.text('返回大厅', 622, 1394, 230, 52, 28, '#4A2B11'); backHomeLbl.isBold = true;
-      this.touch(backHome, 'lb-home', () => { this.close(); this.refresh(); });
+      this.artButton('primary', '挑战今日一题', 314, 1392, 304, 88, () => this.context.onOpenDaily?.(), true, 27);
+      this.artButton('secondary', '返回大厅', 626, 1392, 286, 88, () => { this.close(); this.refresh(); }, true, 27);
     } else {
-      const backHome = this.boxPanel(470, 1396, 420, 84, new Color(116, 70, 26, 26), new Color(172, 126, 66, 175), 16, 1.8);
-      const backHomeLbl = this.text('返回大厅', 470, 1394, 360, 52, 30, '#4A2B11'); backHomeLbl.isBold = true;
-      this.touch(backHome, 'lb-home', () => { this.close(); this.refresh(); });
+      this.artButton('secondary', '返回大厅', 470, 1392, 380, 88, () => { this.close(); this.refresh(); }, true, 29);
     }
   }
   private syncPicks(size: DigitCount, key: string, result: ReturnType<typeof deduce>) {
@@ -984,12 +976,9 @@ export class LearningPanel {
           : composed.digits.length === size
             ? '填入猜测'
             : `填入前 ${composed.digits.length} 位`;
-    const ctaW = 178;
-    const ctaX = compRight - 18 - ctaW / 2;
-    const ctaBtn = this.boxPanel(ctaX, composerY - 2, ctaW, 82, canFill ? '#C84218' : '#BAA58B', canFill ? '#F0BE62' : '#9B8770', 14, 2.2);
-    const ctaLbl = this.text(ctaText, ctaX, composerY - 4, ctaW - 14, 52, composed.completed ? 25 : 26, canFill ? '#FFF6DF' : '#6A5B4B');
-    ctaLbl.isBold = true;
-    this.touch(ctaBtn, 'quick-fill', () => {
+    const ctaW = 192;
+    const ctaX = compRight - 14 - ctaW / 2;
+    this.artButton('primary', ctaText, ctaX, composerY - 2, ctaW, 82, () => {
       if (!composed.digits) return;
       const msg = !composed.consistent
         ? '已填入当前组合（提示：与部分历史线索冲突，可点槽位微调）'
@@ -1011,7 +1000,7 @@ export class LearningPanel {
         this.message = msg;
         this.go('practice');
       }
-    }, canFill);
+    }, canFill, composed.completed ? 23 : 24);
 
     // Inline feedback / note underneath composer
     const noteText = this.clueHint

@@ -18,6 +18,8 @@ export interface ResultViewOptions {
   shouldAnimate: boolean;
   feedbackArt: FeedbackArt;
   cardPaper: SpriteFrame | null;
+  btnSecondary?: SpriteFrame;
+  btnEmerald?: SpriteFrame;
   friendDigitFont?: Font;
   inkColor: string;
   bindPressEffect: (node: Node) => void;
@@ -35,7 +37,7 @@ export interface ResultViewOptions {
 export function renderResultView(opts: ResultViewOptions) {
   const {
     root, effects, room: r, me, screenHeight, layoutTop, bottomSafe, busy, shouldAnimate,
-    feedbackArt, cardPaper, friendDigitFont, inkColor, bindPressEffect, addCardDigit,
+    feedbackArt, cardPaper, btnSecondary, btnEmerald, friendDigitFont, inkColor, bindPressEffect, addCardDigit,
     playerPortrait, playTap, onUnlockAudio, onRecords, onShare, onReturnToRoom, onRematch, onHome,
   } = opts;
 
@@ -187,21 +189,29 @@ export function renderResultView(opts: ResultViewOptions) {
     label(sub, cx, 972, 204, 32, 20, '#73583B', cardGroup);
   }
 
-  // Symmetrical twin pills tucked cleanly inside lower parchment: [本局记录] + [分享战绩]
-  const drawSubPill = (name: string, text: string, cx: number, fill: Color, stroke: Color, textColor: string, fn: () => void) => {
-    const pill = feedbackArt.group(cardGroup, name, -1076);
-    pill.setPosition(cx, -1076);
-    pill.getComponent(UITransform)!.setContentSize(284, 62);
-    const pg = pill.addComponent(Graphics);
-    pg.fillColor = fill; pg.roundRect(-142, -31, 284, 62, 31); pg.fill();
-    pg.strokeColor = stroke; pg.lineWidth = 2; pg.roundRect(-141, -30, 282, 60, 30); pg.stroke();
-    const lbl = label(text, 0, 2, 250, 44, 25, textColor, pill);
+  // Symmetrical twin scalloped brass-beveled buttons tucked cleanly inside lower parchment: [查看本局记录] + [晒战绩 · 邀好友]
+  const drawSubButton = (name: string, text: string, cx: number, frame: SpriteFrame | undefined, fill: Color, stroke: Color, textColor: string, fn: () => void) => {
+    const pill = feedbackArt.group(cardGroup, name, -1078);
+    pill.setPosition(cx, -1078);
+    pill.getComponent(UITransform)!.setContentSize(304, 78);
+    if (frame) {
+      const sp = pill.addComponent(Sprite);
+      sp.spriteFrame = frame;
+      sp.type = Sprite.Type.SLICED;
+      sp.sizeMode = Sprite.SizeMode.CUSTOM;
+      pill.getComponent(UITransform)!.setContentSize(304, 78);
+    } else {
+      const pg = pill.addComponent(Graphics);
+      pg.fillColor = fill; pg.roundRect(-142, -33, 284, 66, 33); pg.fill();
+      pg.strokeColor = stroke; pg.lineWidth = 2; pg.roundRect(-141, -32, 282, 64, 32); pg.stroke();
+    }
+    const lbl = label(text, 0, -4, 232, 48, 24, textColor, pill);
     lbl.isBold = true;
     touch(pill, fn);
     return pill;
   };
-  drawSubPill('ResultRecordsPill', '查看本局记录', -158, new Color(116, 70, 26, 26), new Color(172, 126, 66, 175), '#4A2B11', onRecords);
-  drawSubPill('ResultSharePill', win ? '晒战绩 · 邀好友' : '分享本局战绩', 158, new Color(45, 118, 72, 232), new Color('#DFB362'), '#FFF5DC', onShare);
+  drawSubButton('ResultRecordsPill', '查看本局记录', -164, btnSecondary, new Color(116, 70, 26, 26), new Color(172, 126, 66, 175), '#3B1E08', onRecords);
+  drawSubButton('ResultSharePill', win ? '晒战绩 · 邀好友' : '分享本局战绩', 164, btnEmerald, new Color(45, 118, 72, 232), new Color('#DFB362'), '#FFF6DF', onShare);
 
   // 3. Unified bottom action bar
   const actionGroup = feedbackArt.group(group, 'ResultActions', 0);
