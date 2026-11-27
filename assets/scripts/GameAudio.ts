@@ -41,19 +41,27 @@ export class GameAudio {
   private syncMusic() {
     if (this.disposed) return;
     if (!this.music.clip) this.music.clip = this.clips.get('music-' + this.scene) ?? null;
-    if (this.unlocked && !this.hidden && read('music','1') === '1' && this.music.clip) { if (!this.music.playing) this.music.play(); }
-    else this.music.pause();
+    try {
+      if (this.unlocked && !this.hidden && read('music','1') === '1' && this.music.clip) { if (!this.music.playing) this.music.play(); }
+      else this.music.pause();
+    } catch { /* iOS/WeChat AudioContext may require a fresh user gesture after backgrounding. */ }
   }
   play(name: string) {
     if (this.disposed || this.hidden || !this.unlocked || read('sound','1') !== '1') return;
     const clip = this.clips.get(name); if (!clip) return;
-    const source = this.voices[this.voice++ % this.voices.length]; source.stop(); source.clip = clip; source.play();
+    const source = this.voices[this.voice++ % this.voices.length];
+    try { source.stop(); source.clip = clip; source.play(); } catch { /* Ignore transient audio resume failures. */ }
   }
   toggle(key: 'music' | 'sound') {
     write(key, read(key,'1') === '1' ? '0' : '1');
     if (key === 'sound' && read(key) === '0') this.voices.forEach(v => v.stop());
     this.syncMusic();
   }
-  background(hidden: boolean) { this.hidden = hidden; if (hidden) this.voices.forEach(v => v.stop()); this.syncMusic(); }
+  background(hidden: boolean) {
+    this.hidden = hidden;
+    if (hidden) this.voices.forEach(v => v.stop());
+    else this.music.volume = Math.min(this.music.volume, 0.04);
+    this.syncMusic();
+  }
   dispose() { this.disposed = true; this.music.stop(); this.voices.forEach(v => v.stop()); }
 }

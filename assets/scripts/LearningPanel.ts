@@ -1,5 +1,7 @@
 import { BlockInputEvents, Color, Graphics, Label, Layers, Node, Sprite, SpriteFrame, UIOpacity, UITransform, resources, Texture2D } from 'cc';
 import { clueCaption, compareClues, composeQuickDraft, consistentCandidate, deduce, STANDARD_ROUNDS, STANDARD_TURN_MS, type Clue, type DigitCount } from './shared/deduction';
+import { formatMatchDuration } from './shared/battle-feedback';
+import type { DailyProgress } from './shared/daily-challenge';
 import { Practice, Tutorial } from './shared/learning';
 import type { RoomView } from './shared/protocol';
 import { modeLabel, type MatchMode } from './shared/game-mode';
@@ -11,13 +13,18 @@ interface Context {
   paper?: SpriteFrame; button?: SpriteFrame; card?: SpriteFrame;
   cardDigits?: Record<'ink' | 'crimson', Map<string, SpriteFrame>>;
   room?: RoomView | null; me: string; now: number;
+  dailyProgress?: DailyProgress;
+  dailyStreak?: number;
+  onDailySubmit?: (digits: string) => { error?: string; solved?: boolean; hits?: number };
+  onDailyShare?: () => void;
   redraw: () => void; copy: (digits: string, message?: string) => void; completed: () => void;
 }
-type Page = 'menu' | 'rules' | 'tutorial' | 'practice' | 'clues' | 'mode' | 'confirmation';
+type Page = 'menu' | 'rules' | 'tutorial' | 'practice' | 'daily' | 'clues' | 'mode' | 'confirmation';
 /** Local teaching and practice never send guesses to the multiplayer service. */
 export class LearningPanel {
   visible = false;
   private page: Page = 'menu';
+  private cluesSource: 'room' | 'practice' | 'daily' = 'room';
   private tutorial = new Tutorial();
   private practice?: Practice;
   private draft = '';
@@ -48,27 +55,35 @@ export class LearningPanel {
     this.visible = true; this.page = 'confirmation'; this.confirmation = { kind, digits, accept, cancel };
   }
 
-  open(page: 'menu' | 'rules' | 'clues' = 'menu') {
+  open(page: 'menu' | 'rules' | 'clues' | 'daily' = 'menu') {
     this.visible = true; this.page = page; this.message = '';
+    if (page === 'daily') { this.draft = ''; this.slot = -1; this.cluesSource = 'daily'; }
+    else if (page === 'clues') { this.cluesSource = 'room'; }
     this.tab = 'positions'; this.selected = -1; this.baseline = -1; this.recordPage = -1;
   }
   close() { this.visible = false; this.timer = undefined; }
   private refresh() { this.context.redraw(); }
   private go(page: Page) { if (page === 'clues') { this.recordPage = -1; this.selected = -1; } this.page = page; this.message = ''; this.refresh(); }
   private startPractice(size: DigitCount) {
-    this.practice = new Practice(size); this.draft = ''; this.slot = -1;
+    this.practice = new Practice(size); this.cluesSource = 'practice'; this.draft = ''; this.slot = -1;
     this.selected = -1; this.baseline = -1; this.recordPage = 0; this.go('practice');
   }
   private startTutorial() { this.tutorial = new Tutorial(); this.draft = ''; this.slot = -1; this.go('tutorial'); }
   input(key: string) {
-    if (!this.visible || !['tutorial', 'practice'].includes(this.page)) return;
-    if (this.page === 'tutorial' && this.tutorial.step >= 2 || this.page === 'practice' && this.practice?.solved) return;
-    const size = this.page === 'tutorial' ? 4 : this.practice!.size;
+    if (!this.visible || !['tutorial', 'practice', 'daily'].includes(this.page)) return;
+    if (this.page === 'tutorial' && this.tutorial.step >= 2) return;
+    if (this.page === 'practice' && this.practice?.solved) return;
+    if (this.page === 'daily' && this.context.dailyProgress?.solved) return;
+    const size = this.page === 'practice' ? this.practice!.size : 4;
     this.message = '';
     if (key === 'submit') {
       if (this.page === 'tutorial') {
         this.tutorial.submit(this.draft);
         this.message = this.tutorial.message;
+      } else if (this.page === 'daily') {
+        const res = this.context.onDailySubmit?.(this.draft);
+        this.message = res?.error ?? '';
+        if (!this.message) { this.draft = ''; this.slot = -1; }
       } else {
         this.message = this.practice!.submit(this.draft) ?? '';
         if (!this.message) { this.draft = ''; this.slot = -1; }
@@ -140,7 +155,8 @@ export class LearningPanel {
   }
   private back() {
     if (this.page === 'confirmation') this.confirmation?.cancel();
-    else if (this.page === 'mode') { this.close(); this.refresh(); }
+    else if (this.page === 'mode' || this.page === 'daily') { this.close(); this.refresh(); }
+    else if (this.page === 'clues' && this.cluesSource === 'daily' && !this.context.room) this.go('daily');
     else if (this.page === 'clues' && this.practice && !this.context.room) this.go('practice');
     else if (this.page !== 'menu' && !this.context.room) this.go('menu');
     else { this.close(); this.refresh(); }
@@ -172,6 +188,7 @@ export class LearningPanel {
     else if (this.page === 'rules') this.rules();
     else if (this.page === 'tutorial') this.teach();
     else if (this.page === 'practice') this.training();
+    else if (this.page === 'daily') this.daily();
     else this.clues();
     if (context.room && ['playing','reply','preparing'].includes(context.room.phase)) {
       this.art('banner',470,1365,710,76);
@@ -200,10 +217,15 @@ export class LearningPanel {
   private confirm() {
     const pending=this.confirmation!;
     this.heading(pending.kind==='lock'?'确认锁定底牌':'确认重复猜测',`本局 ${pending.digits.length} 位密码`);
+    this.trapezoidPanel(470.5, 760, 420, 22, new Color(148, 92, 28, 22), new Color(182, 134, 66, 165), 1.8);
     this.cards(pending.digits,470,690,140);
-    this.text(pending.kind==='lock'?'锁定后本局不可修改。':'这组数字已经猜过，仍会消耗一次机会。',470,980,700,130,38);
-    this.button('取消',285,1230,280,pending.cancel,true,130);
-    this.button('确认',650,1230,280,pending.accept,true,130);
+    this.text(pending.kind==='lock'?'锁定后本局不可修改。':'这组数字已经猜过，仍会消耗一次机会。',470,895,620,100,34,'#4A2A10');
+    const cancelBtn = this.boxPanel(292, 1180, 266, 108, new Color(116, 70, 26, 26), new Color(172, 126, 66, 175), 16, 2.0);
+    const cancelLbl = this.text('取消', 292, 1178, 240, 64, 34, '#4A2B11'); cancelLbl.isBold = true;
+    this.touch(cancelBtn, '取消', pending.cancel);
+    const okBtn = this.boxPanel(648, 1180, 266, 108, '#C84218', '#F0BE62', 16, 2.4);
+    const okLbl = this.text('确认', 648, 1178, 240, 64, 34, '#FFF6DF'); okLbl.isBold = true;
+    this.touch(okBtn, '确认', pending.accept);
   }
   update(now: number) {
     if (!this.timer?.isValid || !this.timerRoom) return;
@@ -213,29 +235,53 @@ export class LearningPanel {
   }
   private menu() {
     this.heading('','先学会推理，再与对手较量','hub');
-    this.art('panel',471,680,722,550);
-    this.text('只改一位，比较命中变化',470,465,650,70,38);
+    this.trapezoidPanel(470.5, 678, 494, 22, new Color(148, 92, 28, 22), new Color(184, 134, 64, 165), 1.8);
+    const exTitle = this.text('只改一位，比较命中变化',470,480,610,60,34,'#3D200A');
+    exTitle.isBold = true;
     for (const [i,digits] of ['1234','9234'].entries()) {
-      Array.from(digits).forEach((digit,j)=>this.text(digit,211+j*104,618+i*165,86,110,76,j===0?'#9F3415':'#321502'));
-      this.text(`命中 ${2-i} 位`,695,619+i*165,190,80,36,'#FFE5A9');
+      const y = 612 + i * 144;
+      this.trapezoidPanel(470.5, y, 124, 38, new Color(116, 70, 26, 18), new Color(172, 128, 70, 130), 1.4);
+      Array.from(digits).forEach((digit,j)=>{
+        const cx = 236 + j * 94;
+        const card = this.art('card', cx, y, 76, 104);
+        if (j === 0) card.getComponent(Sprite)!.color = new Color('#FFE18B');
+        const artFrame = this.context.cardDigits?.[j === 0 ? 'crimson' : 'ink'].get(digit);
+        if (artFrame) {
+          const dn = new Node('MenuDigit-' + digit);
+          dn.layer = Layers.Enum.UI_2D; card.addChild(dn); dn.setPosition(0, 0);
+          const sp = dn.addComponent(Sprite); sp.spriteFrame = artFrame; sp.sizeMode = Sprite.SizeMode.CUSTOM;
+          dn.getComponent(UITransform)!.setContentSize(56, 70);
+        } else {
+          this.text(digit, cx, y, 70, 96, 62, j === 0 ? '#9F3415' : '#321502');
+        }
+      });
+      this.boxPanel(670, y, 160, 56, i === 0 ? new Color('#B95A18') : new Color(44, 26, 15, 232), new Color('#DFB362'), 28, 1.8);
+      const hitLbl = this.text(`命中 ${2-i} 位`, 670, y - 2, 148, 46, 28, '#FFF2D2');
+      hitLbl.isBold = true;
     }
-    this.text('第一位改变，其他位相同',470,900,600,60,32);
-    this.art('banner',470,1150,520,95);
-    this.text('自由练习',470,1150,470,70,42,'#FFE5A9');
-    this.text('不限时 · 不计战绩',470,1220,650,40,27);
-    this.fixed('start','互动教学 · 学会第一步推理',472,1030,532,()=>this.startTutorial());
-    for(const [i,size] of ([2,3,4] as const).entries()) this.fixed('practice-'+size,`${size} 位 · ${['入门','进阶','标准'][i]}`,225+i*249,1360,241,()=>this.startPractice(size));
-    this.fixed('rules','查看正式对战规则',295,1513,311,()=>this.go('rules'));
-    this.fixed('home','先去大厅',648,1513,311,()=>{this.close();this.refresh();});
+    this.text('第一位改变，其他位相同 → 确认第一位是 1',470,874,620,52,26,'#5D3B18');
+    this.fixed('start','互动教学 · 学会第一步推理',472,1022,526,()=>this.startTutorial());
+    this.art('banner',470,1152,500,82);
+    this.text('自由练习',470,1150,440,62,38,'#FFE5A9');
+    this.text('不限时 · 不计战绩',470,1218,620,38,25,'#6F5030');
+    for(const [i,size] of ([2,3,4] as const).entries()) this.fixed('practice-'+size,`${size} 位 · ${['入门','进阶','标准'][i]}`,225+i*249,1352,235,()=>this.startPractice(size));
+    this.fixed('rules','查看正式对战规则',295,1508,308,()=>this.go('rules'));
+    this.fixed('home','先去大厅',648,1508,308,()=>{this.close();this.refresh();});
   }
   private rules() {
     this.heading('对战规则','公平较量 · 逐步推理');
     const room=this.context.room;
-    this.text(room?`① 各自设置 ${room.digitCount??4} 位密码`:'① 选择 2 / 3 / 4 位密码，默认 4 位',470,510,700,100,38);
-    this.text('每位 0～9，可以重复、可以 0 开头。',470,620,700,90,33);
-    this.text('② 轮流猜测对方的密码\n只反馈数字与位置同时正确的数量。\n0 命中不代表这些数字不在密码中。',470,815,700,220,36);
-    this.text('③ 同一大轮，双方机会相同\n先手猜中，后手仍可补猜一次。\n双方本轮都猜中则平局。',470,1020,700,200,36);
-    this.text(`每回合 ${(room?.turnMs??STANDARD_TURN_MS)/1000} 秒，最多 ${room?.roundLimit??STANDARD_ROUNDS} 大轮。\n连续两次自己的行动超时判负。\n低峰时可能匹配自动对手。`,470,1250,700,180,33);
+    const sections: [number, number, string, string][] = [
+      [538, 210, room ? `① 各自设置 ${room.digitCount ?? 4} 位密码` : '① 选择 2 / 3 / 4 位密码', '每位 0～9，可以重复、可以 0 开头。\n锁定后本局不可修改。'],
+      [796, 240, '② 轮流猜测对方密码', '只反馈数字与位置同时正确的数量。\n0 命中仅排除各数字在对应位置，\n不代表这些数字不在密码中。'],
+      [1086, 270, '③ 同轮公平补猜与计时', `先手猜中，后手仍可补猜一次；同轮均中平局。\n每回合 ${(room?.turnMs ?? STANDARD_TURN_MS) / 1000} 秒，最多 ${room?.roundLimit ?? STANDARD_ROUNDS} 大轮。\n连续两次己方超时判负，低峰可匹配自动对手。`],
+    ];
+    for (const [y, h, title, body] of sections) {
+      this.trapezoidPanel(470.5, y, h, 22, new Color(118, 72, 26, 20), new Color(176, 130, 68, 155), 1.6);
+      const t = this.text(title, 470, y - h / 2 + 44, 620, 48, 32, '#8F2910');
+      t.isBold = true;
+      this.text(body, 470, y + 20, 640, h - 78, 27, '#462810');
+    }
   }
   private cards(digits: string, x: number, y: number, width: number, editable=false, size=digits.length) {
     for(let i=0;i<size;i++) {
@@ -261,7 +307,7 @@ export class LearningPanel {
     }
   }
   private keyboard(size: DigitCount, practice=false) {
-    this.cards(this.draft,practice?395:470,practice?958:820,practice?105:110,true,size);
+    this.cards(this.draft,practice?374:470,practice?958:820,practice?98:110,true,size);
     for(const [i,key] of ['1','2','3','4','5','6','7','8','9','delete','0','submit'].entries()) {
       this.fixed('key-'+key,key==='delete'?'删除':key==='submit'?'提交':key,260+(i%3)*211,(practice?1154:1020)+Math.floor(i/3)*100,205,()=>this.input(key),key==='submit'?this.draft.length===size:key==='delete'?this.draft.length>0:true);
     }
@@ -304,35 +350,119 @@ export class LearningPanel {
     const practice=this.practice!;
     if(practice.solved) {
       this.heading('破解成功',`${practice.size} 位自由练习`);
-      this.cards(practice.history[practice.history.length-1].digits!,470,650,130);
-      this.text(`用了 ${practice.history.length} 次猜测\n哪一次猜测帮你排除了最多可能？`,470,940,700,170,38);
-      this.button('查看推理记录',470,1130,600,()=>{this.tab='history';this.go('clues');},true,100);
-      this.button('再练一次',470,1270,600,()=>this.startPractice(practice.size),true,100);
-      this.button(practice.size<4?`挑战 ${practice.size+1} 位`:'返回练习室',470,1410,600,()=>practice.size<4?this.startPractice((practice.size+1) as DigitCount):this.go('menu'),true,100);return;
+      this.trapezoidPanel(470.5, 760, 400, 22, new Color(148, 92, 28, 22), new Color(184, 134, 64, 165), 1.8);
+      this.cards(practice.history[practice.history.length-1].digits!,470,670,130);
+      this.text(`用了 ${practice.history.length} 次猜测\n哪一次猜测帮你排除了最多可能？`,470,875,620,130,34,'#4A2A10');
+      this.button('查看推理记录',470,1115,580,()=>{this.tab='history';this.cluesSource='practice';this.go('clues');},true,96);
+      this.button('再练一次',470,1245,580,()=>this.startPractice(practice.size),true,96);
+      this.button(practice.size<4?`挑战 ${practice.size+1} 位`:'返回练习室',470,1375,580,()=>practice.size<4?this.startPractice((practice.size+1) as DigitCount):this.go('menu'),true,96);return;
     }
-    this.art('banner',470,227,650,110);
-    this.text(`${practice.size} 位自由练习`,470,227,490,100,58,'#FFE5A9');
-    this.text('我的猜测 · 不限时 · 不计战绩',470,330,650,60,30);
+    this.art('banner',470,227,610,96);
+    this.text(`${practice.size} 位自由练习`,470,225,490,88,50,'#FFE5A9');
+    this.text('我的猜测 · 不限时 · 不计战绩',470,324,620,52,28,'#68492A');
     const recent=practice.history.slice(-2);
-    if(!recent.length) this.text('先猜一组数字，收集第一条线索\n每位 0～9 · 可重复 · 可 0 开头',470,530,660,160,33);
+    if(!recent.length) {
+      this.trapezoidPanel(470.5, 526, 200, 22, new Color(116, 70, 26, 16), new Color(172, 128, 70, 135), 1.5);
+      this.text('先猜一组数字，收集第一条线索\n每位 0～9 · 可重复 · 可 0 开头',470,526,600,140,31,'#5A3C1E');
+    }
     recent.forEach((h,i)=>{
-      const y=460+i*145;
-      this.text(`第 ${practice.history.length-recent.length+i+1} 次`,229,y,145,70,31);
-      this.cards(h.digits!,470,y,practice.size===4?65:86);
-      this.text(`${h.hits}/${practice.size}`,722,y,120,70,40);
+      const y=456+i*138;
+      const rowW=this.paperSafeWidth(y,22), rowLeft=470.5-rowW/2, rowRight=470.5+rowW/2;
+      const row=this.trapezoidPanel(470.5, y, 120, 22, new Color(116, 70, 26, 18), new Color(172, 128, 70, 140), 1.5);
       const index=practice.history.length-recent.length+i;
-      const reuse=this.node('PracticeReuse',470,y,680,130);
-      this.touch(reuse,'reuse-'+index,()=>{
+      const turnL = this.text(`第 ${index+1} 次`, rowLeft+66, y-1, 114, 60, 27, '#3D210B');
+      turnL.isBold = true;
+      this.cards(h.digits!,455,y,practice.size===4?60:78);
+      this.boxPanel(rowRight-68, y, 92, 46, new Color(44, 26, 15, 232), new Color('#D6A654'), 23, 1.5);
+      const hitL = this.text(`${h.hits}/${practice.size}`, rowRight-68, y-2, 82, 40, 27, '#FFF2D2');
+      hitL.isBold = true;
+      this.touch(row,'reuse-'+index,()=>{
         this.draft=h.digits!; this.slot=-1;
         this.message=`已复用第 ${index+1} 次猜测，点击一张卡牌修改。`; this.refresh();
       });
     });
-    if(recent.length)this.text('点击上方记录复用 · 改一位再比较',470,710,650,32,24);
+    if(recent.length)this.text('点击上方记录复用 · 改一位再比较',470,694,620,32,23,'#6E4F30');
     const caption=recent.length>1?compareClues(recent[0],recent[1]):recent.length?clueCaption(recent[0]):'点击卡牌可单独修改一位';
-    this.text(this.message||caption,470,760,670,90,30);
+    this.text(this.message||caption,470,750,630,82,28,'#492B11');
     this.keyboard(practice.size,true);
-    this.text(this.slot>=0?(this.slot<this.draft.length?`正在修改第 ${this.slot+1} 位 · 点击键盘替换`:`接着填写第 ${this.slot+1} 位 · 点击键盘输入`):`已输入 ${this.draft.length}/${practice.size} 位 · 点击卡牌可修改`,470,1050,680,40,26);
-    this.fixed('hint',`推理提示 · ${practice.history.length} 条记录`,747,970,215,()=>this.go('clues'));
+    this.text(this.slot>=0?(this.slot<this.draft.length?`正在修改第 ${this.slot+1} 位 · 点击键盘替换`:`接着填写第 ${this.slot+1} 位 · 点击键盘输入`):`已输入 ${this.draft.length}/${practice.size} 位 · 点击卡牌可修改`,470,1046,660,38,25,'#6B4D2E');
+    this.fixed('hint',`推理提示 · ${practice.history.length} 条记录`,716,962,188,()=>{this.cluesSource='practice';this.go('clues');});
+  }
+  private daily() {
+    const progress = this.context.dailyProgress;
+    if (!progress) { this.go('menu'); return; }
+    const streak = this.context.dailyStreak ?? 0;
+    this.art('banner', 470, 224, 590, 92);
+    const title = this.text('每日一题', 470, 222, 480, 76, 46, '#FFE5A9');
+    title.isBold = true;
+    const sub = streak > 0
+      ? `${progress.dateKey} · 4 位全服同题 · 已连卡 ${streak} 天`
+      : `${progress.dateKey} · 4 位全服同题 · 不限时`;
+    this.text(sub, 470, 316, 620, 44, 25, '#68492A');
+
+    if (progress.solved) {
+      const answer = progress.history[progress.history.length - 1]?.digits ?? '0000';
+      const dur = formatMatchDuration(progress.startedAt, progress.endedAt);
+      this.trapezoidPanel(470.5, 590, 290, 22, new Color(56, 124, 68, 22), new Color(76, 152, 92, 165), 1.8);
+      const okLbl = this.text('今日暗号已破译！', 470, 486, 560, 50, 34, '#1B6631');
+      okLbl.isBold = true;
+      this.cards(answer, 470, 610, 114);
+      this.text(`共 ${progress.history.length} 步${dur ? ` · 用时 ${dur}` : ''}${streak > 1 ? ` · 连续打卡 ${streak} 天` : ''}`, 470, 706, 610, 40, 26, '#3F230C');
+
+      // Visual spoiler-free inference trail
+      const shown = progress.history.slice(-6);
+      this.trapezoidPanel(470.5, 920, 270, 22, new Color(118, 72, 26, 18), new Color(176, 130, 68, 150), 1.5);
+      const trailHdr = this.text('本次破译轨迹（分享不泄露答案）', 470, 814, 580, 34, 22, '#6E4E2E');
+      trailHdr.isBold = true;
+      shown.forEach((h, idx) => {
+        const y = 856 + idx * 34;
+        const hits = Math.max(0, Math.min(4, h.hits ?? 0));
+        const stepNo = progress.history.length - shown.length + idx + 1;
+        this.text(`第 ${stepNo} 步   ${'■'.repeat(hits)}${'□'.repeat(4 - hits)}   ${hits}/4`, 470, y, 560, 32, 24, hits === 4 ? '#1E7037' : '#4B2E14');
+      });
+
+      const shareBtn = this.boxPanel(470, 1152, 560, 96, '#C84218', '#F0BE62', 18, 2.4);
+      const shareLbl = this.text('分享今日战绩', 470, 1150, 500, 64, 34, '#FFF6DF');
+      shareLbl.isBold = true;
+      this.touch(shareBtn, 'daily-share', () => this.context.onDailyShare?.());
+
+      const notesBtn = this.boxPanel(312, 1286, 262, 82, new Color(116, 70, 26, 24), new Color(172, 126, 66, 175), 14, 1.8);
+      const notesLbl = this.text('查看推理笔记', 312, 1284, 240, 54, 26, '#4A2B11'); notesLbl.isBold = true;
+      this.touch(notesBtn, 'daily-clues', () => { this.tab = 'history'; this.cluesSource = 'daily'; this.go('clues'); });
+
+      const homeBtn = this.boxPanel(628, 1286, 262, 82, new Color(116, 70, 26, 24), new Color(172, 126, 66, 175), 14, 1.8);
+      const homeLbl = this.text('返回大厅', 628, 1284, 240, 54, 26, '#4A2B11'); homeLbl.isBold = true;
+      this.touch(homeBtn, 'daily-home', () => { this.close(); this.refresh(); });
+      return;
+    }
+
+    const recent = progress.history.slice(-2);
+    if (!recent.length) {
+      this.trapezoidPanel(470.5, 526, 200, 22, new Color(116, 70, 26, 16), new Color(172, 128, 70, 135), 1.5);
+      this.text('每天一道固定 4 位暗号，全球同题\n输入第一组数字，开启今日推理', 470, 526, 600, 140, 30, '#5A3C1E');
+    }
+    recent.forEach((h, i) => {
+      const y = 456 + i * 138;
+      const rowW = this.paperSafeWidth(y, 22), rowLeft = 470.5 - rowW / 2, rowRight = 470.5 + rowW / 2;
+      const row = this.trapezoidPanel(470.5, y, 120, 22, new Color(116, 70, 26, 18), new Color(172, 128, 70, 140), 1.5);
+      const index = progress.history.length - recent.length + i;
+      const turnL = this.text(`第 ${index + 1} 次`, rowLeft + 66, y - 1, 114, 60, 27, '#3D210B');
+      turnL.isBold = true;
+      this.cards(h.digits!, 455, y, 60);
+      this.boxPanel(rowRight - 68, y, 92, 46, new Color(44, 26, 15, 232), new Color('#D6A654'), 23, 1.5);
+      const hitL = this.text(`${h.hits}/4`, rowRight - 68, y - 2, 82, 40, 27, '#FFF2D2');
+      hitL.isBold = true;
+      this.touch(row, 'daily-reuse-' + index, () => {
+        this.draft = h.digits!; this.slot = -1;
+        this.message = `已复用第 ${index + 1} 次猜测，点击一张卡牌修改。`; this.refresh();
+      });
+    });
+    if (recent.length) this.text('点击上方记录复用 · 改一位再比较', 470, 694, 620, 32, 23, '#6E4F30');
+    const caption = recent.length > 1 ? compareClues(recent[0], recent[1]) : recent.length ? clueCaption(recent[0]) : '点击卡牌可单独修改一位';
+    this.text(this.message || caption, 470, 750, 630, 82, 28, '#492B11');
+    this.keyboard(4, true);
+    this.text(this.slot >= 0 ? (this.slot < this.draft.length ? `正在修改第 ${this.slot + 1} 位 · 点击键盘替换` : `接着填写第 ${this.slot + 1} 位 · 点击键盘输入`) : `已输入 ${this.draft.length}/4 位 · 点击卡牌可修改`, 470, 1046, 660, 38, 25, '#6B4D2E');
+    this.fixed('hint', `推理提示 · ${progress.history.length} 条记录`, 716, 962, 188, () => { this.cluesSource = 'daily'; this.go('clues'); });
   }
   private syncPicks(size: DigitCount, key: string, result: ReturnType<typeof deduce>) {
     if (this.picksKey === key && this.picks.length === size) return;
@@ -405,8 +535,13 @@ export class LearningPanel {
   }
   private clues() {
     const { room, me } = this.context;
-    const history: Clue[] = room ? room.history.filter(h => h.playerId === me) : this.practice?.history ?? [];
-    const size: DigitCount = room ? room.digitCount ?? 4 : this.practice?.size ?? 4;
+    const isDaily = !room && this.cluesSource === 'daily';
+    const history: Clue[] = room
+      ? room.history.filter(h => h.playerId === me)
+      : isDaily
+        ? this.context.dailyProgress?.history ?? []
+        : this.practice?.history ?? [];
+    const size: DigitCount = room ? room.digitCount ?? 4 : isDaily ? 4 : this.practice?.size ?? 4;
 
     // 1. Clean header plaque + redesigned active/inactive twin ledger tabs (comfortably inside paper.png top width)
     this.art('banner', 470, 214, 576, 84);
@@ -575,7 +710,9 @@ export class LearningPanel {
     const compRight = 470.5 + composerW / 2;
     const composed = composeQuickDraft(history, size, this.picks);
     const canInput = !room
-      ? !!this.practice && !this.practice.solved
+      ? isDaily
+        ? !!this.context.dailyProgress && !this.context.dailyProgress.solved
+        : !!this.practice && !this.practice.solved
       : ['playing', 'reply'].includes(room.phase) && room.current === me && this.context.now >= room.startAt && this.context.now < room.deadline;
 
     this.trapezoidPanel(470.5, composerY, composerH, 22, new Color(148, 92, 28, 26), new Color(186, 134, 62, 185), 2.0);
@@ -678,6 +815,11 @@ export class LearningPanel {
             : `已填入前 ${composed.digits.length} 位，继续输入剩余位`;
       if (room) {
         this.context.copy(composed.digits, msg);
+      } else if (isDaily) {
+        this.draft = composed.digits;
+        this.slot = -1;
+        this.message = msg;
+        this.go('daily');
       } else if (this.practice) {
         this.draft = composed.digits;
         this.slot = -1;
@@ -757,15 +899,18 @@ export class LearningPanel {
     this.text(caption,470,item?.digits&&before?.digits&&baseline!==selected?1194:1104,610,124,29,'#4B2D12');
     this.fixed('baseline','设为对照',285,1500,360,()=>{this.baseline=selected;this.refresh();},!!item?.digits);
     const room=this.context.room;
-    const canCopy=!room?!this.practice?.solved:['playing','reply'].includes(room.phase)&&room.current===this.context.me&&this.context.now>=room.startAt&&this.context.now<room.deadline;
+    const isDaily = !room && this.cluesSource === 'daily';
+    const canCopy=!room
+      ? isDaily ? !!this.context.dailyProgress && !this.context.dailyProgress.solved : !this.practice?.solved
+      : ['playing','reply'].includes(room.phase)&&room.current===this.context.me&&this.context.now>=room.startAt&&this.context.now<room.deadline;
     const copyHint = !item?.digits ? (history.length?'超时记录没有数字，无法复制':'先提交一次猜测，再选择记录')
-      : !canCopy ? (!room?'本局已破解，可返回开始新练习':'轮到你行动时可复制记录')
+      : !canCopy ? (!room?(isDaily?'今日暗号已破译':'本局已破解，可返回开始新练习'):'轮到你行动时可复制记录')
       : `已选第 ${selected+1} 次 · 复制后可修改任意一位`;
     this.text(copyHint,470,1302,660,48,26,'#6D4E2E');
     this.fixed('copy','复制后修改',677,1500,383,()=>{
       if(!item?.digits)return;
       if(room)this.context.copy(item.digits);
-      else {this.draft=item.digits;this.slot=-1;this.go('practice');}
+      else {this.draft=item.digits;this.slot=-1;this.go(isDaily?'daily':'practice');}
     },!!item?.digits&&canCopy);
   }
 }

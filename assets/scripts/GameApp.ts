@@ -9,9 +9,14 @@ import { RoundRoll } from './shared/round-roll';
 import { FeedbackArt } from './FeedbackArt';
 import { SpriteEffects } from './SpriteEffects';
 import { countdownUrgency } from './shared/shader-feedback';
-import { feedbackEvent, cancellationArt, resultCaption, type FeedbackEvent } from './shared/feedback-state';
-import { hitBadgePalette, guessInsight, opponentProgress, formatMatchDuration } from './shared/battle-feedback';
+import { feedbackEvent, type FeedbackEvent } from './shared/feedback-state';
+import { hitBadgePalette, guessInsight, opponentProgress } from './shared/battle-feedback';
 import { toastSpec } from './shared/toast-style';
+import { buildBattleShareText, parseCareerStats, recordDailySolved, recordMatchOutcome, serializeCareerStats, type CareerStats } from './shared/career-stats';
+import { buildDailyShareText, dailyDateKey, loadDailyProgress, submitDailyGuess, type DailyProgress } from './shared/daily-challenge';
+import { dismissNoticeNode, renderNoticeToast, renderReconnectBanner } from './views/OverlayHud';
+import { renderResultView } from './views/ResultView';
+import { renderProfileSheet } from './views/ProfileView';
 import { burstParticles, shakeNode, floatDeltaBadge, flipRevealCard } from './BattleEffects';
 import { FriendReturnLayer } from './FriendReturnLayer';
 import { shouldReturnToJoin } from './shared/friend-return';
@@ -109,6 +114,8 @@ export class GameApp extends Component {
   private playSlotCursors: UIOpacity[] = [];
   private playActionButton?: Node;
   private playGuessPanel?: SpriteEffects;
+  private prepCards: { card: Node; x: number; baseY: number; digitH: number; digitNode?: Node; char: string }[] = [];
+  private prepLockButton?: Node;
   private opponentPulseRing?: UIOpacity;
   private opponentBacksNode?: Node;
   private replyAura?: UIOpacity;
@@ -273,7 +280,7 @@ export class GameApp extends Component {
     this.wxFlow.start();
     this.resizeLayout(); this.connect(); this.schedule(this.updateTimer, 0.2);
   }
-  onDestroy() { this.finishMatchingMotion(); clearTimeout(this.pendingFinishTimer); this.opponentCard?.destroy(); for (const map of [this.cardDigitFrames.ink, this.cardDigitFrames.crimson]) { for (const f of map.values()) f.destroy(); map.clear(); } clearTimeout(this.loginDeadline); this.releaseStartup(); this.wxFlow?.destroy(); if (this.feedbackArt) this.feedbackArt.disposed = true; this.friendReturn?.destroy(); this.modals?.destroy(); this.stopJoinMotion(); this.stopPlayMotion(); this.scenery?.destroy(); view.off('canvas-resize', this.resizeLayout, this); this.audio.dispose(); if (this.profilePanel) Tween.stopAllByTarget(this.profilePanel); this.clearEffects(); this.net.stop(); input.off(Input.EventType.KEY_DOWN, this.onKey, this); game.off(Game.EVENT_SHOW, this.onShow, this); game.off(Game.EVENT_HIDE, this.onHide, this); }
+  onDestroy() { this.finishMatchingMotion(); clearTimeout(this.pendingFinishTimer); this.opponentCard?.destroy(); for (const map of [this.cardDigitFrames.ink, this.cardDigitFrames.crimson]) { for (const f of map.values()) f.destroy(); map.clear(); } clearTimeout(this.loginDeadline); this.releaseStartup(); this.wxFlow?.destroy(); if (this.feedbackArt) this.feedbackArt.disposed = true; this.friendReturn?.destroy(); this.modals?.destroy(); this.stopJoinMotion(); this.stopPlayMotion(); this.stopPrepMotion(); this.scenery?.destroy(); view.off('canvas-resize', this.resizeLayout, this); this.audio.dispose(); if (this.profilePanel) Tween.stopAllByTarget(this.profilePanel); this.clearEffects(); this.net.stop(); input.off(Input.EventType.KEY_DOWN, this.onKey, this); game.off(Game.EVENT_SHOW, this.onShow, this); game.off(Game.EVENT_HIDE, this.onHide, this); }
   private onHide() { this.wxFlow?.clearButton();this.audio.background(true); }
   private onShow() {
     this.audio.background(false);
@@ -344,6 +351,7 @@ export class GameApp extends Component {
     if (r && r.turn !== this.lastTurn) { this.draft = ''; this.selected = -1; this.lastTurn = r.turn; this.openingRendered = false; }
     if (r && this.lastPhase === 'preparing' && r.phase === 'playing') { this.draft = ''; this.selected = -1; }
     if (r && ['finished','cancelled'].includes(r.phase) && oldPhase !== r.phase) this.learning.close();
+    if (r && r.phase === 'finished') this.recordFinishedMatch(r, s.me.id);
     const shouldCrackFinale = event?.kind === 'end' && !!r && r.phase === 'finished'
       && (oldPhase === 'playing' || oldPhase === 'reply')
       && ['cracked', 'same_round', 'reply_missed'].includes(r.result?.reason ?? '')
@@ -387,18 +395,46 @@ export class GameApp extends Component {
   }
   private toast(text: string, durationMs?: number) { this.setNotice(text, durationMs); this.render(); }
   private dismissNotice(animated = false) {
-    this.notice='';this.noticeUntil=0;
+    this.notice = ''; this.noticeUntil = 0;
     const node = this.noticeNode;
-    this.noticeNode=undefined;this.toastLabel=undefined;
-    if (!node?.isValid) return;
-    if (animated && read('motion', '1') === '1') {
-      const op = node.getComponent(UIOpacity) ?? node.addComponent(UIOpacity);
-      Tween.stopAllByTarget(node); Tween.stopAllByTarget(op);
-      tween(node).by(0.18, { position: new Vec3(0, 12, 0) }, { easing: 'quadIn' }).start();
-      tween(op).to(0.18, { opacity: 0 }).call(() => { if (node.isValid) { node.removeFromParent(); node.destroy(); } }).start();
-      return;
+    this.noticeNode = undefined; this.toastLabel = undefined;
+    dismissNoticeNode(node, animated, read('motion', '1') === '1');
+  }
+  private statsStorageKey(): string { return 'career-stats-v1-' + (this.net.state?.me.id ?? 'local'); }
+  private dailyStorageKey(): string { return 'daily-v1-' + (this.net.state?.me.id ?? 'local'); }
+  private loadCareerStats(): CareerStats { return parseCareerStats(read(this.statsStorageKey())); }
+  private saveCareerStats(stats: CareerStats) { write(this.statsStorageKey(), serializeCareerStats(stats)); }
+  private recordFinishedMatch(room: RoomView, meId: string) {
+    const res = recordMatchOutcome(this.loadCareerStats(), room, meId);
+    if (res.changed) this.saveCareerStats(res.stats);
+  }
+  private loadDaily(): DailyProgress {
+    const now = this.net.state ? this.net.now() : Date.now();
+    return loadDailyProgress(read(this.dailyStorageKey()), dailyDateKey(now), now);
+  }
+  private handleDailySubmit(digits: string): { error?: string; solved?: boolean; hits?: number } {
+    const now = this.net.state ? this.net.now() : Date.now();
+    const current = this.loadDaily();
+    const res = submitDailyGuess(current, digits, now);
+    if (res.error) { this.audio.play('error'); return { error: res.error }; }
+    write(this.dailyStorageKey(), JSON.stringify(res.progress));
+    if (res.progress.solved) {
+      const updated = recordDailySolved(this.loadCareerStats(), res.progress.dateKey);
+      if (updated.changed) this.saveCareerStats(updated.stats);
+      this.audio.play('win'); vibrate('heavy');
+    } else {
+      this.audio.play('hit' + Math.min(4, res.hits ?? 0)); vibrate('light');
     }
-    node.removeFromParent(); node.destroy();
+    return { solved: res.progress.solved, hits: res.hits };
+  }
+  private async shareRecap(text: string, wxTitle: string) {
+    if (this.wxFlow.shareCustom(wxTitle)) return;
+    try {
+      await copy(text);
+      this.toast('战绩已复制，可直接粘贴分享给好友');
+    } catch {
+      this.toast('当前环境无法直接分享，可截图发送给好友');
+    }
   }
   private async act(action: string, payload: Record<string, unknown> = {}) {
     if (this.busy) return; this.busy = true;
@@ -720,6 +756,7 @@ export class GameApp extends Component {
     this.reconnectBar=undefined; this.reconnectDot=undefined; this.reconnectText=undefined;
     this.stopJoinMotion(); this.joinDigits = []; this.joinGlows = []; this.joinButton = undefined; this.joinPaper = undefined;
     this.stopPlayMotion(); this.playDigits = []; this.playSlotGlows = []; this.playSlotCursors = []; this.playActionButton = undefined; this.playGuessPanel = undefined;
+    this.stopPrepMotion(); this.prepCards = []; this.prepLockButton = undefined;
     this.opponentPulseRing = undefined; this.opponentBacksNode = undefined; this.replyAura = undefined;
     this.lobbyReels = []; this.roundOld = undefined; this.roundNew = undefined;
     this.profilePaper = undefined; this.profilePanel = undefined; this.profileBack = undefined; this.transitionLobby = undefined;
@@ -759,91 +796,66 @@ export class GameApp extends Component {
     }
     // Learning pages share the scene, while their underlying page controls stay hidden.
     if (!starting && this.learning.visible) for (const child of this.root.children) child.active = false;
-    if (!starting && this.learning.visible) this.learning.render({
-      parent: this.root, height: this.screenHeight, top: this.layoutTop, bottom: bottomSafeInset(),
-      paper: this.profileArt.get('paper'), button: this.modalArt.get('tab-off'), card: this.battleArt.get('card-paper'),
-      cardDigits: this.cardDigitFrames.ink.size === 11 ? this.cardDigitFrames : undefined,
-      room: s?.room, me: s?.me.id ?? '', now: this.net.now(), redraw: () => this.render(),
-      copy: (digits, message) => this.copyGuess(digits, message), completed: () => write('learning-complete-v1-'+s!.me.id,'1'),
-    });
+    if (!starting && this.learning.visible) {
+      const daily = this.loadDaily();
+      const stats = this.loadCareerStats();
+      this.learning.render({
+        parent: this.root, height: this.screenHeight, top: this.layoutTop, bottom: bottomSafeInset(),
+        paper: this.profileArt.get('paper'), button: this.modalArt.get('tab-off'), card: this.battleArt.get('card-paper'),
+        cardDigits: this.cardDigitFrames.ink.size === 11 ? this.cardDigitFrames : undefined,
+        room: s?.room, me: s?.me.id ?? '', now: this.net.now(),
+        dailyProgress: daily,
+        dailyStreak: stats.dailyStreak,
+        onDailySubmit: digits => this.handleDailySubmit(digits),
+        onDailyShare: () => {
+          const latest = this.loadDaily();
+          const st = this.loadCareerStats();
+          void this.shareRecap(
+            buildDailyShareText(latest, st.dailyStreak),
+            `我用 ${latest.history.length} 步破译了今日《猜数字暗号》每日一题，来试试！`,
+          );
+        },
+        redraw: () => this.render(),
+        copy: (digits, message) => this.copyGuess(digits, message), completed: () => write('learning-complete-v1-'+s!.me.id,'1'),
+      });
+    }
     const modalKey = starting ? undefined : this.modalKey();
     this.modals.begin(this.modalArtReady ? modalKey : undefined, read('motion', '1') === '1');
     if (modalKey) this.artModal(modalKey);
     if (!starting && s && !this.net.online) {
       this.wasOfflineNotice = true;
-      const bar = this.n('ReconnectBanner', 375, 667, 424, 52, this.noticeLayer);
-      bar.setPosition(0, -this.screenHeight / 2 + bottomSafeInset() + 40);
-      const g = bar.addComponent(Graphics);
-      g.fillColor = new Color(28, 17, 10, 228);
-      g.roundRect(-212, -26, 424, 52, 26); g.fill();
-      g.strokeColor = new Color(216, 170, 88, 215); g.lineWidth = 1.8;
-      g.roundRect(-211, -25, 422, 50, 25); g.stroke();
-      const dot = this.n('ReconnectDot', 375, 667, 16, 16, bar);
-      dot.setPosition(-178, 0);
-      const dg = dot.addComponent(Graphics);
-      dg.fillColor = new Color('#F5B841'); dg.circle(0, 0, 6); dg.fill();
-      this.reconnectDot = dot.addComponent(UIOpacity);
-      const txt = this.text(this.reconnecting ? '正在重新连接…' : '网络波动，自动重连中…', 375, 667, 22, '#F7E7C8', 278, 42, bar);
-      txt.node.setPosition(-16, 1); txt.enableWrapText = false;
-      this.reconnectText = txt;
-      const retryBtn = this.n('ReconnectTap', 375, 667, 74, 34, bar);
-      retryBtn.setPosition(160, 0);
-      const rg = retryBtn.addComponent(Graphics);
-      rg.fillColor = new Color(216, 170, 88, 45); rg.roundRect(-36, -16, 72, 32, 16); rg.fill();
-      rg.strokeColor = new Color(216, 170, 88, 165); rg.lineWidth = 1.2; rg.roundRect(-35, -15, 70, 30, 15); rg.stroke();
-      const rl = this.text('重试', 375, 667, 20, '#FFD978', 68, 32, retryBtn);
-      rl.node.setPosition(0, 1); rl.isBold = true;
-      bar.on(Node.EventType.TOUCH_END, () => { this.audio.unlock(); this.audio.play('tap'); void this.retryConnection(); });
-      this.reconnectBar = bar;
+      const refs = renderReconnectBanner({
+        parent: this.noticeLayer,
+        screenHeight: this.screenHeight,
+        bottomSafe: bottomSafeInset(),
+        reconnecting: this.reconnecting,
+        createNode: (name, x, y, w, h, p) => this.n(name, x, y, w, h, p),
+        createText: (val, x, y, sz, col, w, h, p) => this.text(val, x, y, sz, col, w, h, p),
+        onRetry: () => { this.audio.unlock(); this.audio.play('tap'); void this.retryConnection(); },
+      });
+      this.reconnectBar = refs.bar;
+      this.reconnectDot = refs.dot;
+      this.reconnectText = refs.text;
     } else if (this.wasOfflineNotice && this.net.online) {
       this.wasOfflineNotice = false;
       this.setNotice('连接已恢复', 2200);
     }
     if (this.notice && Date.now() < this.noticeUntil) {
-      const spec = toastSpec(this.notice);
-      const radius = Math.round(spec.height / 2);
-      const restY = this.screenHeight / 2 - this.layoutTop - 16 - spec.height / 2;
-      const capsule = this.n('NoticeToast', 375, 667, spec.width, spec.height, this.noticeLayer);
-      capsule.setPosition(0, restY);
-      const g = capsule.addComponent(Graphics);
-      // Soft grounded drop shadow
-      g.fillColor = new Color(6, 14, 14, 82);
-      g.roundRect(-spec.width / 2, -spec.height / 2 - 4, spec.width, spec.height, radius); g.fill();
-      // Deep translucent vintage espresso-walnut body + subtle semantic bronze-gold rim
-      g.fillColor = new Color(28, 17, 11, 232);
-      g.roundRect(-spec.width / 2, -spec.height / 2, spec.width, spec.height, radius); g.fill();
-      g.strokeColor = new Color(spec.borderColor); g.lineWidth = 1.8;
-      g.roundRect(-spec.width / 2 + 1, -spec.height / 2 + 1, spec.width - 2, spec.height - 2, radius - 1); g.stroke();
-      // Left semantic circular emblem
-      const badgeX = -spec.width / 2 + 28;
-      g.fillColor = new Color(spec.badgeColor);
-      g.circle(badgeX, 0, 13.5); g.fill();
-      g.strokeColor = new Color(255, 245, 220, 145); g.lineWidth = 1.2;
-      g.circle(badgeX, 0, 13.5); g.stroke();
-      const sym = this.text(spec.badgeSymbol, 375, 667, spec.badgeSymbol === '✓' ? 17 : 18, '#FFF8E8', 28, 28, capsule);
-      sym.node.setPosition(badgeX, 1); sym.isBold = true; sym.enableWrapText = false;
-      // Crisp centered toast text
-      const multiLine = spec.height > 60;
-      const textW = spec.width - 76;
-      const lbl = this.text(this.notice, 375, 667, 23, spec.textColor, textW, spec.height - 10, capsule);
-      lbl.node.setPosition(17, 1);
-      lbl.lineHeight = 28;
-      lbl.enableWrapText = multiLine;
-      lbl.overflow = multiLine ? Label.Overflow.CLAMP : Label.Overflow.SHRINK;
-      this.toastLabel = lbl;
-      this.noticeNode = capsule;
-      capsule.on(Node.EventType.TOUCH_END, () => this.dismissNotice(true));
-      // Play gentle slide-in animation only once per newly raised notice (never replay on unrelated redraws).
-      if (this.noticeShownId !== this.noticeId) {
-        this.noticeShownId = this.noticeId;
-        if (read('motion', '1') === '1') {
-          const op = capsule.addComponent(UIOpacity);
-          op.opacity = 0;
-          capsule.setPosition(0, restY + 14);
-          tween(op).to(0.18, { opacity: 255 }).start();
-          tween(capsule).to(0.2, { position: new Vec3(0, restY, 0) }, { easing: 'quadOut' }).start();
-        }
-      }
+      const animateIn = this.noticeShownId !== this.noticeId;
+      if (animateIn) this.noticeShownId = this.noticeId;
+      const refs = renderNoticeToast({
+        parent: this.noticeLayer,
+        text: this.notice,
+        screenHeight: this.screenHeight,
+        layoutTop: this.layoutTop,
+        animateIn,
+        motion: read('motion', '1') === '1',
+        createNode: (name, x, y, w, h, p) => this.n(name, x, y, w, h, p),
+        createText: (val, x, y, sz, col, w, h, p) => this.text(val, x, y, sz, col, w, h, p),
+        onDismiss: () => this.dismissNotice(true),
+      });
+      this.noticeNode = refs.node;
+      this.toastLabel = refs.label;
     }
     this.updateTimer();
   }
@@ -926,8 +938,31 @@ export class GameApp extends Component {
       }
       this.applyLobbyShuffle();
     } else this.cards('0123', 695, 88);
-    this.lobbyButton('match-full', '在线匹配  ›', 375, 920, 610 * fit, 175 * fit, () => this.selectMode('public'), !this.busy);
-    this.lobbyButton('friend-full', '好友对战  ›', 375, 1100, 610 * fit, 170 * fit, () => { this.page = 'join'; this.code = ''; this.render(); });
+    this.lobbyButton('match-full', '在线匹配  ›', 375, 898, 610 * fit, 168 * fit, () => this.selectMode('public'), !this.busy);
+    this.lobbyButton('friend-full', '好友对战  ›', 375, 1054, 610 * fit, 162 * fit, () => { this.page = 'join'; this.code = ''; this.render(); });
+    // Daily Cipher entry pill tucked cleanly between Friend Match and the bottom wooden rim.
+    const daily = this.loadDaily();
+    const dailyStats = this.loadCareerStats();
+    const dailyW = Math.round(476 * fit), dailyH = Math.round(58 * fit);
+    const dailyBtn = this.n('LobbyDailyChallenge', 375, 1164, dailyW, dailyH);
+    const dg = dailyBtn.addComponent(Graphics);
+    const dr = Math.round(dailyH / 2);
+    dg.fillColor = new Color(25, 19, 13, 218); dg.roundRect(-dailyW / 2, -dailyH / 2, dailyW, dailyH, dr); dg.fill();
+    dg.strokeColor = new Color(daily.solved ? '#5EB87A' : '#D9AA58'); dg.lineWidth = 2;
+    dg.roundRect(-dailyW / 2 + 1, -dailyH / 2 + 1, dailyW - 2, dailyH - 2, dr - 1); dg.stroke();
+    const dotX = -dailyW / 2 + 28 * fit;
+    dg.fillColor = new Color(daily.solved ? '#2D9B60' : '#D96A32');
+    dg.circle(dotX, 0, 8 * fit); dg.fill();
+    const dailyCopy = daily.solved
+      ? `每日一题 · 今日 ${daily.history.length} 步已破${dailyStats.dailyStreak > 1 ? ` · 连卡 ${dailyStats.dailyStreak} 天` : ''} ›`
+      : daily.history.length > 0
+        ? `每日一题 · 进行中（已猜 ${daily.history.length} 步） ›`
+        : '每日一题 · 今日 4 位暗号待挑战 ›';
+    const dLbl = this.text(dailyCopy, 375, 667, Math.round(23 * fit), daily.solved ? '#CBEFD5' : '#FFE7B5', dailyW - 64 * fit, dailyH - 8, dailyBtn);
+    dLbl.node.setPosition(12 * fit, 1); dLbl.isBold = true; dLbl.enableWrapText = false;
+    dailyBtn.on(Node.EventType.TOUCH_START, () => { if (read('motion', '1') === '1') dailyBtn.setScale(0.97, 0.97, 1); });
+    dailyBtn.on(Node.EventType.TOUCH_CANCEL, () => dailyBtn.setScale(1, 1, 1));
+    dailyBtn.on(Node.EventType.TOUCH_END, () => { dailyBtn.setScale(1, 1, 1); this.audio.unlock(); this.audio.play('tap'); this.openLearning('daily'); });
     this.lobbyButton('settings-full', '设置', 115, 1250, 76 * fit, 76 * fit, () => { this.overlay = 'settings'; this.render(); });
     this.lobbyButton('help-full', '怎么玩', 375, 1250, 285 * fit, 121 * fit, () => this.openLearning('menu'));
     const muted = read('music', '1') === '0' && read('sound', '1') === '0';
@@ -1191,6 +1226,61 @@ export class GameApp extends Component {
       }
     }
   }
+  private stopPrepMotion() {
+    for (const item of this.prepCards) {
+      if (item.card?.isValid) Tween.stopAllByTarget(item.card);
+      if (item.digitNode?.isValid) Tween.stopAllByTarget(item.digitNode);
+    }
+    if (this.prepLockButton?.isValid) Tween.stopAllByTarget(this.prepLockButton);
+  }
+  private syncPrepInput(previous: string, next: string) {
+    const count = this.digitCount();
+    const r = this.net.state?.room;
+    const editable = !!r && !this.busy && this.net.online && r.phase === 'preparing' && !r.ownSecret;
+    const motion = read('motion', '1') === '1';
+    const selected = editable ? (this.selected >= 0 ? this.selected : next.length < count ? next.length : -1) : -1;
+
+    this.prepCards.forEach((slot, i) => {
+      if (!slot.card?.isValid) return;
+      const lifted = i === selected;
+      const targetY = -(slot.baseY - (lifted ? 24 : 0));
+      const targetPos = new Vec3(slot.x - 470.5, targetY, 0);
+      Tween.stopAllByTarget(slot.card);
+      if (motion) {
+        tween(slot.card).to(0.14, { position: targetPos }, { easing: 'quadOut' }).start();
+      } else {
+        slot.card.setPosition(targetPos);
+      }
+      const ch = next[i] ?? '';
+      if (slot.char !== ch) {
+        slot.char = ch;
+        if (slot.digitNode?.isValid) { slot.digitNode.removeFromParent(); slot.digitNode.destroy(); }
+        slot.digitNode = undefined;
+        if (ch) {
+          const dn = this.addCardDigit(slot.card, ch, 0, 0, slot.digitH, 'ink');
+          slot.digitNode = dn;
+          if (motion) {
+            dn.setScale(0.7, 0.7, 1);
+            tween(dn).to(0.11, { scale: new Vec3(1.12, 1.12, 1) }, { easing: 'quadOut' }).to(0.08, { scale: Vec3.ONE }).start();
+          }
+        }
+      }
+    });
+
+    const lock = this.prepLockButton;
+    if (lock?.isValid) {
+      const enabled = editable && next.length === count;
+      const sp = lock.getComponent(Sprite);
+      if (sp) sp.grayscale = !enabled;
+      const op = lock.getComponent(UIOpacity) ?? lock.addComponent(UIOpacity);
+      op.opacity = enabled ? 255 : 145;
+      Tween.stopAllByTarget(lock); lock.setScale(1, 1, 1);
+      if (motion && enabled && previous.length < count) {
+        tween(lock).to(0.09, { scale: new Vec3(1.04, 1.04, 1) }, { easing: 'quadOut' }).to(0.12, { scale: Vec3.ONE }).start();
+        if (sp) SpriteEffects.attach(sp).sweep();
+      }
+    }
+  }
   private keypad(top: number, context: 'join' | 'secret' | 'guess', enabled = true) {
     const labels = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '删除', '0', context === 'secret' ? '随机' : '清空'];
     labels.forEach((label, i) => { if (context === 'guess' && i === 11) return; this.button(label, 165 + i % 3 * 210, top + Math.floor(i / 3) * 80, 194, 66, () => this.digit(label, context), false, enabled && !this.busy); });
@@ -1221,7 +1311,12 @@ export class GameApp extends Component {
       if (this.playDigits.length === count && this.playDigits.every(label => label.isValid)) {
         this.syncPlayInput(previous, v); return;
       }
-    } else this.draft = v;
+    } else {
+      const previous = this.draft; this.draft = v;
+      if (this.prepCards.length === count && this.prepCards.every(c => c.card.isValid)) {
+        this.syncPrepInput(previous, v); return;
+      }
+    }
     this.render();
   }
   private onKey(e: EventKeyboard) {
@@ -1452,7 +1547,22 @@ export class GameApp extends Component {
     if (prep) {
       art('status',[355,299,586,344]); label(opponent.ready ? '对手已准备' : '对手正在设置',470,316,28,215,C.cream);
       if(count===4)art('heading');
-      else {art('mode-heading',[179,362,762,463],this.modalArt.get('tab-off')??this.profileArt.get('input'));label(`设置你的 ${count} 位密码`,470,411,40,530,C.ink,70);}
+      else {
+        const plaque = place(this.n('PrepModeHeading', 375, 667, 586, 98, group), 470.5, 412);
+        const pg = plaque.addComponent(Graphics);
+        const pw = 586, ph = 98, c = 12;
+        const drawPlaque = (shrink: number) => {
+          const hw = pw / 2 - shrink, hh = ph / 2 - shrink;
+          pg.moveTo(-hw + c, hh); pg.lineTo(hw - c, hh); pg.lineTo(hw, hh - c);
+          pg.lineTo(hw, -hh + c); pg.lineTo(hw - c, -hh); pg.lineTo(-hw + c, -hh);
+          pg.lineTo(-hw, -hh + c); pg.lineTo(-hw, hh - c); pg.close();
+        };
+        pg.fillColor = new Color('#F6E8CC'); drawPlaque(0); pg.fill();
+        pg.strokeColor = new Color('#6D431E'); pg.lineWidth = 4; drawPlaque(2); pg.stroke();
+        pg.strokeColor = new Color('#D7A44E'); pg.lineWidth = 1.8; drawPlaque(8); pg.stroke();
+        const hl = label(`设置你的 ${count} 位密码`, 470.5, 411, 40, 520, C.ink, 64);
+        hl.isBold = true;
+      }
       this.timerEffects = SpriteEffects.attach(art('timer').getComponent(Sprite)!);
       this.timerLabel=label('',488,492,38,84,'#FFD978',52);
       this.timerLabel.horizontalAlign = Label.HorizontalAlign.RIGHT;
@@ -1466,16 +1576,33 @@ export class GameApp extends Component {
       const selected=editable ? (this.selected>=0 ? this.selected : value.length<count ? value.length : -1) : -1;
       const order=Array.from({length:count},(_,i)=>i).sort((a,b)=>Number(a===selected)-Number(b===selected));
       const paper=this.battleArt.get('card-paper')!,ratio=paper.originalSize.height/paper.originalSize.width;
+      const digitH = Math.round(192 * ratio * 0.65);
+      this.prepCards = Array.from({ length: count });
       for(const i of order) {
-        const active=i===selected,x=471.5+(i-(count-1)/2)*149,y=752+(i===0||i===count-1?25:0)-(active?24:0);
+        const active=i===selected,x=471.5+(i-(count-1)/2)*149,baseY=752+(i===0||i===count-1?25:0),y=baseY-(active?24:0);
         const cardGroup=this.n('SecretCard-'+i,375,667,202,202*ratio,group);cardGroup.setPosition(0,0);
         const card=art('card-paper',[x-96,y-96*ratio,x+96,y+96*ratio],paper,cardGroup);card.angle=count===4?[14,5,-5,-14][i]:((count-1)/2-i)*10;
         const ch = value[i] ?? '';
-        if (ch) this.addCardDigit(card, ch, 0, 0, Math.round(192 * ratio * 0.65), 'ink');
-        if(editable){touch(card,()=>{this.selected=i;this.render();});}
+        const digitNode = ch ? this.addCardDigit(card, ch, 0, 0, digitH, 'ink') : undefined;
+        this.prepCards[i] = { card, x, baseY, digitH, digitNode, char: ch };
+        if(editable){
+          touch(card,()=>{
+            this.selected = this.selected === i ? -1 : i;
+            this.syncPrepInput(this.draft, this.draft);
+          });
+        }
       }
       this.battleHands(group, count, true, scale, selected);
-      const lock=art('lock');touch(lock,()=>this.lockSecret(),editable&&this.draft.length===count);
+      const lock=art('lock');
+      this.prepLockButton = lock;
+      const lockReady = editable && this.draft.length === count;
+      if (!lockReady) { lock.getComponent(Sprite)!.grayscale = true; lock.addComponent(UIOpacity).opacity = 145; }
+      if (editable) {
+        this.bindPressEffect(lock, () => this.draft.length === count && !this.busy && this.net.online);
+        lock.on(Node.EventType.TOUCH_START, () => { if (this.draft.length === count && !this.busy && read('motion', '1') === '1') lock.setScale(.98, .98, 1); });
+        lock.on(Node.EventType.TOUCH_CANCEL, () => lock.setScale(1, 1, 1));
+        lock.on(Node.EventType.TOUCH_END, () => { lock.setScale(1, 1, 1); if (this.draft.length === count && !this.busy && this.net.online) { this.audio.unlock(); this.lockSecret(); } });
+      }
       art('status',[230,1546,711,1603]);
       label(r.ownSecret ? '底牌已锁定，等待对手' : 'ⓘ 锁定后本局不可修改',470,1568,29,650,C.gold);
     } else {
@@ -1554,7 +1681,16 @@ export class GameApp extends Component {
         viewport.on(ScrollView.EventType.SCROLLING,update);update();
       }
       if(count===4) this.playGuessPanel = SpriteEffects.attach(art('guess').getComponent(Sprite)!);
-      else label('本次猜测',470,759,33,500,C.cream,55);
+      else {
+        const gw = count === 2 ? 430 : 540, gh = 196;
+        const board = place(this.n('PlayModeGuessPanel', 375, 667, gw, gh, group), 470.5, 822);
+        const bg = board.addComponent(Graphics);
+        bg.fillColor = new Color('#5A381D'); bg.roundRect(-gw / 2, -gh / 2, gw, gh, 18); bg.fill();
+        bg.fillColor = new Color('#F2DFBE'); bg.roundRect(-gw / 2 + 8, -gh / 2 + 8, gw - 16, gh - 16, 13); bg.fill();
+        bg.strokeColor = new Color('#C99A52'); bg.lineWidth = 2; bg.roundRect(-gw / 2 + 12, -gh / 2 + 12, gw - 24, gh - 24, 10); bg.stroke();
+        const titleLbl = label('本次猜测', 470.5, 754, 29, 320, C.ink, 42);
+        titleLbl.isBold = true;
+      }
       for(let i=0;i<count;i++) {
         const x = count === 4 ? 470.25 + (i - 1.5) * 114.8 : 470.5 + (i - (count - 1) / 2) * 116;
         if(count!==4)art('mode-slot',[x-49,773,x+49,907],this.battleArt.get('card-paper'));
@@ -1715,184 +1851,38 @@ export class GameApp extends Component {
     if (r.history.some(h => h.playerId === this.net.state!.me.id && h.digits === this.draft)) this.ask('repeat', submit); else submit();
   }
   private artResult(r: RoomView) {
-    const me = this.net.state!.me, meId = me.id;
-    const available = this.screenHeight - this.layoutTop - bottomSafeInset() - 20;
-    const scale = Math.min(750 / 941, available / 1410);
-    const group = this.feedbackArt.group(this.root, 'ArtResult', this.screenHeight / 2 - this.layoutTop - (available - 1410 * scale) / 2, scale);
-    const art = (key: string, x: number, y: number, w: number, action?: () => void, parent = group) => {
-      const node = this.feedbackArt.image(parent, key, x, y, w, action ? () => { this.audio.unlock(); this.audio.play('tap'); action(); } : undefined);
-      if (action) this.bindPressEffect(node);
-      return node;
-    };
-    const label = (text: string, x: number, y: number, w: number, h: number, size = 30, color = C.ink, parent = group) =>
-      this.feedbackArt.label(parent, text, x, y, w, h, size, color);
-    const shortName = (name: string, limit: number) => Array.from(name).length > limit ? Array.from(name).slice(0, limit - 1).join('') + '…' : name;
-    const home = () => { this.page = 'lobby'; this.act('leave'); };
-    if (r.phase === 'cancelled') {
-      art(cancellationArt(r.result?.reason), 0, 620, 700);
-      art('home', 0, 910, 410, home);
-      return;
-    }
-
-    const win = r.result?.winner === meId, draw = !r.result?.winner;
+    const me = this.net.state!.me;
     const motion = read('motion', '1') === '1';
     const shouldAnimate = motion && this.resultAnimatedRoomId !== r.id;
     if (shouldAnimate) this.resultAnimatedRoomId = r.id;
-
-    // 1. Unified open outcome header (no boxy parchment frame competing with the recap sheet)
-    const headerGroup = this.feedbackArt.group(group, 'ResultHeader', 0);
-    let titleSprite: Sprite | null = null;
-    if (win) {
-      const titleNode = art('victory-title', 0, 174, 670, undefined, headerGroup);
-      titleSprite = titleNode.getComponent(Sprite);
-      const cap = label(resultCaption(r, meId), 0, 297, 420, 44, 26, '#FFF0C8', headerGroup);
-      cap.isBold = true;
-    } else if (!draw) {
-      const titleNode = art('defeat-title', 0, 178, 740, undefined, headerGroup);
-      titleSprite = titleNode.getComponent(Sprite);
-      label(resultCaption(r, meId), 0, 299, 460, 44, 26, C.ink, headerGroup);
-    } else {
-      const titleNode = art('draw-title', 0, 146, 470, undefined, headerGroup);
-      titleSprite = titleNode.getComponent(Sprite);
-      // Clean brass-trimmed capsule so draw reason text never floats over or touches the card border.
-      const pill = this.feedbackArt.group(headerGroup, 'DrawReasonPill', -332);
-      const pg = pill.addComponent(Graphics);
-      pg.fillColor = new Color('#261A13'); pg.roundRect(-220, -23, 440, 46, 23); pg.fill();
-      pg.strokeColor = new Color('#D8A856'); pg.lineWidth = 2.2; pg.roundRect(-219, -22, 438, 44, 22); pg.stroke();
-      const cap = label(resultCaption(r, meId), 0, 330, 410, 40, 24, '#FFF0C8', headerGroup);
-      cap.isBold = true;
-    }
-
-    // 2. Single clean parchment recap card (opponent password revealed first, dynamic 2/3/4 digits, compact 3-col stats)
-    const cardGroup = this.feedbackArt.group(group, 'ResultCard', 0);
-    art('result-paper', 0, 788, 816, undefined, cardGroup);
-
-    const peer = r.players.find(p => p.id !== meId);
-    const digitCount = r.digitCount ?? 4;
-    const guessCount = (id: string) => r.history.filter(h => h.playerId === id && h.digits !== null).length;
-    const cardW = digitCount === 2 ? 108 : digitCount === 3 ? 98 : 90;
-    const cardH = Math.round(cardW * 1.32);
-    const gap = digitCount === 2 ? 26 : digitCount === 3 ? 18 : 13;
-    const step = cardW + gap;
-    const cardPaper = this.battleArt.get('card-paper') ?? this.joinArt.get('digit-slot') ?? null;
-
-    const drawCardBand = (y: number, h: number, fill: string, stroke: string, lineWidth: number) => {
-      const band = this.feedbackArt.group(cardGroup, 'ResultBand', -y);
-      const bg = band.addComponent(Graphics);
-      bg.fillColor = new Color(fill); bg.roundRect(-344, -h / 2, 688, h, 16); bg.fill();
-      bg.strokeColor = new Color(stroke); bg.lineWidth = lineWidth; bg.roundRect(-343, -h / 2 + 1, 686, h - 2, 15); bg.stroke();
-    };
-
-    // Row 1 (Primary Focus): Opponent's revealed password
-    drawCardBand(620, 162, '#F4DFB7', '#CA984B', 2.2);
-    if (peer) this.playerPortrait(cardGroup, peer, -284, -620, 76);
-    const oppTag = label('对手密码', -182, 600, 134, 38, 26, '#962B12', cardGroup);
-    oppTag.isBold = true;
-    label(shortName(peer?.name ?? '对手', 6), -182, 640, 138, 34, 21, '#5D4329', cardGroup);
-    const oppSecret = r.revealed?.[peer?.id ?? ''] ?? '';
-    for (let i = 0; i < digitCount; i++) {
-      const cx = 122 + (i - (digitCount - 1) / 2) * step;
-      const card = this.feedbackArt.group(cardGroup, 'ResultOppDigit-' + i, -620);
-      card.setPosition(cx, -620);
-      const sp = card.addComponent(Sprite);
-      sp.spriteFrame = cardPaper; sp.sizeMode = Sprite.SizeMode.CUSTOM;
-      card.getComponent(UITransform)!.setContentSize(cardW, cardH);
-      const digitNode = this.addCardDigit(card, oppSecret[i] ?? '—', 0, 0, Math.round(cardH * 0.66), win ? 'crimson' : 'ink');
-      if (shouldAnimate) {
-        sp.color = new Color('#2A4A64');
-        digitNode.active = false;
-        flipRevealCard(card, () => {
-          sp.color = Color.WHITE;
-          digitNode.active = true;
-          this.audio.play('tap');
-        }, 0.22 + i * 0.085);
-      }
-    }
-
-    // Row 2 (Secondary Reference): Player's own secret
-    drawCardBand(796, 146, '#F7EAD0', '#D7B780', 1.6);
-    this.playerPortrait(cardGroup, me, -284, -796, 68);
-    const ownTag = label('我的底牌', -182, 778, 134, 36, 24, C.ink, cardGroup);
-    ownTag.isBold = true;
-    label(shortName(me.name, 6), -182, 814, 138, 32, 20, '#6F563C', cardGroup);
-    const mySecret = r.ownSecret ?? '';
-    const ownW = cardW - 6, ownH = Math.round(ownW * 1.3);
-    for (let i = 0; i < digitCount; i++) {
-      const cx = 122 + (i - (digitCount - 1) / 2) * step;
-      const card = this.feedbackArt.group(cardGroup, 'ResultOwnDigit-' + i, -796);
-      card.setPosition(cx, -796);
-      const sp = card.addComponent(Sprite);
-      sp.spriteFrame = cardPaper; sp.sizeMode = Sprite.SizeMode.CUSTOM;
-      card.getComponent(UITransform)!.setContentSize(ownW, ownH);
-      this.addCardDigit(card, mySecret[i] ?? '—', 0, 0, Math.round(ownH * 0.66), 'ink');
-    }
-
-    // Row 3: Compact 3-column horizontal stats strip (replaces two sparse full-width rows)
-    const statBar = this.feedbackArt.group(cardGroup, 'ResultStats', -946);
-    const sg = statBar.addComponent(Graphics);
-    sg.fillColor = new Color('#F4E5C5'); sg.roundRect(-344, -46, 688, 92, 16); sg.fill();
-    sg.strokeColor = new Color('#CFA562'); sg.lineWidth = 1.6; sg.roundRect(-343, -45, 686, 90, 15); sg.stroke();
-    sg.strokeColor = new Color('#D2B078'); sg.lineWidth = 1.5;
-    for (const dx of [-114, 114]) { sg.moveTo(dx, -26); sg.lineTo(dx, 26); }
-    sg.stroke();
-
-    const duration = formatMatchDuration(r.startAt, r.endedAt);
-    const cols: [string, string, number][] = [
-      [`${guessCount(meId)} 次`, '我的猜测', -229],
-      [`${guessCount(peer?.id ?? '')} 次`, '对手猜测', 0],
-      duration
-        ? [duration, `${digitCount}位 · 第${r.round}轮`, 229]
-        : [`第 ${r.round} 轮`, `${digitCount} 位密码`, 229],
-    ];
-    for (const [val, sub, cx] of cols) {
-      const vLbl = label(val, cx, 932, 200, 44, 33, C.ink, cardGroup);
-      if (/^[0-9:]+$/.test(val) && this.friendDigitFont) { vLbl.font = this.friendDigitFont; vLbl.lineHeight = 38; }
-      else vLbl.isBold = true;
-      label(sub, cx, 972, 204, 32, 20, '#73583B', cardGroup);
-    }
-
-    // Compact records link tucked cleanly inside the lower parchment
-    art('records', 0, 1076, 336, () => { this.overlay = 'resultRecords'; this.render(); }, cardGroup);
-
-    // 3. Unified bottom action bar (same ArtResult coordinate space & consistent warm-orange primary CTA for both modes!)
-    const actionGroup = this.feedbackArt.group(group, 'ResultActions', 0);
-    let primaryBtnSprite: Sprite | null = null;
-    if (r.mode === 'friend') {
-      const backBtn = art('rematch', 0, 1292, 620, () => { if (!this.busy) this.act('returnToRoom'); }, actionGroup);
-      if (this.busy) backBtn.addComponent(UIOpacity).opacity = 150;
-      primaryBtnSprite = backBtn.getComponent(Sprite);
-      const backLbl = label('确认 · 返回房间', 0, 0, 520, 76, 36, '#FFF5DC', backBtn);
-      backLbl.isBold = true;
-    } else {
-      const matchBtn = art('match', -200, 1292, 376, () => { if (!this.busy) this.selectMode('public'); }, actionGroup);
-      if (this.busy) matchBtn.addComponent(UIOpacity).opacity = 150;
-      primaryBtnSprite = matchBtn.getComponent(Sprite);
-      art('result-home', 200, 1292, 370, home, actionGroup);
-    }
-
-    // 4. Choreographed entrance & victory gold foil confetti
-    if (shouldAnimate) {
-      const hOp = headerGroup.addComponent(UIOpacity); hOp.opacity = 0;
-      headerGroup.setScale(0.82, 0.82, 1);
-      tween(hOp).to(0.22, { opacity: 255 }).start();
-      tween(headerGroup).to(0.28, { scale: Vec3.ONE }, { easing: 'backOut' }).call(() => {
-        if (titleSprite?.isValid) SpriteEffects.attach(titleSprite).sweep();
-      }).start();
-
-      const cOp = cardGroup.addComponent(UIOpacity); cOp.opacity = 0;
-      cardGroup.setPosition(0, -24);
-      tween(cOp).delay(0.08).to(0.24, { opacity: 255 }).start();
-      tween(cardGroup).delay(0.08).to(0.28, { position: Vec3.ZERO }, { easing: 'quadOut' }).start();
-
-      const aOp = actionGroup.addComponent(UIOpacity); aOp.opacity = 0;
-      actionGroup.setPosition(0, -18);
-      tween(aOp).delay(0.32).to(0.22, { opacity: 255 }).start();
-      tween(actionGroup).delay(0.32).to(0.24, { position: Vec3.ZERO }, { easing: 'quadOut' }).call(() => {
-        if (primaryBtnSprite?.isValid) SpriteEffects.attach(primaryBtnSprite).sweep();
-      }).start();
-
-      if (win) burstParticles(this.effects, 0, this.screenHeight * 0.2, 'confetti');
-    }
+    renderResultView({
+      root: this.root,
+      effects: this.effects,
+      room: r,
+      me,
+      screenHeight: this.screenHeight,
+      layoutTop: this.layoutTop,
+      bottomSafe: bottomSafeInset(),
+      busy: this.busy,
+      shouldAnimate,
+      feedbackArt: this.feedbackArt,
+      cardPaper: this.battleArt.get('card-paper') ?? this.joinArt.get('digit-slot') ?? null,
+      friendDigitFont: this.friendDigitFont,
+      inkColor: C.ink,
+      bindPressEffect: node => this.bindPressEffect(node),
+      addCardDigit: (parent, char, x, y, height, tone) => this.addCardDigit(parent, char, x, y, height, tone),
+      playerPortrait: (parent, profile, x, y, size) => this.playerPortrait(parent, profile, x, y, size),
+      playTap: () => this.audio.play('tap'),
+      onUnlockAudio: () => this.audio.unlock(),
+      onRecords: () => { this.overlay = 'resultRecords'; this.render(); },
+      onShare: () => {
+        const shareText = buildBattleShareText(r, me.id);
+        void this.shareRecap(shareText, shareText);
+      },
+      onReturnToRoom: () => { void this.act('returnToRoom'); },
+      onRematch: () => { this.selectMode('public'); },
+      onHome: () => { this.page = 'lobby'; void this.act('leave'); },
+    });
   }
   private result(r: RoomView) {
     if (this.feedbackArt.ready) { this.artResult(r); return; }
@@ -2115,58 +2105,40 @@ export class GameApp extends Component {
     // Fixed local paper coordinates: the complete sheet and its controls rotate together.
     this.root = sheet; this.screenHeight = 1334; this.layoutTop = 60; this.layoutScale = 1;
     try {
-      const paper = this.profileSprite('paper', 375, 715, 710, 1040);
-      if (paper) this.profilePaper = SpriteEffects.attach(paper.getComponent(Sprite)!);
-      else this.box(375, 715, 710, 1040, C.cream, 24);
-      if (!this.profileSprite('heading', 375, 165, 300, 89)) this.text('个人资料', 375, 165, 40);
-      this.profileBack = this.profileButton('back', '返回', 100, 85, 166, 62, () => this.closeProfile());
-      this.profileSprite('portrait-background', 375, 365, 320, 320);
-      if (!this.profileSprite('avatar-' + this.avatar, 375, 365, 190, 190, this.avatarFrame({avatarUrl:this.draftAvatarUrl,avatar:this.avatar}))) {
-        this.box(375, 365, 180, 180, C.blue, 90); this.text(AVATARS[this.avatar], 375, 365, 72, C.cream, 150, 120);
-      }
-      this.profileSprite('portrait-frame', 375, 365, 234, 234);
-      this.profileButton('change-avatar', '更换头像', 375, 490, 245, 64, () => {
-        this.pendingProfileAvatar=undefined;this.draftAvatarUrl='';this.avatar = (this.avatar + 1) % 4; this.render();
+      this.nicknameEditingBegan = false;
+      const refs = renderProfileSheet({
+        nickname: this.nickname,
+        avatar: this.avatar,
+        draftAvatarUrl: this.draftAvatarUrl,
+        stats: this.loadCareerStats(),
+        busy: this.busy,
+        inMotion: !!this.profileMotion,
+        inkColor: C.ink,
+        creamColor: C.cream,
+        blueColor: C.blue,
+        hasAvatarArt: i => this.profileArt.has('avatar-' + i),
+        avatarOverride: this.avatarFrame({ avatarUrl: this.draftAvatarUrl, avatar: this.avatar }),
+        createNode: (name, x, y, w, h) => this.n(name, x, y, w, h),
+        createBox: (x, y, w, h, color, radius) => this.box(x, y, w, h, color, radius),
+        createText: (val, x, y, sz, col, w, h) => this.text(val, x, y, sz, col, w, h),
+        profileSprite: (name, x, y, w, h, ov) => this.profileSprite(name, x, y, w, h, ov),
+        profileButton: (art, lbl, x, y, w, h, fn) => this.profileButton(art, lbl, x, y, w, h, fn),
+        onClose: () => this.closeProfile(),
+        onCycleAvatar: () => { this.pendingProfileAvatar = undefined; this.draftAvatarUrl = ''; this.avatar = (this.avatar + 1) % 4; this.render(); },
+        onSelectAvatar: i => { this.finishNicknameEditing(); this.audio.play('tap'); this.pendingProfileAvatar = undefined; this.draftAvatarUrl = ''; this.avatar = i; this.render(); },
+        onAuthorizeWechat: () => { void this.authorizeProfile(); },
+        onOpenPrivacy: () => { try { this.wxFlow.openPrivacy(); } catch (e) { this.toast((e as Error).message); } },
+        onSave: () => { void this.saveProfile(); },
+        onBeginEdit: () => this.nicknameSession.begin(),
+        onCancelEdit: edit => { if (!this.nicknameEditingBegan) this.nicknameEditingEnded(edit); },
+        onDidBeginEdit: () => { this.nicknameEditingBegan = true; this.nicknameSession.begin(); },
+        onTextChanged: value => { this.nickname = value; },
+        onDidEndEdit: edit => this.nicknameEditingEnded(edit),
       });
-      this.text('昵称', 130, 600, 31, C.ink, 90, 60);
-      this.box(435, 600, 435, 72, '#EBD1A6', 10);
-      this.profileSprite('input', 435, 600, 435, 75);
-      const n = this.n('NicknameInput', 435, 600, 435, 75), eb = n.addComponent(EditBox);
-      this.nicknameEditBox = eb; this.nicknameEditingBegan = false;
-      // EditBox positions its text at the upper-left; use a matching anchor and single-line layout.
-      eb.inputMode = EditBox.InputMode.SINGLE_LINE;
-      eb.inputFlag = EditBox.InputFlag.DEFAULT;
-      eb.returnType = EditBox.KeyboardReturnType.DONE;
-      const label = new Node('Text'); label.layer = Layers.Enum.UI_2D; n.addChild(label);
-      const labelTransform = label.addComponent(UITransform); labelTransform.setAnchorPoint(0, 1);
-      const l = label.addComponent(Label); l.fontSize = 30; l.lineHeight = 38;
-      l.color = new Color(C.ink); l.horizontalAlign = Label.HorizontalAlign.LEFT;
-      l.verticalAlign = Label.VerticalAlign.CENTER; l.enableWrapText = false; l.overflow = Label.Overflow.CLAMP;
-      eb.textLabel = l; eb.maxLength = -1; eb.string = this.nickname; eb.enabled = !this.profileMotion && !this.busy;
-      labelTransform.setContentSize(350, 75); label.setPosition(-197, 37.5);
-      // Capture touch before the platform opens its keyboard (and can synchronously resize the canvas).
-      n.on(Node.EventType.TOUCH_START, () => { if (eb.enabled) this.nicknameSession.begin(); }, this, true);
-      n.on(Node.EventType.TOUCH_CANCEL, () => { if (!this.nicknameEditingBegan) this.nicknameEditingEnded(eb); });
-      n.on('editing-did-began', () => { this.nicknameEditingBegan = true; this.nicknameSession.begin(); });
-      n.on('text-changed', (edit: EditBox) => { this.nickname = edit.string; });
-      n.on('editing-did-ended', (edit: EditBox) => this.nicknameEditingEnded(edit));
-      this.text('1–12 个字符', 326, 657, 23, '#8D714E', 220, 40);
-      this.wechatProfileNode=this.profileButton('wechat', '使用微信头像昵称', 375, 745, 560, 114, () => this.authorizeProfile());
-      const privacy=this.text('隐私保护指引',375,1100,24,C.ink,300,50);privacy.node.on(Node.EventType.TOUCH_END,()=>{try{this.wxFlow.openPrivacy();}catch(e){this.toast((e as Error).message);}});
-      this.text('—  选择头像  —', 375, 840, 29, C.ink, 550, 50);
-      AVATARS.slice(0, 4).forEach((a, i) => {
-        const x = 150 + (i % 4) * 150, y = 985;
-        const face = this.profileSprite('avatar-' + i, x, y, 125, 125) ?? this.box(x, y, 122, 122, C.blue, 61);
-        if (!this.profileArt.has('avatar-' + i)) this.text(a, x, y, 36, C.cream, 80, 70);
-        if (!this.busy && !this.profileMotion) face.on(Node.EventType.TOUCH_END, () => { this.finishNicknameEditing(); this.audio.play('tap'); this.pendingProfileAvatar=undefined;this.draftAvatarUrl='';this.avatar = i; this.render(); });
-        const frameSize = !this.draftAvatarUrl && i === this.avatar ? 156 : 150;
-        this.profileSprite('portrait-frame', x, y, frameSize, frameSize);
-        if (!this.draftAvatarUrl && i === this.avatar && !this.profileSprite('avatar-selected', x + 46, y + 45, 58, 58)) {
-          this.text('✓', x + 45, y + 45, 26, C.ink, 36, 36);
-        }
-      });
-      this.profileButton('cancel', '取消', 205, 1185, 255, 98, () => this.closeProfile());
-      this.profileButton('save', '保存修改', 530, 1185, 295, 98, () => this.saveProfile());
+      this.profilePaper = refs.paper;
+      this.profileBack = refs.back;
+      this.nicknameEditBox = refs.editBox;
+      this.wechatProfileNode = refs.wechatNode;
     } finally { this.root = host; this.screenHeight = height; this.layoutTop = top; this.layoutScale = scale; }
     // Back is a sibling of the sheet, so it never inherits the body's rotation or zoom.
     const back = this.profileBack!;
@@ -2308,7 +2280,7 @@ export class GameApp extends Component {
     });
     this.render();
   }
-  private openLearning(page: 'menu' | 'rules' | 'clues') {
+  private openLearning(page: 'menu' | 'rules' | 'clues' | 'daily') {
     this.overlay = ''; this.learning.open(page); this.render();
   }
   private copyGuess(digits: string, message?: string) {

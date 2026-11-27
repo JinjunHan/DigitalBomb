@@ -106,3 +106,20 @@ test('sharing cache is valid for one hour and rejects invalid or future entries'
   assert.equal(cachedSharingConfig('invalid', 1000), undefined);
   assert.equal(cachedSharingConfig(JSON.stringify({savedAt:1000,config:{enabled:'true'}}), 1000), undefined);
 });
+
+test('shareCustom shares via WeChat only when sharing is enabled and returns false otherwise', () => {
+  const shared: any[] = [];
+  const flow = new WechatFlow({
+    hideShareMenu() {},
+    showShareMenu() {},
+    onShow() {},
+    onShareAppMessage() {},
+    shareAppMessage(payload: any) { shared.push(payload); },
+  }, () => undefined, () => {});
+  assert.equal(flow.shareCustom('测试标题'), false);
+  flow.setSharingEnabled(true, [{ imageUrlId: 'id-1', imageUrl: 'https://mmocgame.qpic.cn/wechatgame/demo.png' }]);
+  assert.equal(flow.shareCustom('我用 4 步破译了今日暗号'), true);
+  assert.equal(shared.length, 1);
+  assert.equal(shared[0].title, '我用 4 步破译了今日暗号');
+  assert.equal(shared[0].imageUrlId, 'id-1');
+});

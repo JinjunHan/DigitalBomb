@@ -28,13 +28,25 @@ export async function copy(value: string): Promise<void> {
 export function vibrate(type: 'light' | 'medium' | 'heavy' = 'light') { if (read('vibration', '1') === '1') wechat()?.vibrateShort({ type }); }
 export function topSafeInset(): number {
   if (!wechat()) return 64;
-  try { const info = wechat().getWindowInfo?.() ?? wechat().getSystemInfoSync(); const menu = wechat().getMenuButtonBoundingClientRect(); return Math.max(64, (menu.bottom + 12) * 750 / info.windowWidth); } catch { return 96; }
+  try {
+    const info = wechat().getWindowInfo?.() ?? wechat().getSystemInfoSync();
+    const width = info?.windowWidth > 0 ? info.windowWidth : 375;
+    const menu = wechat().getMenuButtonBoundingClientRect?.();
+    const statusTop = Math.max(info?.statusBarHeight ?? 0, info?.safeArea?.top ?? 0);
+    const capsuleBottom = menu && menu.bottom > 0 ? menu.bottom + 12 : statusTop + 48;
+    const px = Math.max(capsuleBottom, statusTop + 44) * 750 / width;
+    return Math.min(210, Math.max(64, Math.round(px)));
+  } catch { return 96; }
 }
 
 export function bottomSafeInset(): number {
   if (!wechat()) return 20;
   try {
     const info = wechat().getWindowInfo?.() ?? wechat().getSystemInfoSync();
-    return Math.max(20, (info.screenHeight - (info.safeArea?.bottom ?? info.screenHeight)) * 750 / info.windowWidth);
+    const width = info?.windowWidth > 0 ? info.windowWidth : 375;
+    const screenH = info?.screenHeight ?? info?.windowHeight ?? 0;
+    const safeBottom = info?.safeArea?.bottom ?? screenH;
+    const px = Math.max(0, screenH - safeBottom) * 750 / width;
+    return Math.min(120, Math.max(20, Math.round(px)));
   } catch { return 40; }
 }

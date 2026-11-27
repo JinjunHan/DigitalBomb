@@ -91,6 +91,13 @@ export class WechatFlow {
     // WeChat provides no reliable share-success signal. Never display a fake success or grant rewards.
     this.wx.shareAppMessage(this.onShare());
   }
+  /** Share a battle or daily recap via WeChat when enabled; returns false when caller should fall back to clipboard copy. */
+  shareCustom(title: string, query = ''): boolean {
+    if (!this.sharingEnabled || !this.wx?.shareAppMessage) return false;
+    const img = this.images[0] ?? {};
+    this.wx.shareAppMessage({ title, ...(query ? { query } : {}), ...img });
+    return true;
+  }
   privacy(): Promise<void> {
     return new Promise((resolve,reject)=>{
       if(!this.wx?.requirePrivacyAuthorize){resolve();return;}
