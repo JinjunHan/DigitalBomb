@@ -342,12 +342,65 @@ export class LearningPanel {
       ? result.positions.map(p => (p.possible.length === 1 ? p.possible[0] : ''))
       : Array.from({ length: size }, () => '');
   }
-  private boxPanel(x: number, y: number, w: number, h: number, fill: string, stroke: string, radius = 14, lineWidth = 2) {
+  /** Safe usable width strictly inside paper.png's sloping antique gold filigree borders at coordinate y. */
+  private paperSafeWidth(y: number, inset = 22): number {
+    // Measured directly from assets/resources/art/profile/paper.png (687.6px at y=314 -> 771.9px at y=1365).
+    const filigreeW = 687.6 + ((y - 314) / 100) * 8.02;
+    return Math.max(540, filigreeW - inset * 2);
+  }
+  /** Draw a 2.5D tabletop trapezoid panel whose left/right edges match paper.png's perspective slant. */
+  private trapezoidPanel(
+    x: number,
+    y: number,
+    h: number,
+    inset: number,
+    fill: Color,
+    stroke: Color,
+    lineWidth = 1.6,
+    customTopW?: number,
+    customBotW?: number,
+  ) {
+    const topW = customTopW ?? this.paperSafeWidth(y - h / 2, inset);
+    const botW = customBotW ?? this.paperSafeWidth(y + h / 2, inset);
+    const maxW = Math.max(topW, botW);
+    const n = this.node('LearningTrapezoid', x, y, maxW, h);
+    const g = n.addComponent(Graphics);
+    const ht = topW / 2, hb = botW / 2, hh = h / 2;
+    // Chamfered antique ledger corners (6px bevel) with exact trapezoidal side slopes.
+    const c = 7;
+    const drawPath = (shrink: number) => {
+      const t = ht - shrink, b = hb - shrink, v = hh - shrink;
+      g.moveTo(-t + c, v);
+      g.lineTo(t - c, v);
+      g.lineTo(t, v - c);
+      g.lineTo(b, -v + c);
+      g.lineTo(b - c, -v);
+      g.lineTo(-b + c, -v);
+      g.lineTo(-b, -v + c);
+      g.lineTo(-t, v - c);
+      g.close();
+    };
+    g.fillColor = fill;
+    drawPath(0);
+    g.fill();
+    if (lineWidth > 0) {
+      g.strokeColor = stroke;
+      g.lineWidth = lineWidth;
+      drawPath(1);
+      g.stroke();
+    }
+    return n;
+  }
+  private boxPanel(x: number, y: number, w: number, h: number, fill: Color | string, stroke: Color | string, radius = 12, lineWidth = 1.8) {
     const n = this.node('LearningBox', x, y, w, h);
     const g = n.addComponent(Graphics);
-    g.fillColor = new Color(fill); g.roundRect(-w / 2, -h / 2, w, h, radius); g.fill();
-    g.strokeColor = new Color(stroke); g.lineWidth = lineWidth;
-    g.roundRect(-w / 2 + 1, -h / 2 + 1, w - 2, h - 2, Math.max(2, radius - 1)); g.stroke();
+    g.fillColor = typeof fill === 'string' ? new Color(fill) : fill;
+    g.roundRect(-w / 2, -h / 2, w, h, radius); g.fill();
+    if (lineWidth > 0) {
+      g.strokeColor = typeof stroke === 'string' ? new Color(stroke) : stroke;
+      g.lineWidth = lineWidth;
+      g.roundRect(-w / 2 + 1, -h / 2 + 1, w - 2, h - 2, Math.max(2, radius - 1)); g.stroke();
+    }
     return n;
   }
   private clues() {
@@ -355,14 +408,14 @@ export class LearningPanel {
     const history: Clue[] = room ? room.history.filter(h => h.playerId === me) : this.practice?.history ?? [];
     const size: DigitCount = room ? room.digitCount ?? 4 : this.practice?.size ?? 4;
 
-    // 1. Clean header plaque + redesigned active/inactive twin ledger tabs
-    this.art('banner', 470, 214, 590, 86);
-    const titleLbl = this.text('我的推理笔记', 470, 211, 520, 68, 42, '#FFE5A9');
+    // 1. Clean header plaque + redesigned active/inactive twin ledger tabs (comfortably inside paper.png top width)
+    this.art('banner', 470, 214, 576, 84);
+    const titleLbl = this.text('我的推理笔记', 470, 211, 510, 66, 41, '#FFE5A9');
     titleLbl.isBold = true;
 
     const posActive = this.tab === 'positions';
-    this.fixed(posActive ? 'tab-positions' : 'tab-positions-off', '逐位排除', 302, 314, 326, () => { this.tab = 'positions'; this.refresh(); });
-    this.fixed(posActive ? 'tab-history-off' : 'tab-history', '记录与对比', 638, 314, 326, () => { this.tab = 'history'; this.refresh(); });
+    this.fixed(posActive ? 'tab-positions' : 'tab-positions-off', '逐位排除', 310, 314, 306, () => { this.tab = 'positions'; this.refresh(); });
+    this.fixed(posActive ? 'tab-history-off' : 'tab-history', '记录与对比', 630, 314, 306, () => { this.tab = 'history'; this.refresh(); });
     if (!posActive) { this.history(history, size); return; }
 
     const key = JSON.stringify([size, history.map(h => [h.digits, h.hits])]);
@@ -370,29 +423,38 @@ export class LearningPanel {
     const result = this.cache;
     this.syncPicks(size, key, result);
 
-    // 2. Compact unified summary strip: remaining count badge + recent 3 clues chips
-    this.boxPanel(470, 404, 742, 78, '#F6E7C9', '#CFA562', 16, 1.8);
-    this.boxPanel(228, 404, 240, 52, '#2B190E', '#C99848', 26, 2);
-    const remLbl = this.text(result.consistent ? `剩余 ${result.count} 种可能` : '线索同步中', 228, 402, 226, 44, 24, '#FFE5A9');
+    // 2. Compact 2.5D trapezoidal summary strip (translucent vintage wash letting paper.png grain breathe through!)
+    const sumY = 404, sumH = 74, sumW = this.paperSafeWidth(sumY, 22);
+    this.trapezoidPanel(470.5, sumY, sumH, 22, new Color(115, 68, 24, 20), new Color(172, 128, 70, 130), 1.5);
+    const remX = 470.5 - sumW / 2 + 118;
+    this.boxPanel(remX, sumY, 214, 48, new Color(43, 25, 14, 238), new Color('#C99848'), 24, 1.8);
+    const remLbl = this.text(result.consistent ? `剩余 ${result.count} 种可能` : '线索同步中', remX, sumY - 2, 202, 42, 22, '#FFE5A9');
     remLbl.isBold = true;
 
     const recent = history.slice(-3);
+    const chipsAreaL = remX + 114, chipsAreaR = 470.5 + sumW / 2 - 14, chipsAreaW = chipsAreaR - chipsAreaL;
     if (!recent.length) {
-      this.text('提交猜测后，这里会自动整理每轮线索', 595, 403, 460, 44, 23, '#7C5D3B');
+      this.text('提交猜测后自动整理线索', (chipsAreaL + chipsAreaR) / 2, sumY - 1, chipsAreaW, 42, 22, '#7A5B39');
     } else {
-      const chipW = recent.length === 1 ? 230 : recent.length === 2 ? 214 : 150;
-      const gap = 10;
-      const startX = 360 + (472 - (recent.length * chipW + (recent.length - 1) * gap)) / 2 + chipW / 2;
+      const gap = 8;
+      const chipW = Math.min(180, Math.floor((chipsAreaW - gap * (recent.length - 1)) / recent.length));
+      const totalW = chipW * recent.length + gap * (recent.length - 1);
+      const startX = chipsAreaL + (chipsAreaW - totalW) / 2 + chipW / 2;
       recent.forEach((h, i) => {
         const cx = startX + i * (chipW + gap);
         const hot = h.hits !== null && h.hits >= Math.max(1, size - 1);
-        this.boxPanel(cx, 404, chipW, 50, hot ? '#F9E1B5' : '#EFE0BE', hot ? '#C97B2A' : '#CBB07F', 12, 1.6);
-        const cl = this.text(`${h.digits ?? '超时'} · ${h.hits ?? '—'}/${size}`, cx, 402, chipW - 10, 42, recent.length === 3 ? 21 : 23, hot ? '#942812' : '#3B2311');
+        this.boxPanel(
+          cx, sumY, chipW, 46,
+          hot ? new Color(196, 108, 30, 34) : new Color(112, 68, 26, 18),
+          hot ? new Color(194, 114, 38, 175) : new Color(168, 128, 76, 125),
+          10, 1.4,
+        );
+        const cl = this.text(`${h.digits ?? '超时'} · ${h.hits ?? '—'}/${size}`, cx, sumY - 2, chipW - 8, 38, recent.length === 3 ? 19 : 22, hot ? '#942812' : '#3C2311');
         cl.isBold = true;
       });
     }
 
-    // 3. Interactive Position Elimination & Quick-Pick Matrix (cleanly spaced for 2/3/4 digits)
+    // 3. 2.5D Trapezoid Position Matrix (progressively widens top->bottom strictly parallel to paper.png's slanted borders!)
     const rowStep = size === 4 ? 108 : size === 3 ? 124 : 138;
     const rowH = size === 4 ? 98 : 108;
     const matrixTop = size === 4 ? 506 : size === 3 ? 544 : 590;
@@ -400,45 +462,89 @@ export class LearningPanel {
     if (result.consistent) {
       result.positions.forEach((position, i) => {
         const y = matrixTop + i * rowStep;
+        const rowW = this.paperSafeWidth(y, 22);
+        const rowLeft = 470.5 - rowW / 2;
         const pickedDigit = this.picks[i] ?? '';
         const confirmedDigit = position.possible.length === 1 ? position.possible[0] : '';
-        this.boxPanel(470, y, 742, rowH, '#F8ECD3', confirmedDigit ? '#4E9A5E' : pickedDigit ? '#D48A30' : '#D4B47E', 14, confirmedDigit || pickedDigit ? 2.2 : 1.6);
 
-        // Left position badge
-        this.boxPanel(164, y, 112, 74, '#2C1A0F', '#BE8E44', 12, 1.8);
-        const posLbl = this.text(`第 ${i + 1} 位`, 164, confirmedDigit || pickedDigit ? y - 12 : y - 2, 102, 38, 26, '#FFE5A9');
+        // Soft translucent vintage sepia wash + antique hairline trapezoid border (blends seamlessly into paper.png!)
+        const rowFill = confirmedDigit
+          ? new Color(56, 124, 68, 18)
+          : pickedDigit
+            ? new Color(184, 116, 30, 22)
+            : new Color(116, 70, 26, 15);
+        const rowStroke = confirmedDigit
+          ? new Color(68, 146, 84, 160)
+          : pickedDigit
+            ? new Color(196, 128, 42, 175)
+            : new Color(168, 126, 70, 115);
+        this.trapezoidPanel(470.5, y, rowH, 22, rowFill, rowStroke, confirmedDigit || pickedDigit ? 1.8 : 1.3);
+
+        // Left position badge (gently tapered trapezoid matching left paper slant!)
+        const badgeW = 94;
+        const badgeX = rowLeft + 14 + badgeW / 2;
+        this.trapezoidPanel(badgeX, y, 72, 0, new Color(44, 26, 15, 232), new Color(192, 144, 70, 200), 1.6, badgeW - 3, badgeW + 3);
+        const posLbl = this.text(`第 ${i + 1} 位`, badgeX, confirmedDigit || pickedDigit ? y - 12 : y - 2, badgeW - 8, 36, 23, '#FFE5A9');
         posLbl.isBold = true;
         if (confirmedDigit) {
-          const st = this.text(`已定 ${confirmedDigit}`, 164, y + 18, 102, 26, 18, '#8EE69E');
+          const st = this.text(`已定 ${confirmedDigit}`, badgeX, y + 17, badgeW - 8, 24, 17, '#8EE69E');
           st.isBold = true;
         } else if (pickedDigit) {
-          const st = this.text(`已选 ${pickedDigit}`, 164, y + 18, 102, 26, 18, '#FFD472');
+          const st = this.text(`已选 ${pickedDigit}`, badgeX, y + 17, badgeW - 8, 24, 17, '#FFD472');
           st.isBold = true;
         }
 
-        // 10 interactive digit tiles (0..9)
+        // 10 interactive hand-painted miniature parchment cards (card.png) expanding naturally with perspective width!
+        const tilesL = badgeX + badgeW / 2 + 12;
+        const tilesR = 470.5 + rowW / 2 - 14;
+        const tilesSpan = tilesR - tilesL;
+        const step = tilesSpan / 10;
+        const tileW = Math.min(50, Math.floor(step - 4));
+        const tileH = Math.round(tileW * 1.56);
+
         for (let d = 0; d < 10; d++) {
           const ch = String(d);
-          const x = 259 + d * 60;
+          const x = tilesL + step * (d + 0.5);
           const excluded = position.excluded.includes(ch);
           const confirmed = confirmedDigit === ch;
           const selected = !confirmed && pickedDigit === ch;
-          const fill = confirmed ? '#D7F1D8' : selected ? '#FFE18A' : excluded ? '#EBD5C8' : '#FFF7E6';
-          const border = confirmed ? '#2E8747' : selected ? '#C95A10' : excluded ? '#CFA796' : '#C9A46E';
-          const tile = this.boxPanel(x, y, 53, 80, fill, border, 9, selected || confirmed ? 2.8 : 1.5);
-          const dLbl = this.text(ch, x, excluded || confirmed || selected ? y - 12 : y - 2, 46, 46, 33, confirmed ? '#155427' : selected ? '#8E250B' : excluded ? '#9D7B6C' : '#311A0A');
+          const tileY = selected ? y - 4 : y;
+
+          // Real hand-painted parchment mini-card sprite matching paper.png's vintage ink aesthetic!
+          const tile = this.art('card', x, tileY, tileW, tileH);
+          const sp = tile.getComponent(Sprite)!;
+          if (confirmed) {
+            sp.color = new Color('#BFE3BE');
+          } else if (selected) {
+            sp.color = new Color('#FFE18B');
+            const ring = this.node('SelectedRing', x, tileY, tileW + 4, tileH + 4);
+            const rg = ring.addComponent(Graphics);
+            rg.strokeColor = new Color('#C95A10'); rg.lineWidth = 2.6;
+            rg.roundRect(-(tileW + 2) / 2, -(tileH + 2) / 2, tileW + 2, tileH + 2, 8); rg.stroke();
+          } else if (excluded) {
+            sp.color = new Color('#DFC4AE');
+            tile.addComponent(UIOpacity).opacity = 165;
+          } else {
+            sp.color = new Color('#FFF6E3');
+          }
+
+          const dLbl = this.text(
+            ch, x, excluded || confirmed || selected ? tileY - 12 : tileY - 2,
+            tileW - 4, 42, 30,
+            confirmed ? '#145526' : selected ? '#8E250B' : excluded ? '#8A6B58' : '#311A0A',
+          );
           dLbl.isBold = true;
           if (confirmed) {
-            const m = this.text('✓', x, y + 21, 46, 28, 22, '#17662E'); m.isBold = true;
+            const m = this.text('✓', x, tileY + 19, tileW - 4, 26, 20, '#16652D'); m.isBold = true;
           } else if (selected) {
-            const m = this.text('●', x, y + 21, 46, 26, 16, '#C95A10'); m.isBold = true;
+            const m = this.text('●', x, tileY + 19, tileW - 4, 22, 14, '#C95A10'); m.isBold = true;
           } else if (excluded) {
-            this.text('×', x, y + 21, 46, 28, 22, '#B34338');
+            this.text('×', x, tileY + 19, tileW - 4, 26, 20, '#B34338');
           }
 
           this.touch(tile, `pick-${i}-${d}`, () => {
             if (excluded) {
-              this.clueHint = `第 ${i + 1} 位的 ${ch} 已排除，可点击其余空白候选位快速组牌`;
+              this.clueHint = `第 ${i + 1} 位的 ${ch} 已排除，可点击其余候选牌快速组牌`;
               this.refresh();
               return;
             }
@@ -455,27 +561,31 @@ export class LearningPanel {
         }
       });
     } else {
-      this.text('当前记录不一致，请等待同步后查看逐位排除', 470, 660, 680, 80, 30, '#7C5D3B');
+      this.text('当前记录不一致，请等待同步后查看逐位排除', 470, 660, 640, 80, 29, '#7C5D3B');
     }
 
     // 4. Crisp 1-line legend
     const legendY = matrixTop + (size - 1) * rowStep + Math.round(rowH / 2) + 38;
-    this.text('✓ 已确定   ·   ● 已选入组牌   ·   空白 点击可选   ·   × 已排除', 470, legendY, 740, 38, 22, '#6A4C2E');
+    this.text('✓ 已确定   ·   ● 已选入组牌   ·   空白 点击可选   ·   × 已排除', 470, legendY, 680, 38, 22, '#6A4C2E');
 
-    // 5. Quick-Input Composer Panel (click possible digits above -> instant fill into guess!)
-    const composerY = 1106;
+    // 5. 2.5D Trapezoidal Quick-Input Composer Panel (widens naturally with bottom perspective!)
+    const composerY = 1106, composerH = 166;
+    const composerW = this.paperSafeWidth(composerY, 22);
+    const compLeft = 470.5 - composerW / 2;
+    const compRight = 470.5 + composerW / 2;
     const composed = composeQuickDraft(history, size, this.picks);
     const canInput = !room
       ? !!this.practice && !this.practice.solved
       : ['playing', 'reply'].includes(room.phase) && room.current === me && this.context.now >= room.startAt && this.context.now < room.deadline;
 
-    this.boxPanel(470, composerY, 742, 168, '#F4E1BA', '#C69143', 18, 2.4);
-    const compTitle = this.text('快速组牌', 176, composerY - 34, 124, 36, 26, '#3D200A');
+    this.trapezoidPanel(470.5, composerY, composerH, 22, new Color(148, 92, 28, 26), new Color(186, 134, 62, 185), 2.0);
+    const leftColX = compLeft + 74;
+    const compTitle = this.text('快速组牌', leftColX, composerY - 34, 118, 36, 25, '#3D200A');
     compTitle.isBold = true;
 
     // Mini action chip: Smart Fill (智能补全)
-    const fillChip = this.boxPanel(176, composerY + 24, 108, 42, '#EFE0BE', '#B88944', 10, 1.5);
-    const fillChipLbl = this.text('智能补全', 176, composerY + 22, 102, 34, 20, '#5A3514');
+    const fillChip = this.boxPanel(leftColX, composerY + 24, 106, 40, new Color(122, 74, 24, 24), new Color(168, 122, 62, 165), 10, 1.4);
+    const fillChipLbl = this.text('智能补全', leftColX, composerY + 22, 100, 32, 19, '#553112');
     fillChipLbl.isBold = true;
     this.touch(fillChip, 'quick-complete', () => {
       const candidate = consistentCandidate(history, size, this.picks);
@@ -488,33 +598,41 @@ export class LearningPanel {
       this.refresh();
     }, result.consistent);
 
-    // Live preview card slots
-    const slotW = size === 4 ? 72 : size === 3 ? 82 : 92;
-    const slotH = Math.round(slotW * 1.24);
-    const slotGap = size === 4 ? 12 : 18;
-    const slotsCenterX = 418;
+    // Live preview painted card slots
+    const slotW = size === 4 ? 68 : size === 3 ? 78 : 88;
+    const slotH = Math.round(slotW * 1.28);
+    const slotGap = size === 4 ? 11 : 16;
+    const slotsCenterX = 424;
     for (let i = 0; i < size; i++) {
       const sx = slotsCenterX + (i - (size - 1) / 2) * (slotW + slotGap);
       const ch = this.picks[i] ?? '';
       const confirmed = result.consistent && result.positions[i]?.possible.length === 1 && result.positions[i].possible[0] === ch;
-      const slotNode = this.boxPanel(sx, composerY - 8, slotW, slotH, ch ? '#FFF8E8' : '#EED9B0', confirmed ? '#2E8747' : ch ? '#C96A1B' : '#C4A26F', 10, ch ? 2.4 : 1.5);
+      const slotNode = this.art('card', sx, composerY - 8, slotW, slotH);
+      const ssp = slotNode.getComponent(Sprite)!;
       if (ch) {
+        ssp.color = confirmed ? new Color('#D5EDD3') : new Color('#FFF7E5');
+        const ring = this.node('SlotRing', sx, composerY - 8, slotW + 2, slotH + 2);
+        const rg = ring.addComponent(Graphics);
+        rg.strokeColor = new Color(confirmed ? '#2E8747' : '#C96A1B'); rg.lineWidth = 2.2;
+        rg.roundRect(-slotW / 2, -slotH / 2, slotW, slotH, 8); rg.stroke();
         const artFrame = this.context.cardDigits?.[confirmed ? 'ink' : 'crimson'].get(ch);
         if (artFrame) {
-          const h = Math.round(slotH * 0.72);
+          const h = Math.round(slotH * 0.7);
           const dn = new Node('ComposerDigit-' + ch);
           dn.layer = Layers.Enum.UI_2D; slotNode.addChild(dn); dn.setPosition(0, 0);
           const sp = dn.addComponent(Sprite); sp.spriteFrame = artFrame; sp.sizeMode = Sprite.SizeMode.CUSTOM;
           dn.getComponent(UITransform)!.setContentSize(Math.round(h * (144 / 180)), h);
         } else {
-          const l = this.text(ch, sx, composerY - 10, slotW - 8, slotH - 8, 44, confirmed ? '#155427' : '#8E250B');
+          const l = this.text(ch, sx, composerY - 10, slotW - 8, slotH - 8, 42, confirmed ? '#155427' : '#8E250B');
           l.isBold = true;
         }
         if (!confirmed) {
           this.touch(slotNode, `clear-slot-${i}`, () => { this.picks[i] = ''; this.clueHint = ''; this.refresh(); });
         }
       } else {
-        this.text(`第${i + 1}位`, sx, composerY - 10, slotW - 6, 36, 18, '#9A7D56');
+        ssp.color = new Color('#E4CFA9');
+        slotNode.addComponent(UIOpacity).opacity = 185;
+        this.text(`第${i + 1}位`, sx, composerY - 10, slotW - 6, 36, 17, '#8A6B46');
       }
     }
 
@@ -530,7 +648,7 @@ export class LearningPanel {
         this.refresh();
       });
     } else {
-      this.text('点上方数字即可填入对应位', slotsCenterX, composerY + 56, 320, 32, 19, '#7B5B38');
+      this.text('点上方数字即可填入对应位', slotsCenterX, composerY + 56, 310, 32, 19, '#7B5B38');
     }
 
     // Primary "Fill Guess" CTA right inside the composer
@@ -544,8 +662,10 @@ export class LearningPanel {
           : composed.digits.length === size
             ? '填入猜测'
             : `填入前 ${composed.digits.length} 位`;
-    const ctaBtn = this.boxPanel(722, composerY - 2, 190, 86, canFill ? '#C84218' : '#B9A389', canFill ? '#F0BE62' : '#9B8770', 14, 2.4);
-    const ctaLbl = this.text(ctaText, 722, composerY - 4, 178, 54, composed.completed ? 26 : 27, canFill ? '#FFF6DF' : '#6A5B4B');
+    const ctaW = 178;
+    const ctaX = compRight - 18 - ctaW / 2;
+    const ctaBtn = this.boxPanel(ctaX, composerY - 2, ctaW, 82, canFill ? '#C84218' : '#BAA58B', canFill ? '#F0BE62' : '#9B8770', 14, 2.2);
+    const ctaLbl = this.text(ctaText, ctaX, composerY - 4, ctaW - 14, 52, composed.completed ? 25 : 26, canFill ? '#FFF6DF' : '#6A5B4B');
     ctaLbl.isBold = true;
     this.touch(ctaBtn, 'quick-fill', () => {
       if (!composed.digits) return;
@@ -571,7 +691,7 @@ export class LearningPanel {
       || (!composed.consistent && composed.pickedCount > 0
         ? '提示：当前自选组合与历史线索存在冲突，可点「智能补全」或微调'
         : '注：可能数字受多条线索联动约束，并非每位可任意组合');
-    this.text(noteText, 470, 1244, 730, 52, 22, !composed.consistent && composed.pickedCount > 0 ? '#A22A16' : '#735434');
+    this.text(noteText, 470, 1244, 680, 52, 22, !composed.consistent && composed.pickedCount > 0 ? '#A22A16' : '#735434');
 
     // 6. Redesigned spotless bottom return button
     this.fixed('return', '返回猜测', 470, 1492, 472, () => this.back());
@@ -580,53 +700,68 @@ export class LearningPanel {
     const pages=Math.max(1,Math.ceil(history.length/3));this.recordPage=this.recordPage<0?pages-1:Math.min(this.recordPage,pages-1);
     const selected=this.selected<0?history.length-1:Math.min(this.selected,history.length-1);
     const baseline=this.baseline<0?selected-1:Math.min(this.baseline,history.length-1);
-    this.text(`我的猜测 · 共 ${history.length} 条`,470,425,700,80,39);
-    if(!history.length)this.text('还没有记录，先提交一次猜测。',470,650,700,100,34);
+    const hdr = this.text(`我的猜测 · 共 ${history.length} 条`,470,418,620,66,34,'#3D220B');
+    hdr.isBold = true;
+    if(!history.length)this.text('还没有记录，先提交一次猜测。',470,650,620,100,32,'#735535');
     history.slice(this.recordPage*3,this.recordPage*3+3).forEach((h,i)=>{
-      const index=this.recordPage*3+i,y=535+i*122;
-      const row=this.art('answer',475,y,735,112);
-      if(index===selected)row.getComponent(Sprite)!.color=new Color('#FFE193');
+      const index=this.recordPage*3+i,y=528+i*118;
+      const rowW=this.paperSafeWidth(y,22), rowLeft=470.5-rowW/2, rowRight=470.5+rowW/2;
+      const isSel=index===selected, isBase=index===baseline&&baseline!==selected;
+      const row=this.trapezoidPanel(
+        470.5, y, 106, 22,
+        isSel ? new Color(192,120,30,28) : isBase ? new Color(68,128,84,18) : new Color(116,70,26,15),
+        isSel ? new Color(198,128,38,185) : isBase ? new Color(82,146,96,155) : new Color(168,126,70,115),
+        isSel || isBase ? 1.8 : 1.3,
+      );
       this.touch(row,'record-'+index,()=>{this.selected=index;this.refresh();});
-      this.text(`第 ${index+1} 次`,208,y,160,70,32);
-      if(h.digits)this.cards(h.digits,455,y,61);else this.text('超时',455,y,300,70,32);
-      this.text(h.hits===null?'—':`${h.hits}/${size}`,690,y,110,70,38);
-      this.text(index===selected?'已选':index===baseline?'对照':'',793,y,80,60,25);
+      const turnLbl = this.text(`第 ${index+1} 次`,rowLeft+66,y-1,112,56,26,'#3B210C');
+      turnLbl.isBold = true;
+      if(h.digits)this.cards(h.digits,438,y,55);else this.text('超时',438,y,240,60,28,'#7D5C3B');
+      const hitX=rowRight-128;
+      const hot=h.hits!==null&&h.hits>=Math.max(1,size-1);
+      this.boxPanel(hitX,y,86,44,hot?new Color('#B95A18'):new Color(44,26,15,232),new Color('#D6A654'),22,1.5);
+      const hitLbl=this.text(h.hits===null?'—':`${h.hits}/${size}`,hitX,y-1,78,38,25,'#FFF2D2');
+      hitLbl.isBold=true;
+      if(isSel||isBase){
+        const tag=this.text(isSel?'已选':'对照',rowRight-46,y-1,64,40,22,isSel?'#A23012':'#286B3B');
+        tag.isBold=true;
+      }
     });
     if (pages > 1) {
       const move = (page: number, index = page * 3) => {
         this.recordPage = page; this.selected = index; this.refresh();
       };
-      this.button('上一页',235,892,190,()=>move(this.recordPage-1),this.recordPage>0,80);
-      this.button(`${this.recordPage+1}/${pages} · 回最新`,470,892,230,()=>move(pages-1,history.length-1),true,80).name='LearningControl-回到最新';
-      this.button('下一页',705,892,190,()=>move(this.recordPage+1),this.recordPage+1<pages,80);
-    } else this.text(history.length?'点击记录选择，再设为对照':'猜测后即可在这里查看和对比记录',470,892,700,65,29);
+      this.button('上一页',235,882,190,()=>move(this.recordPage-1),this.recordPage>0,76);
+      this.button(`${this.recordPage+1}/${pages} · 回最新`,470,882,230,()=>move(pages-1,history.length-1),true,76).name='LearningControl-回到最新';
+      this.button('下一页',705,882,190,()=>move(this.recordPage+1),this.recordPage+1<pages,76);
+    } else this.text(history.length?'点击记录选择，再设为对照':'猜测后即可在这里查看和对比记录',470,882,640,56,26,'#6E4F30');
     const item=history[selected],before=history[baseline];
     const caption=item?baseline===selected&&this.baseline>=0?`已将第 ${selected+1} 次设为对照。\n再点击另一条记录，查看变化。`:before&&baseline!==selected?compareClues(before,item):clueCaption(item):'点击记录选择，再设为对照，可比较任意两次猜测。';
-    this.art('answer',470,1110,735,320);
+    this.trapezoidPanel(470.5,1104,306,22,new Color(148,92,28,22),new Color(184,134,64,170),1.8);
     if(item?.digits&&before?.digits&&baseline!==selected){
       const changed=Array.from(item.digits).map((digit,i)=>digit!==before.digits![i]?i:-1).filter(i=>i>=0);
       if(changed.length===1){
         const position=changed[0];
-        this.art('banner',470,990,415,70);
-        this.text(`只改了第 ${position+1} 位`,470,990,380,60,34,'#FFE5A9');
-        this.text(`第 ${baseline+1} 次`,210,1090,130,60,26);
-        this.cards(before.digits[position],320,1090,67);
-        this.text('→',410,1090,70,70,42);
-        this.cards(item.digits[position],500,1090,67);
-        this.text(`命中数变化\n${before.hits} → ${item.hits}`,700,1090,225,110,34);
+        this.art('banner',470,994,380,62);
+        this.text(`只改了第 ${position+1} 位`,470,992,350,52,30,'#FFE5A9');
+        this.text(`第 ${baseline+1} 次`,226,1084,120,54,24,'#4D3014');
+        this.cards(before.digits[position],326,1084,60);
+        this.text('→',408,1084,60,60,38,'#7D4B1D');
+        this.cards(item.digits[position],490,1084,60);
+        this.text(`命中数变化\n${before.hits} → ${item.hits}`,666,1084,210,100,30,'#3D200A');
       }else{
-        this.text(`第 ${baseline+1} 次  ${before.digits}    →    第 ${selected+1} 次  ${item.digits}`,470,1015,670,70,32);
-        this.text(`命中数 ${before.hits} → ${item.hits}`,470,1090,650,70,37);
+        this.text(`第 ${baseline+1} 次  ${before.digits}   →   第 ${selected+1} 次  ${item.digits}`,470,1014,620,60,29,'#3D200A');
+        this.text(`命中数 ${before.hits} → ${item.hits}`,470,1084,600,60,34,'#942B14');
       }
     }
-    this.text(caption,470,item?.digits&&before?.digits&&baseline!==selected?1200:1110,650,135,32);
+    this.text(caption,470,item?.digits&&before?.digits&&baseline!==selected?1194:1104,610,124,29,'#4B2D12');
     this.fixed('baseline','设为对照',285,1500,360,()=>{this.baseline=selected;this.refresh();},!!item?.digits);
     const room=this.context.room;
     const canCopy=!room?!this.practice?.solved:['playing','reply'].includes(room.phase)&&room.current===this.context.me&&this.context.now>=room.startAt&&this.context.now<room.deadline;
     const copyHint = !item?.digits ? (history.length?'超时记录没有数字，无法复制':'先提交一次猜测，再选择记录')
       : !canCopy ? (!room?'本局已破解，可返回开始新练习':'轮到你行动时可复制记录')
       : `已选第 ${selected+1} 次 · 复制后可修改任意一位`;
-    this.text(copyHint,470,1302,700,50,28);
+    this.text(copyHint,470,1302,660,48,26,'#6D4E2E');
     this.fixed('copy','复制后修改',677,1500,383,()=>{
       if(!item?.digits)return;
       if(room)this.context.copy(item.digits);

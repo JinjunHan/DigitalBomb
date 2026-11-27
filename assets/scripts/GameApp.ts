@@ -11,6 +11,7 @@ import { SpriteEffects } from './SpriteEffects';
 import { countdownUrgency } from './shared/shader-feedback';
 import { feedbackEvent, cancellationArt, resultCaption, type FeedbackEvent } from './shared/feedback-state';
 import { hitBadgePalette, guessInsight, opponentProgress, formatMatchDuration } from './shared/battle-feedback';
+import { toastSpec } from './shared/toast-style';
 import { burstParticles, shakeNode, floatDeltaBadge, flipRevealCard } from './BattleEffects';
 import { FriendReturnLayer } from './FriendReturnLayer';
 import { shouldReturnToJoin } from './shared/friend-return';
@@ -138,6 +139,7 @@ export class GameApp extends Component {
   private nicknameEditBox?: EditBox;
   private nicknameEditingBegan = false;
   private nickname = ''; private avatar = 0; private busy = false; private notice = ''; private noticeUntil = 0;
+  private noticeId = 0; private noticeShownId = 0;
   private noticeNode?: Node;
   private noticePage = '';
   private reconnectBar?: Node;
@@ -376,11 +378,27 @@ export class GameApp extends Component {
   }
 
   private noticeContext() { const s=this.net.state;return s?.room?s.room.id+':'+s.room.phase:s?.queuedAt!=null?'matching':this.page; }
-  private toast(text: string) { this.noticePage=this.noticeContext();this.notice = text; this.noticeUntil = Date.now() + 6500; this.render(); }
-  private dismissNotice() {
+  private setNotice(text: string, durationMs?: number) {
+    const spec = toastSpec(text);
+    this.noticePage = this.noticeContext();
+    this.notice = text;
+    this.noticeUntil = Date.now() + (durationMs ?? spec.durationMs);
+    this.noticeId++;
+  }
+  private toast(text: string, durationMs?: number) { this.setNotice(text, durationMs); this.render(); }
+  private dismissNotice(animated = false) {
     this.notice='';this.noticeUntil=0;
-    if(this.noticeNode?.isValid){this.noticeNode.removeFromParent();this.noticeNode.destroy();}
+    const node = this.noticeNode;
     this.noticeNode=undefined;this.toastLabel=undefined;
+    if (!node?.isValid) return;
+    if (animated && read('motion', '1') === '1') {
+      const op = node.getComponent(UIOpacity) ?? node.addComponent(UIOpacity);
+      Tween.stopAllByTarget(node); Tween.stopAllByTarget(op);
+      tween(node).by(0.18, { position: new Vec3(0, 12, 0) }, { easing: 'quadIn' }).start();
+      tween(op).to(0.18, { opacity: 0 }).call(() => { if (node.isValid) { node.removeFromParent(); node.destroy(); } }).start();
+      return;
+    }
+    node.removeFromParent(); node.destroy();
   }
   private async act(action: string, payload: Record<string, unknown> = {}) {
     if (this.busy) return; this.busy = true;
@@ -396,7 +414,7 @@ export class GameApp extends Component {
       this.render();
     }
     try { await this.net.command(action, { roomId: this.net.state?.room?.id, ...payload }); if (action === 'lock') this.audio.play('ready'); }
-    catch (e) { this.audio.play('error'); if (action === 'guess') { this.submitting = false; this.clearEffects(); } this.noticePage=this.noticeContext();this.notice = (e as Error).message; this.noticeUntil = Date.now() + 6500; }
+    catch (e) { this.audio.play('error'); if (action === 'guess') { this.submitting = false; this.clearEffects(); } this.setNotice((e as Error).message); }
     finally { this.busy = false; this.render(); }
   }
   private n(name: string, x: number, y: number, w: number, h: number, parent = this.root) {
@@ -779,26 +797,53 @@ export class GameApp extends Component {
       this.reconnectBar = bar;
     } else if (this.wasOfflineNotice && this.net.online) {
       this.wasOfflineNotice = false;
-      this.noticePage = this.noticeContext();
-      this.notice = '连接已恢复';
-      this.noticeUntil = Date.now() + 2400;
+      this.setNotice('连接已恢复', 2200);
     }
     if (this.notice && Date.now() < this.noticeUntil) {
-      if (this.feedbackArt.ready) {
-        const group=this.feedbackArt.group(this.noticeLayer,'Notice',0);this.noticeNode=group;
-        let noticeArt: Node;
-        if(this.notice.startsWith('确认超时')) {
-          noticeArt=this.feedbackArt.image(group,'timeout-2',0,0,520);
-          this.toastLabel=this.feedbackArt.label(group,'',0,0,1,1,1);
-        } else {
-          noticeArt=this.feedbackArt.image(group,/复制/.test(this.notice)?'toast':'warning',0,0,690);
-          this.toastLabel=this.feedbackArt.label(group,this.notice,75,10,470,92,24);
+      const spec = toastSpec(this.notice);
+      const radius = Math.round(spec.height / 2);
+      const restY = this.screenHeight / 2 - this.layoutTop - 16 - spec.height / 2;
+      const capsule = this.n('NoticeToast', 375, 667, spec.width, spec.height, this.noticeLayer);
+      capsule.setPosition(0, restY);
+      const g = capsule.addComponent(Graphics);
+      // Soft grounded drop shadow
+      g.fillColor = new Color(6, 14, 14, 82);
+      g.roundRect(-spec.width / 2, -spec.height / 2 - 4, spec.width, spec.height, radius); g.fill();
+      // Deep translucent vintage espresso-walnut body + subtle semantic bronze-gold rim
+      g.fillColor = new Color(28, 17, 11, 232);
+      g.roundRect(-spec.width / 2, -spec.height / 2, spec.width, spec.height, radius); g.fill();
+      g.strokeColor = new Color(spec.borderColor); g.lineWidth = 1.8;
+      g.roundRect(-spec.width / 2 + 1, -spec.height / 2 + 1, spec.width - 2, spec.height - 2, radius - 1); g.stroke();
+      // Left semantic circular emblem
+      const badgeX = -spec.width / 2 + 28;
+      g.fillColor = new Color(spec.badgeColor);
+      g.circle(badgeX, 0, 13.5); g.fill();
+      g.strokeColor = new Color(255, 245, 220, 145); g.lineWidth = 1.2;
+      g.circle(badgeX, 0, 13.5); g.stroke();
+      const sym = this.text(spec.badgeSymbol, 375, 667, spec.badgeSymbol === '✓' ? 17 : 18, '#FFF8E8', 28, 28, capsule);
+      sym.node.setPosition(badgeX, 1); sym.isBold = true; sym.enableWrapText = false;
+      // Crisp centered toast text
+      const multiLine = spec.height > 60;
+      const textW = spec.width - 76;
+      const lbl = this.text(this.notice, 375, 667, 23, spec.textColor, textW, spec.height - 10, capsule);
+      lbl.node.setPosition(17, 1);
+      lbl.lineHeight = 28;
+      lbl.enableWrapText = multiLine;
+      lbl.overflow = multiLine ? Label.Overflow.CLAMP : Label.Overflow.SHRINK;
+      this.toastLabel = lbl;
+      this.noticeNode = capsule;
+      capsule.on(Node.EventType.TOUCH_END, () => this.dismissNotice(true));
+      // Play gentle slide-in animation only once per newly raised notice (never replay on unrelated redraws).
+      if (this.noticeShownId !== this.noticeId) {
+        this.noticeShownId = this.noticeId;
+        if (read('motion', '1') === '1') {
+          const op = capsule.addComponent(UIOpacity);
+          op.opacity = 0;
+          capsule.setPosition(0, restY + 14);
+          tween(op).to(0.18, { opacity: 255 }).start();
+          tween(capsule).to(0.2, { position: new Vec3(0, restY, 0) }, { easing: 'quadOut' }).start();
         }
-        // New artwork is taller than the original text-only toast. Keep its whole frame above the safe area.
-        noticeArt.on(Node.EventType.TOUCH_END,()=>this.dismissNotice());
-        const height=noticeArt.getComponent(UITransform)!.height;
-        group.setPosition(0,-this.screenHeight/2+bottomSafeInset()+16+height/2);
-      } else { const panel=this.box(375,667,700,62,C.dark,16,this.noticeLayer);panel.setPosition(0,-this.screenHeight/2+bottomSafeInset()+47);this.noticeNode=panel;panel.on(Node.EventType.TOUCH_END,()=>this.dismissNotice());this.toastLabel=this.text(this.notice,375,667,22,C.cream,670,58,panel);this.toastLabel.node.setPosition(0,0); }
+      }
     }
     this.updateTimer();
   }
@@ -2281,11 +2326,7 @@ export class GameApp extends Component {
       return;
     }
     this.learning.close(); this.overlay = '';
-    if (message) {
-      this.noticePage = this.noticeContext();
-      this.notice = message;
-      this.noticeUntil = Date.now() + 4500;
-    }
+    if (message) this.setNotice(message);
     this.render();
     if (this.playDigits.length >= digits.length && digits.length > 0) this.syncPlayInput('', digits, true);
   }
@@ -2438,6 +2479,6 @@ export class GameApp extends Component {
       const dots = '.'.repeat((Math.floor(now / 450) % 3) + 1);
       this.reconnectText.string = this.reconnecting ? `正在重新连接${dots}` : `网络波动，自动重连中${dots}`;
     }
-    if (this.toastLabel && Date.now() >= this.noticeUntil) this.dismissNotice();
+    if (this.toastLabel && Date.now() >= this.noticeUntil) this.dismissNotice(true);
   };
 }
