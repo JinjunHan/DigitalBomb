@@ -8,7 +8,7 @@ export interface RoomView {
   players: (Profile & { ready: boolean; online: boolean })[];
   version: number; round: number; turn: number; current: string; first: string;
   digitCount?: DigitCount; roundLimit?: number; turnMs?: number;
-  deadline: number; startAt: number; history: Guess[]; ownSecret?: string;
+  deadline: number; startAt: number; endedAt?: number; history: Guess[]; ownSecret?: string;
   revealed?: Record<string, string>; result?: Result; rematch: string[];
 }
 export interface ShareImage { imageUrlId: string; imageUrl: string }

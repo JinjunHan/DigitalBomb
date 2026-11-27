@@ -92,7 +92,7 @@ export class Match {
       players: this.seats.map(s => ({ ...s.profile, ready: !!s.secret, online: s.online })),
       round: Math.min(this.rules.rounds, Math.floor(this.turn / 2) + 1), turn: this.turn,
       digitCount: this.digitCount, roundLimit: this.rules.rounds, turnMs: this.rules.turnMs,
-      first: this.first, current: this.current, deadline: this.deadline, startAt: this.startAt,
+      first: this.first, current: this.current, deadline: this.deadline, startAt: this.startAt, endedAt: this.endedAt || undefined,
       history: this.history.map(h => ({ ...h })), ownSecret: this.seat(id).secret,
       revealed: this.phase === 'finished' ? Object.fromEntries(this.seats.map(s => [s.profile.id, s.secret!])) : undefined,
       result: this.result, rematch: [...this.rematch],

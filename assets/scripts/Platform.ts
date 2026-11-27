@@ -25,7 +25,7 @@ export async function copy(value: string): Promise<void> {
   if(!globalThis.navigator?.clipboard)throw Error('无法访问剪贴板，请手动输入房间口令');
   await globalThis.navigator.clipboard.writeText(value);
 }
-export function vibrate() { if (read('vibration', '1') === '1') wechat()?.vibrateShort({ type: 'light' }); }
+export function vibrate(type: 'light' | 'medium' | 'heavy' = 'light') { if (read('vibration', '1') === '1') wechat()?.vibrateShort({ type }); }
 export function topSafeInset(): number {
   if (!wechat()) return 64;
   try { const info = wechat().getWindowInfo?.() ?? wechat().getSystemInfoSync(); const menu = wechat().getMenuButtonBoundingClientRect(); return Math.max(64, (menu.bottom + 12) * 750 / info.windowWidth); } catch { return 96; }

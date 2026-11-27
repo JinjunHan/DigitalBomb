@@ -137,8 +137,8 @@ export const FEEDBACK_SIZES: Record<string, readonly number[]> = {
     466
   ],
   "victory-title": [
-    590,
-    454
+    553,
+    282
   ],
   "rematch-0": [
     506,

@@ -10,6 +10,8 @@ import { FeedbackArt } from './FeedbackArt';
 import { SpriteEffects } from './SpriteEffects';
 import { countdownUrgency } from './shared/shader-feedback';
 import { feedbackEvent, cancellationArt, resultCaption, type FeedbackEvent } from './shared/feedback-state';
+import { hitBadgePalette, guessInsight, opponentProgress, formatMatchDuration } from './shared/battle-feedback';
+import { burstParticles, shakeNode, floatDeltaBadge, flipRevealCard } from './BattleEffects';
 import { FriendReturnLayer } from './FriendReturnLayer';
 import { shouldReturnToJoin } from './shared/friend-return';
 import { ModalLayer } from './ModalLayer';
@@ -99,6 +101,19 @@ export class GameApp extends Component {
   private joinGlows: UIOpacity[] = [];
   private joinButton?: Node;
   private joinPaper?: SpriteEffects;
+  private playDigits: Label[] = [];
+  private playSlotGlows: UIOpacity[] = [];
+  private playSlotCursors: UIOpacity[] = [];
+  private playActionButton?: Node;
+  private playGuessPanel?: SpriteEffects;
+  private opponentPulseRing?: UIOpacity;
+  private opponentBacksNode?: Node;
+  private replyAura?: UIOpacity;
+  private lastAnimatedRecordTurn = -1;
+  private pendingFinishTimer?: ReturnType<typeof setTimeout>;
+  private finishHoldingRoomId = '';
+  private finishRevealedRoomId = '';
+  private resultAnimatedRoomId = '';
   private timerEffects?: SpriteEffects;
   private profilePaper?: SpriteEffects;
   private friendDigitFont?: Font;
@@ -232,7 +247,7 @@ export class GameApp extends Component {
     this.wxFlow.start();
     this.resizeLayout(); this.connect(); this.schedule(this.updateTimer, 0.2);
   }
-  onDestroy() { this.finishMatchingMotion(); this.opponentCard?.destroy(); clearTimeout(this.loginDeadline); this.releaseStartup(); this.wxFlow?.destroy(); if (this.feedbackArt) this.feedbackArt.disposed = true; this.friendReturn?.destroy(); this.modals?.destroy(); this.stopJoinMotion(); this.scenery?.destroy(); view.off('canvas-resize', this.resizeLayout, this); this.audio.dispose(); if (this.profilePanel) Tween.stopAllByTarget(this.profilePanel); this.clearEffects(); this.net.stop(); input.off(Input.EventType.KEY_DOWN, this.onKey, this); game.off(Game.EVENT_SHOW, this.onShow, this); game.off(Game.EVENT_HIDE, this.onHide, this); }
+  onDestroy() { this.finishMatchingMotion(); clearTimeout(this.pendingFinishTimer); this.opponentCard?.destroy(); clearTimeout(this.loginDeadline); this.releaseStartup(); this.wxFlow?.destroy(); if (this.feedbackArt) this.feedbackArt.disposed = true; this.friendReturn?.destroy(); this.modals?.destroy(); this.stopJoinMotion(); this.stopPlayMotion(); this.scenery?.destroy(); view.off('canvas-resize', this.resizeLayout, this); this.audio.dispose(); if (this.profilePanel) Tween.stopAllByTarget(this.profilePanel); this.clearEffects(); this.net.stop(); input.off(Input.EventType.KEY_DOWN, this.onKey, this); game.off(Game.EVENT_SHOW, this.onShow, this); game.off(Game.EVENT_HIDE, this.onHide, this); }
   private onHide() { this.wxFlow?.clearButton();this.audio.background(true); }
   private onShow() { this.audio.background(false); if (this.net.online) { void this.net.refreshSharing(); this.net.command('sync').catch(() => {}); } }
   private loadStartupTexture(path: string, loaded: (texture: Texture2D) => void) {
@@ -293,24 +308,40 @@ export class GameApp extends Component {
     }
     const sameRoom = !!r && r.id === this.lastRoom, oldTurn = this.lastTurn, oldPhase = this.lastPhase;
     if (!sameRoom && r && r.phase === 'preparing') this.audio.play('ready');
-    if (!sameRoom) { this.clearEffects(); this.dismissNotice(); this.warnedTurn=-1; this.submitting = false; }
+    if (!sameRoom) { clearTimeout(this.pendingFinishTimer); this.finishHoldingRoomId = ''; this.finishRevealedRoomId = ''; this.resultAnimatedRoomId = ''; this.lastAnimatedRecordTurn = -1; this.clearEffects(); this.dismissNotice(); this.warnedTurn=-1; this.submitting = false; }
     this.seenGuesses = r?.history.length ?? 0;
     if ((r?.id ?? '') !== this.lastRoom) { this.learning.close(); this.draft = ''; this.recordScrolls = []; this.recordPositions.clear(); this.recordsOpponent = false; this.overlay = ''; this.lastRoom = r?.id ?? ''; this.lastTurn = -1; }
     if (r && r.turn !== this.lastTurn) { this.draft = ''; this.selected = -1; this.lastTurn = r.turn; this.openingRendered = false; }
     if (r && this.lastPhase === 'preparing' && r.phase === 'playing') { this.draft = ''; this.selected = -1; }
     if (r && ['finished','cancelled'].includes(r.phase) && oldPhase !== r.phase) this.learning.close();
+    const shouldCrackFinale = event?.kind === 'end' && !!r && r.phase === 'finished'
+      && (oldPhase === 'playing' || oldPhase === 'reply')
+      && ['cracked', 'same_round', 'reply_missed'].includes(r.result?.reason ?? '')
+      && read('motion', '1') === '1' && this.finishRevealedRoomId !== r.id;
+    if (shouldCrackFinale && r) {
+      clearTimeout(this.pendingFinishTimer);
+      this.finishHoldingRoomId = r.id;
+    } else if (r?.phase === 'finished' && this.finishHoldingRoomId && this.finishHoldingRoomId !== r.id) {
+      this.finishHoldingRoomId = '';
+    }
     this.lastPhase = r?.phase ?? '';
     const key = JSON.stringify({ ...s, serverNow: 0 }); if (key !== this.lastKey) { this.lastKey = key; this.render(); }
     if (r?.phase === 'cancelled') this.clearEffects();
     if (event) {
       this.submitting = false;
       if (event.kind === 'end') {
-        event.caption = resultCaption(r!, s.me.id);
-        if(r!.result?.reason==='timeout')event.art=r!.result.winner===s.me.id?'timeout-end-1':'timeout-end-0';
-        if(r!.result?.reason==='reply_timeout'&&r!.result.winner!==s.me.id)event.art='timeout-end-2';
+        const win = r!.result?.winner === s.me.id, draw = !r!.result?.winner;
         this.endFeedbackUntil = Date.now() + 1800;
+        this.audio.play(win ? 'win' : draw ? 'draw' : 'lose');
+        vibrate(win ? 'heavy' : 'medium');
+        if (shouldCrackFinale) {
+          this.playCrackFinale(r!, s.me.id);
+        } else {
+          this.clearEffects();
+        }
+      } else {
+        this.showFeedback(event);
       }
-      this.showFeedback(event);
     } else if (sameRoom && r && r.current === s.me.id && (r.turn !== oldTurn || oldPhase === 'preparing') && ['playing', 'reply'].includes(r.phase)) {
       this.turnCue(r.phase === 'reply' ? '最后一次补猜！' : '轮到你出牌了');
     }
@@ -325,8 +356,17 @@ export class GameApp extends Component {
   }
   private async act(action: string, payload: Record<string, unknown> = {}) {
     if (this.busy) return; this.busy = true;
-    if (action === 'guess') { this.submitting = true; this.feedback('正在验证', null, String(payload.digits ?? ''), '等待牌桌确认…', true); }
-    this.render();
+    if (action === 'guess') {
+      this.submitting = true;
+      this.audio.play('submit');
+      this.playGuessPanel?.sweep();
+      if (this.playActionButton?.isValid) {
+        this.playActionButton.getComponent(Sprite)!.grayscale = true;
+        (this.playActionButton.getComponent(UIOpacity) ?? this.playActionButton.addComponent(UIOpacity)).opacity = 160;
+      }
+    } else {
+      this.render();
+    }
     try { await this.net.command(action, { roomId: this.net.state?.room?.id, ...payload }); if (action === 'lock') this.audio.play('ready'); }
     catch (e) { this.audio.play('error'); if (action === 'guess') { this.submitting = false; this.clearEffects(); } this.noticePage=this.noticeContext();this.notice = (e as Error).message; this.noticeUntil = Date.now() + 6500; }
     finally { this.busy = false; this.render(); }
@@ -373,7 +413,7 @@ export class GameApp extends Component {
   }
   private setOpponentSeatVisible(visible: boolean) {
     const room=this.root?.getChildByName('BattleRoom');
-    for(const name of ['PlayerPortrait','PlayerPortraitRim','Battle-nameplate','Battle-card-backs','OpponentNickname']) {
+    for(const name of ['PlayerPortrait','PlayerPortraitRim','Battle-nameplate','Battle-card-backs','OpponentNickname','OpponentProgress','OpponentPulseRing']) {
       const node=room?.getChildByName(name);if(node)node.active=visible;
     }
   }
@@ -386,51 +426,167 @@ export class GameApp extends Component {
   private feedback(title: string, hits: number | null, digits: string, caption: string, pending = false) {
     this.showFeedback({ kind: 'own', title: pending ? '正在验证' : title, hits: hits ?? undefined, caption, art: hits === this.digitCount() ? 'own-gold' : 'own' }, pending);
   }
+  private playCrackFinale(r: RoomView, meId: string) {
+    this.clearEffects();
+    const win = r.result?.winner === meId, draw = !r.result?.winner;
+    const peer = r.players.find(p => p.id !== meId);
+    const secret = r.revealed?.[peer?.id ?? ''] ?? '';
+    const count = r.digitCount ?? 4;
+    const available = this.screenHeight - this.layoutTop - bottomSafeInset() - 16;
+    const scale = Math.min(750 / 941, available / 1750);
+    const cardY = this.screenHeight / 2 - this.layoutTop + 20 * scale - 239 * scale;
+
+    shakeNode(this.root, win ? 10 : 6);
+    burstParticles(this.effects, 0, cardY, win ? 'crack' : 'hot');
+
+    // Flip revealed opponent password right at the opponent's seat during the 0.95s crack finale!
+    if (secret && this.battleArtReady) {
+      const seat = this.feedbackArt.group(this.effects, 'CrackFinaleCards', cardY, scale);
+      const paper = this.battleArt.get('card-paper')!;
+      for (let i = 0; i < count; i++) {
+        const x = (i - (count - 1) / 2) * 86;
+        const card = this.feedbackArt.group(seat, 'FinaleCard-' + i, 0);
+        card.setPosition(x, 0, 0);
+        const sp = card.addComponent(Sprite);
+        sp.spriteFrame = paper; sp.sizeMode = Sprite.SizeMode.CUSTOM;
+        card.getComponent(UITransform)!.setContentSize(82, 110);
+        const digit = this.feedbackArt.label(card, secret[i] ?? '—', 0, 0, 74, 96, 62, win ? '#8E2414' : C.ink);
+        digit.font = this.friendDigitFont ?? null;
+        digit.node.active = false;
+        sp.color = new Color('#294963');
+        flipRevealCard(card, () => {
+          sp.color = new Color('#FFF7DF');
+          digit.node.active = true;
+          this.audio.play('tap');
+        }, 0.06 + i * 0.08);
+      }
+    }
+
+    // Crisp floating banner across upper felt without double-stacking a second victory card.
+    const bannerY = this.screenHeight / 2 - this.layoutTop - available * 0.34;
+    const banner = this.feedbackArt.group(this.effects, 'CrackFinaleBanner', bannerY, Math.min(1, available / 1100));
+    const g = banner.addComponent(Graphics);
+    const bw = 440, bh = 88;
+    g.fillColor = new Color(win ? '#9E2B14' : draw ? '#2A4E54' : '#3C2318');
+    g.roundRect(-bw / 2, -bh / 2, bw, bh, 44); g.fill();
+    g.strokeColor = new Color('#FFD770'); g.lineWidth = 3;
+    g.roundRect(-bw / 2 + 2, -bh / 2 + 2, bw - 4, bh - 4, 42); g.stroke();
+    const title = this.feedbackArt.label(banner, win ? '密码全部破译！' : draw ? '同轮破译 · 旗鼓相当！' : '对手抢先破译', 0, 0, 400, 68, 36, '#FFF4CE');
+    title.isBold = true;
+    const op = banner.addComponent(UIOpacity);
+    op.opacity = 0; banner.setScale(0.84, 0.84, 1);
+    tween(op).to(0.16, { opacity: 255 }).delay(0.6).to(0.18, { opacity: 0 }).start();
+    tween(banner).to(0.22, { scale: Vec3.ONE }, { easing: 'backOut' }).start();
+
+    this.pendingFinishTimer = setTimeout(() => {
+      if (!this.isValid) return;
+      this.finishHoldingRoomId = '';
+      this.finishRevealedRoomId = r.id;
+      this.clearEffects();
+      this.render();
+    }, 960);
+  }
   private showFeedback(event: FeedbackEvent, pending = false) {
     this.clearEffects();
     const available = this.screenHeight - this.layoutTop - bottomSafeInset() - 24;
     const opponent = event.kind === 'opponent', own = event.kind === 'own';
+    const room = this.net.state?.room, meId = this.net.state?.me.id ?? '', count = this.digitCount();
+    const insight = own && !pending && room ? guessInsight(room.history, meId, count) : undefined;
     // Opponent feedback occupies the opponent seat, above the record sheet.
     const battleScale = Math.min(750 / 941, (available + 8) / 1750);
-    const group = this.feedbackArt.group(this.effects, 'GuessFeedback', this.screenHeight / 2 - this.layoutTop - (opponent ? 160 * battleScale : available * .29), opponent ? battleScale : Math.min(1, available / 1100));
-    if(opponent) { group.setPosition(110*battleScale,group.position.y);group.setScale(battleScale*600/650,battleScale*600/650,1);this.opponentFeedbackActive=true;this.setOpponentSeatVisible(false); }
-    const width = own ? 430 : event.kind === 'end' ? 480 : 650;
+    const groupY = this.screenHeight / 2 - this.layoutTop - (opponent ? 160 * battleScale : available * .31);
+    const group = this.feedbackArt.group(this.effects, 'GuessFeedback', groupY, opponent ? battleScale : Math.min(1, available / 1150));
+    if (opponent) {
+      // Center opponent banner cleanly so it never clips off the right viewport edge.
+      group.setPosition(0, group.position.y);
+      group.setScale(battleScale * 590 / 650, battleScale * 590 / 650, 1);
+      this.opponentFeedbackActive = true; this.setOpponentSeatVisible(false);
+    }
+    const width = own ? 396 : event.kind === 'end' ? 480 : 640;
     if (this.feedbackArt.ready) {
-      const art = this.feedbackArt.image(group, event.art, 0, 0, width);
+      const artKey = own && insight?.tier === 'crack' ? 'own-gold' : event.art;
+      const art = this.feedbackArt.image(group, artKey, 0, 0, width);
       if (!pending) {
         const fx = SpriteEffects.attach(art.getComponent(Sprite)!);
-        if (event.hits === 0 || event.kind === 'timeout') fx.flash();
-        else if ((event.hits !== undefined && event.hits > 0) || (event.kind === 'end' && this.net.state?.room?.result?.winner === this.net.state?.me.id)) fx.sweep();
+        if (event.hits === 0 || event.kind === 'timeout' || (opponent && event.urgent)) fx.flash();
+        else if ((event.hits !== undefined && event.hits > 0) || (event.kind === 'end' && room?.result?.winner === meId)) fx.sweep();
       }
       if (own) {
-        this.feedbackArt.label(group, event.title, 0, -52, 335, 50, 34).isBold=true;
-        const value = this.feedbackArt.label(group, pending ? '···' : `${event.hits} / ${this.digitCount()}`, 0, 50, 310, 112, 80);
+        const tier = insight?.tier ?? (event.hits === 0 ? 'zero' : event.hits === count ? 'crack' : event.hits === count - 1 ? 'hot' : 'low');
+        const headingText = insight?.headline ?? event.title;
+        const captionText = insight?.caption ?? event.caption;
+        const scoreColor = tier === 'zero' ? '#2A5563' : tier === 'hot' ? '#B42A1B' : tier === 'crack' ? '#A35C05' : tier === 'warm' ? '#9C4E0E' : C.ink;
+        const headingLabel = this.feedbackArt.label(group, headingText, 0, -48, 310, 48, 33, tier === 'hot' ? '#A82616' : C.ink);
+        headingLabel.isBold = true;
+        const value = this.feedbackArt.label(group, pending ? '···' : `${event.hits} / ${count}`, 0, 46, 290, 108, 78, scoreColor);
         value.font = this.friendDigitFont ?? null;
-        this.feedbackArt.label(group, event.caption, 0, 158, 330, 38, 22);
+        if (insight?.deductionHighlight) {
+          const pill = this.feedbackArt.group(group, 'InsightPill', -145);
+          const pg = pill.addComponent(Graphics);
+          pg.fillColor = new Color('#F7DFA8'); pg.roundRect(-162, -24, 324, 48, 12); pg.fill();
+          pg.strokeColor = new Color('#C98632'); pg.lineWidth = 2; pg.roundRect(-161, -23, 322, 46, 11); pg.stroke();
+        }
+        const cap = this.feedbackArt.label(group, captionText, 0, 145, 314, 44, 21, insight?.deductionHighlight ? '#8A2312' : C.ink);
+        if (insight?.deductionHighlight) cap.isBold = true;
+        if (!pending && read('motion', '1') === '1') {
+          if (tier === 'crack') {
+            burstParticles(this.effects, 0, groupY, 'crack');
+            shakeNode(this.root, 9); vibrate('heavy');
+          } else if (tier === 'hot') {
+            burstParticles(this.effects, 0, groupY, 'hot');
+            shakeNode(this.root, 6); vibrate('medium');
+          } else if (tier === 'warm' || (insight && insight.deltaBest > 0)) {
+            burstParticles(this.effects, 0, groupY, 'warm');
+            vibrate('light');
+          } else if (tier === 'zero') {
+            tween(group).by(.06, { position: new Vec3(-7, 0, 0) }).by(.09, { position: new Vec3(14, 0, 0) }).by(.06, { position: new Vec3(-7, 0, 0) }).start();
+            vibrate('light');
+          }
+          if (insight?.deltaLabel) {
+            floatDeltaBadge(this.effects, insight.deltaLabel, 138, groupY + 62, tier === 'hot' || tier === 'crack' ? '#B42A1B' : '#BA6518');
+          }
+        }
       } else if (opponent) {
-        const peer = this.net.state?.room?.players.find(p => p.id !== this.net.state?.me.id);
-        if (peer) this.playerPortrait(group, peer, -210.6, -7.3, 100, false);
-        const value = this.feedbackArt.label(group, `${event.hits} / ${this.digitCount()}`, 24, -8, 285, 96, 68, event.urgent ? '#751F23' : C.ink);value.font = this.friendDigitFont ?? null;
+        const peer = room?.players.find(p => p.id !== meId);
+        if (peer) this.playerPortrait(group, peer, -206.5, -14, 98, false);
+        const value = this.feedbackArt.label(group, `${event.hits} / ${count}`, 22, -10, 285, 96, 68, event.urgent ? '#8B1E1A' : C.ink);
+        value.font = this.friendDigitFont ?? null;
+        if (event.urgent) {
+          shakeNode(this.root, 6);
+          burstParticles(this.effects, 0, groupY, 'hot');
+        }
       } else if (event.kind === 'end') {
-        // The fixed success/failure heading remains in the artwork. Overlay actual reason below.
-        const label = this.feedbackArt.label(group, event.art.startsWith('timeout-')?'':event.caption, 0, 125, 420, 60, 23, C.ink);
+        const label = this.feedbackArt.label(group, event.art.startsWith('timeout-') ? '' : event.caption, 0, 125, 420, 60, 23, C.ink);
         label.node.name = 'ActualEndReason';
       }
     } else this.feedbackArt.label(group, event.title + '\n' + event.caption, 0, 0, 650, 140, 30, C.cream);
-    this.audio.play(pending ? 'submit' : opponent ? (event.urgent ? 'warning' : 'tap') : event.kind === 'timeout' ? 'warning' : event.kind === 'end' ? (this.net.state?.room?.result?.winner === this.net.state?.me.id ? 'win' : this.net.state?.room?.result?.winner ? 'lose' : 'draw') : 'hit' + event.hits);
-    if (event.urgent) vibrate();
+    this.audio.play(pending ? 'submit' : opponent ? (event.urgent ? 'warning' : 'tap') : event.kind === 'timeout' ? 'warning' : event.kind === 'end' ? (room?.result?.winner === meId ? 'win' : room?.result?.winner ? 'lose' : 'draw') : 'hit' + Math.min(4, event.hits ?? 0));
+    if (event.urgent) vibrate('medium');
     const opacity = group.addComponent(UIOpacity), motion = read('motion','1') === '1', scale = group.scale.clone();
-    if (motion) { opacity.opacity = 0; group.setScale(scale.x*.92,scale.y*.92,1);tween(opacity).to(.16,{opacity:255}).start();tween(group).to(.2,{scale},{easing:'backOut'}).start(); }
+    if (motion) { opacity.opacity = 0; group.setScale(scale.x*.88,scale.y*.88,1);tween(opacity).to(.15,{opacity:255}).start();tween(group).to(.22,{scale},{easing:'backOut'}).start(); }
     if (motion && opponent && event.hits === 0) tween(group).by(.07,{position:new Vec3(-6,0,0)}).by(.1,{position:new Vec3(12,0,0)}).by(.07,{position:new Vec3(-6,0,0)}).start();
-    if (!pending) tween(opacity).delay(event.urgent ? 1.8 : 1.5).to(motion ? .18 : 0,{opacity:0}).call(()=>{group.destroy();if(opponent){this.opponentFeedbackActive=false;this.setOpponentSeatVisible(true);}}).start();
+    const hold = insight?.deductionHighlight ? 2.1 : event.urgent ? 1.85 : 1.5;
+    if (!pending) tween(opacity).delay(hold).to(motion ? .18 : 0,{opacity:0}).call(()=>{group.destroy();if(opponent){this.opponentFeedbackActive=false;this.setOpponentSeatVisible(true);}}).start();
   }
   private turnCue(message: string) {
     if (Date.now() < this.endFeedbackUntil) return;
     this.audio.play('turn'); this.clearEffects();
+    this.timerEffects?.sweep();
     const group = this.feedbackArt.group(this.effects, 'TurnCue', this.screenHeight/2-this.layoutTop-(this.screenHeight-this.layoutTop-bottomSafeInset())*.28);
-    if(this.feedbackArt.ready) this.feedbackArt.image(group,'turn',0,0,600);
-    this.feedbackArt.label(group,message,56,8,430,70,28,this.feedbackArt.ready?C.ink:C.cream);
-    const opacity=group.addComponent(UIOpacity);tween(opacity).delay(1.2).to(read('motion','1')==='1'?.18:0,{opacity:0}).call(()=>group.destroy()).start();vibrate();
+    if(this.feedbackArt.ready) {
+      const img = this.feedbackArt.image(group,'turn',0,0,580);
+      SpriteEffects.attach(img.getComponent(Sprite)!).sweep();
+    }
+    this.feedbackArt.label(group,message,52,8,420,70,28,this.feedbackArt.ready?C.ink:C.cream);
+    const opacity=group.addComponent(UIOpacity), motion = read('motion','1')==='1';
+    if (motion) {
+      opacity.opacity = 0; group.setScale(0.92, 0.92, 1);
+      tween(opacity).to(.14, { opacity: 255 }).delay(1.05).to(.18, { opacity: 0 }).call(()=>group.destroy()).start();
+      tween(group).to(.2, { scale: Vec3.ONE }, { easing: 'backOut' }).start();
+    } else {
+      tween(opacity).delay(1.2).to(0,{opacity:0}).call(()=>group.destroy()).start();
+    }
+    vibrate('light');
   }
   private actor(y: number, height = 230) {
     if (!this.opponentArt) return;
@@ -493,6 +649,8 @@ export class GameApp extends Component {
     if(this.noticeNode?.isValid){this.noticeNode.removeFromParent();this.noticeNode.destroy();}
     this.noticeNode=undefined;
     this.stopJoinMotion(); this.joinDigits = []; this.joinGlows = []; this.joinButton = undefined; this.joinPaper = undefined;
+    this.stopPlayMotion(); this.playDigits = []; this.playSlotGlows = []; this.playSlotCursors = []; this.playActionButton = undefined; this.playGuessPanel = undefined;
+    this.opponentPulseRing = undefined; this.opponentBacksNode = undefined; this.replyAura = undefined;
     this.lobbyReels = []; this.roundOld = undefined; this.roundNew = undefined;
     this.profilePaper = undefined; this.profilePanel = undefined; this.profileBack = undefined; this.transitionLobby = undefined;
     for (const child of [...this.root.children]) { child.removeFromParent(); child.destroy(); }
@@ -836,6 +994,71 @@ export class GameApp extends Component {
       }
     }
   }
+  private stopPlayMotion() {
+    for (const label of this.playDigits) {
+      if (!label.isValid) continue;
+      Tween.stopAllByTarget(label.node);
+      const op = label.node.getComponent(UIOpacity);
+      if (op) Tween.stopAllByTarget(op);
+    }
+    for (const glow of this.playSlotGlows) if (glow.isValid) Tween.stopAllByTarget(glow);
+    for (const cur of this.playSlotCursors) if (cur.isValid) Tween.stopAllByTarget(cur);
+    if (this.playActionButton?.isValid) Tween.stopAllByTarget(this.playActionButton);
+  }
+  private syncPlayInput(previous: string, next: string, wave = false) {
+    const count = this.digitCount();
+    const r = this.net.state?.room, me = this.net.state?.me;
+    const editable = !!r && !!me && !this.busy && this.net.online && ['playing', 'reply'].includes(r.phase) && r.current === me.id && this.net.now() >= r.startAt;
+    const motion = read('motion', '1') === '1';
+    const activeSlot = editable ? (this.selected >= 0 ? this.selected : next.length < count ? next.length : -1) : -1;
+
+    this.playDigits.forEach((label, i) => {
+      if (!label.isValid) return;
+      const node = label.node, op = node.getComponent(UIOpacity)!, glow = this.playSlotGlows[i], cursor = this.playSlotCursors[i];
+      const restX = 472 + (i - (count - 1) / 2) * 116 - 470.5, restY = -840;
+      if (cursor?.isValid) {
+        Tween.stopAllByTarget(cursor);
+        if (i === activeSlot) {
+          cursor.opacity = 225;
+          if (motion) tween(cursor).repeatForever(tween().to(0.55, { opacity: 95 }, { easing: 'sineInOut' }).to(0.55, { opacity: 235 }, { easing: 'sineInOut' })).start();
+        } else {
+          cursor.opacity = 0;
+        }
+      }
+      if (previous[i] === next[i] && !wave) return;
+      Tween.stopAllByTarget(node); Tween.stopAllByTarget(op); if (glow?.isValid) Tween.stopAllByTarget(glow);
+      node.setPosition(restX, restY, 0); node.setScale(1, 1, 1); op.opacity = 255; if (glow?.isValid) glow.opacity = 0;
+      if (!motion) { label.string = next[i] ?? ''; return; }
+      const delay = wave ? i * 0.045 : 0;
+      if (next[i] !== undefined) {
+        label.string = next[i];
+        node.setPosition(restX, restY + 12, 0); node.setScale(0.74, 0.74, 1); op.opacity = 0;
+        tween(node).delay(delay)
+          .to(0.11, { position: new Vec3(restX, restY, 0), scale: new Vec3(1.12, 1.12, 1) }, { easing: 'quadOut' })
+          .to(0.08, { scale: Vec3.ONE }).start();
+        tween(op).delay(delay).to(0.09, { opacity: 255 }).start();
+        if (glow?.isValid) tween(glow).delay(delay).to(0.06, { opacity: 210 }).to(0.2, { opacity: 0 }).start();
+      } else {
+        tween(node).to(0.1, { position: new Vec3(restX, restY + 8, 0), scale: new Vec3(0.8, 0.8, 1) }, { easing: 'quadIn' }).start();
+        tween(op).to(0.1, { opacity: 0 }).call(() => { if (label.isValid) label.string = ''; }).start();
+      }
+    });
+
+    const btn = this.playActionButton;
+    if (btn?.isValid) {
+      const enabled = editable && next.length === count;
+      const sprite = btn.getComponent(Sprite)!;
+      sprite.grayscale = !enabled;
+      const op = btn.getComponent(UIOpacity) ?? btn.addComponent(UIOpacity);
+      op.opacity = enabled ? 255 : 145;
+      Tween.stopAllByTarget(btn); btn.setScale(1, 1, 1);
+      if (motion && enabled && (previous.length < count || wave)) {
+        tween(btn).to(0.09, { scale: new Vec3(1.045, 1.045, 1) }, { easing: 'quadOut' }).to(0.12, { scale: Vec3.ONE }).start();
+        SpriteEffects.attach(sprite).sweep();
+        this.playGuessPanel?.sweep();
+      }
+    }
+  }
   private keypad(top: number, context: 'join' | 'secret' | 'guess', enabled = true) {
     const labels = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '删除', '0', context === 'secret' ? '随机' : '清空'];
     labels.forEach((label, i) => { if (context === 'guess' && i === 11) return; this.button(label, 165 + i % 3 * 210, top + Math.floor(i / 3) * 80, 194, 66, () => this.digit(label, context), false, enabled && !this.busy); });
@@ -843,17 +1066,28 @@ export class GameApp extends Component {
   private digit(value: string, context: 'join' | 'secret' | 'guess') {
     if (context === 'join' && (this.friendReturn.active || this.busy || !this.net.online)) return;
     this.audio.play('tap');
+    if (context === 'guess' || context === 'secret') vibrate('light');
     let v = context === 'join' ? this.code : this.draft;
     const count = context === 'join' ? 4 : this.digitCount();
-    if (value === '删除') v = v.slice(0, -1);
-    else if (value === '清空') v = '';
-    else if (value === '随机') v = String(Math.floor(Math.random() * 10 ** count)).padStart(count, '0');
+    if (value === '删除') {
+      if (context !== 'join' && this.selected >= 0 && this.selected < v.length) {
+        v = v.slice(0, this.selected) + v.slice(this.selected + 1);
+        this.selected = -1;
+      } else v = v.slice(0, -1);
+    }
+    else if (value === '清空') { v = ''; this.selected = -1; }
+    else if (value === '随机') { v = String(Math.floor(Math.random() * 10 ** count)).padStart(count, '0'); this.selected = -1; }
     else if (this.selected >= 0 && context !== 'join' && this.selected < v.length) { v = v.slice(0, this.selected) + value + v.slice(this.selected + 1); this.selected = this.selected < count - 1 ? this.selected + 1 : -1; }
-    else if (v.length < count) v += value;
+    else if (v.length < count) { v += value; this.selected = -1; }
     if (context === 'join') {
       const previous = this.code; this.code = v;
       if (this.joinDigits.length === 4 && this.joinDigits.every(label => label.isValid)) {
         this.animateJoinDigits(previous, v); return;
+      }
+    } else if (context === 'guess') {
+      const previous = this.draft; this.draft = v;
+      if (this.playDigits.length === count && this.playDigits.every(label => label.isValid)) {
+        this.syncPlayInput(previous, v); return;
       }
     } else this.draft = v;
     this.render();
@@ -877,7 +1111,7 @@ export class GameApp extends Component {
   }
   private room(r: RoomView) {
     if (r.phase === 'waiting') { this.waiting(r); return; }
-    if (r.phase === 'finished' || r.phase === 'cancelled') { this.result(r); return; }
+    if ((r.phase === 'finished' && this.finishHoldingRoomId !== r.id) || r.phase === 'cancelled') { this.result(r); return; }
     if (this.battleArtReady) { this.battleArtwork(r); return; }
     const opponent = r.players.find(p => p.id !== this.net.state!.me.id)!;
     this.header(r.phase === 'preparing' ? '设置底牌' : `第 ${r.round} 轮 / ${r.roundLimit ?? STANDARD_ROUNDS}`, () => {
@@ -970,7 +1204,7 @@ export class GameApp extends Component {
     for (const side of [-1, 1]) {
       const index = side < 0 ? 0 : count - 1;
       const gripX = center + side * ((count - 1) * spacing / 2 + (preparing ? 55 : 35));
-      const gripY = (preparing ? 752 + 25 + 45 : 1030 + 15 + 35) - (preparing && selected === index ? 18 : 0);
+      const gripY = (preparing ? 752 + 25 + 45 : 1018 + 14 + 26) - (preparing && selected === index ? 18 : 0);
       const edge = 470.5 + side * (375 / sceneScale + 40);
       const tail = (sourceWidth - thumbX) * handScale;
       const width = Math.max(sourceWidth, (Math.abs(edge - gripX) + tail) / handScale);
@@ -1018,15 +1252,39 @@ export class GameApp extends Component {
     // Extend the gameplay keyboard down from its top; keep keys and artwork in one transform.
     const keyboardY=(y:number)=>1190+(y-1190)*1.28;
     art(prep ? 'tray' : 'play-tray',prep?BATTLE_RECTS.tray:BATTLE_RECTS['play-tray'].map((v,i)=>i%2?keyboardY(v):v));
+    if (!prep && r.current !== me.id && ['playing', 'reply'].includes(r.phase)) {
+      const ring = this.n('OpponentPulseRing', 375, 667, 160, 160, group);
+      ring.setPosition(0, -65);
+      const rg = ring.addComponent(Graphics);
+      rg.strokeColor = new Color('#FFD978'); rg.lineWidth = 4.5;
+      rg.circle(0, 0, 72); rg.stroke();
+      this.opponentPulseRing = ring.addComponent(UIOpacity);
+      this.opponentPulseRing.opacity = 160;
+    }
     this.playerPortrait(group, opponent, 0, -65, 126);
     const nameplate=art('nameplate',[355,134,586,179]);
     touch(nameplate,()=>this.toast(opponent.name+(opponent.online?'':' · 连接中')));
     label(shortName(opponent.name,7),472,156,29,208,C.cream,38).node.name='OpponentNickname';
-    if (count === 4) art('card-backs');
+    if (count === 4) this.opponentBacksNode = art('card-backs');
     else {
       if (!this.opponentCard) { this.opponentCard = new SpriteFrame(); this.opponentCard.texture = this.battleArt.get('card-backs')!.texture; this.opponentCard.rect = new Rect(214,0,94,128); }
       const backs=this.n('Battle-card-backs',375,667,1,1,group);backs.setPosition(0,0);
       for(let i=0;i<count;i++){const x=470+(i-(count-1)/2)*77;art('mode-back',[x-47,175,x+47,303],this.opponentCard,backs);}
+      this.opponentBacksNode = backs;
+    }
+    if (!prep) {
+      const progress = opponentProgress(r.history, me.id, count);
+      const badge = place(this.n('OpponentProgress', 375, 667, 250, 56, group), 768, 238);
+      const bg = badge.addComponent(Graphics);
+      bg.fillColor = new Color(progress.urgent || progress.cracked ? '#8F1E16' : '#251B14');
+      bg.roundRect(-125, -26, 250, 52, 26); bg.fill();
+      bg.strokeColor = new Color(progress.urgent || progress.cracked ? '#FFD36B' : '#B98C4B');
+      bg.lineWidth = progress.urgent || progress.cracked ? 2.6 : 1.8;
+      bg.roundRect(-124, -25, 248, 50, 25); bg.stroke();
+      const pl = this.text(progress.label, 375, 667, 22, progress.urgent || progress.cracked ? '#FFF5D6' : '#EED9AE', 230, 40, badge);
+      pl.node.setPosition(0, 0); pl.enableWrapText = false;
+      if (progress.urgent || progress.cracked) pl.isBold = true;
+      badge.on(Node.EventType.TOUCH_END, () => { this.audio.unlock(); this.audio.play('tap'); this.recordsOpponent = true; this.overlay = 'guessRecords'; this.render(); });
     }
     const nav = art('round');
     const navText = (value: string, x: number, width: number, parent = nav) => {
@@ -1051,7 +1309,7 @@ export class GameApp extends Component {
       this.applyRoundRoll();
     }
     touch(nav, () => { if (prep) this.ask('leave',()=>this.act('leave')); else { this.overlay='gameMenu';this.render(); } });
-    const editable = !this.busy && this.net.online && (prep ? !r.ownSecret : r.current === me.id && this.net.now() >= r.startAt);
+    const editable = !this.busy && this.net.online && (prep ? !r.ownSecret : ['playing', 'reply'].includes(r.phase) && r.current === me.id && this.net.now() >= r.startAt);
     if (prep) {
       art('status',[355,299,586,344]); label(opponent.ready ? '对手已准备' : '对手正在设置',470,323,28,215,C.cream);
       if(count===4)art('heading');
@@ -1082,68 +1340,144 @@ export class GameApp extends Component {
     } else {
       art('records');
       const records=art('all-records');touch(records,()=>{this.recordsOpponent=false;this.overlay='guessRecords';this.render();});
-      const hintButton=art('hint-button',[543,678,808,741],this.modalArt.get('tab-off'));
-      label('推理提示 / 排除',675,710,25,240,C.ink,44);
+      // Symmetrical top-left entry inside the ledger header: zero overlap with borders or guess box.
+      const hintButton=art('hint-button',[134,338,308,385],this.modalArt.get('tab-off'));
+      label('推理提示',221,362,25,160,C.ink,40);
       touch(hintButton,()=>this.openLearning('clues'));
-      const rows=r.history.filter(h=>h.playerId===me.id),rowHeight=94,height=282,width=680;
-      const viewport=place(this.n('BattleRecordsViewport',375,667,width,height,group),470.5,397+height/2);
+      const rows=r.history.filter(h=>h.playerId===me.id),rowHeight=90,height=270,width=680;
+      const viewport=place(this.n('BattleRecordsViewport',375,667,width,height,group),470.5,396+height/2);
       viewport.addComponent(Mask).type=Mask.Type.GRAPHICS_RECT;
       const content=this.n('BattleRecordsContent',375,667,width,Math.max(height,rows.length*rowHeight),viewport);
       content.getComponent(UITransform)!.setAnchorPoint(.5,1);content.setPosition(0,height/2);
       const scroll=viewport.addComponent(ScrollView);scroll.content=content;scroll.horizontal=false;scroll.vertical=true;scroll.inertia=true;scroll.elastic=false;scroll.cancelInnerEvents=true;
-      if(!rows.length)label(`暂无记录，输入 ${count} 位数字开始猜测`,470,532,27,620);
+      if(!rows.length)label(`暂无记录，输入 ${count} 位数字开始猜测`,470,530,27,620);
+      const motion = read('motion', '1') === '1';
       rows.forEach((h,i)=>{
-        const y=i*rowHeight+45;
-        const rowNode=art('record-row',[149,y-45,805,y+45],count===4?undefined:this.modalArt.get('record-row'),content);
-        touch(rowNode,()=>{if(h.digits)this.copyGuess(h.digits);},editable&&!!h.digits);
-        label(`第${Math.floor(h.turn/2)+1}轮`,231,y,30,145,C.ink,45,content);
-        if(h.digits)for(let j=0;j<count;j++)number(h.digits[j],481+(j-(count-1)/2)*88,y,45,67,68,content);
-        else label('本次超时',481,y,30,350,C.ink,45,content);
-        label(h.hits===null?'—':`${h.hits}/${r.digitCount ?? 4}`,727,y,35,110,count===4?'#FFD978':C.ink,52,content);
+        const y=i*rowHeight+44;
+        const latest = i === rows.length - 1;
+        const rowWrap = this.n('RecordRowWrap-' + i, 375, 667, 660, 86, content);
+        rowWrap.setPosition(0, -y);
+        const rowNode=art('record-row',[149,y-43,805,y+43],count===4?undefined:this.modalArt.get('record-row'),content);
+        rowNode.parent = rowWrap; rowNode.setPosition(6.5, 0);
+        // Never gray out records during opponent's turn; keep them crisp and readable for deduction!
+        rowNode.on(Node.EventType.TOUCH_START, () => { if (editable && h.digits && motion) rowWrap.setScale(0.985, 0.985, 1); });
+        rowNode.on(Node.EventType.TOUCH_CANCEL, () => rowWrap.setScale(1, 1, 1));
+        rowNode.on(Node.EventType.TOUCH_END, () => { rowWrap.setScale(1, 1, 1); this.audio.unlock(); if (h.digits) this.copyGuess(h.digits); });
+        if (latest) {
+          const hl = this.n('LatestRowHighlight', 375, 667, 656, 86, rowWrap); hl.setPosition(6.5, 0);
+          const hg = hl.addComponent(Graphics);
+          hg.strokeColor = new Color('#D99B38'); hg.lineWidth = 2.6;
+          hg.roundRect(-326, -41, 652, 82, 12); hg.stroke();
+        }
+        const roundLbl = label(`第${Math.floor(h.turn/2)+1}轮`,231,y,29,145,C.ink,44,content);
+        roundLbl.node.parent = rowWrap; roundLbl.node.setPosition(231 - 470.5, 0);
+        if(h.digits)for(let j=0;j<count;j++){
+          const dLbl = number(h.digits[j],481+(j-(count-1)/2)*88,y,45,67,68,content);
+          dLbl.node.parent = rowWrap; dLbl.node.setPosition(481 + (j - (count - 1) / 2) * 88 - 470.5, 0);
+        } else {
+          const tLbl = label('本次超时',481,y,29,350,C.ink,44,content);
+          tLbl.node.parent = rowWrap; tLbl.node.setPosition(481 - 470.5, 0);
+        }
+        // Color-escalated hit badge pill for instant scan of progress & match points!
+        const palette = hitBadgePalette(h.hits, count);
+        const pill = this.n('HitBadge-' + i, 375, 667, 108, 52, rowWrap);
+        pill.setPosition(727 - 470.5, 0);
+        const pg = pill.addComponent(Graphics);
+        pg.fillColor = new Color(palette.bg);
+        pg.roundRect(-52, -25, 104, 50, 25); pg.fill();
+        pg.strokeColor = new Color(palette.border); pg.lineWidth = 2.2;
+        pg.roundRect(-51, -24, 102, 48, 24); pg.stroke();
+        const hitLbl = this.text(h.hits===null?'—':`${h.hits}/${count}`, 375, 667, 33, palette.text, 100, 48, pill);
+        hitLbl.node.setPosition(0, 0); hitLbl.isBold = true; hitLbl.enableWrapText = false;
+        if (latest && h.turn > this.lastAnimatedRecordTurn) {
+          this.lastAnimatedRecordTurn = h.turn;
+          if (motion) {
+            const rop = rowWrap.addComponent(UIOpacity);
+            rop.opacity = 0; rowWrap.setPosition(-26, -y);
+            tween(rop).to(0.22, { opacity: 255 }).start();
+            tween(rowWrap).to(0.26, { position: new Vec3(0, -y, 0) }, { easing: 'quadOut' }).start();
+          }
+        }
       });
       const scrollKey=`battle:${r.id}:${me.id}`,position=this.recordPositions.get(scrollKey),max=Math.max(0,rows.length*rowHeight-height);
       scroll.scrollToOffset(new Vec2(0,position&&!position.bottom?Math.min(max,position.offset):max));
       this.recordScrolls.push({view:scroll,key:scrollKey});
-      if(rows.length)label(`共 ${rows.length} 条${max>0?' · 可滑动':''}`,244,363,20,190,C.ink,28);
+      if(rows.length)label(`共 ${rows.length} 条 · 点击记录可复用${max>0?' · 可滑动':''}`,470,683,20,580,'#6B4E31',26);
       if(max>0&&this.modalArtReady){
-        art('record-track',[816,397,828,397+height],this.modalArt.get('record-track'));
+        art('record-track',[816,396,828,396+height],this.modalArt.get('record-track'));
         const thumbHeight=Math.max(32,height*height/(rows.length*rowHeight));
-        const thumb=art('record-thumb',[816,397,828,397+thumbHeight],this.modalArt.get('record-thumb'));
-        const update=()=>place(thumb,822,397+thumbHeight/2+Math.max(0,Math.min(1,scroll.getScrollOffset().y/max))*(height-thumbHeight));
+        const thumb=art('record-thumb',[816,396,828,396+thumbHeight],this.modalArt.get('record-thumb'));
+        const update=()=>place(thumb,822,396+thumbHeight/2+Math.max(0,Math.min(1,scroll.getScrollOffset().y/max))*(height-thumbHeight));
         viewport.on(ScrollView.EventType.SCROLLING,update);update();
       }
-      if(count===4)art('guess');else label('本次猜测',470,759,33,500,C.cream,55);
+      if(count===4) this.playGuessPanel = SpriteEffects.attach(art('guess').getComponent(Sprite)!);
+      else label('本次猜测',470,759,33,500,C.cream,55);
       for(let i=0;i<count;i++) {
         const x=472+(i-(count-1)/2)*116;
         if(count!==4)art('mode-slot',[x-49,773,x+49,907],this.battleArt.get('card-paper'));
+        // Active slot cursor highlight (golden outline + subtle bottom bar)
+        const cursorNode = place(this.n('PlaySlotCursor-' + i, 375, 667, 104, 128, group), x, 840);
+        const cg = cursorNode.addComponent(Graphics);
+        cg.strokeColor = new Color('#E6A230'); cg.lineWidth = 4;
+        cg.roundRect(-50, -61, 100, 122, 11); cg.stroke();
+        cg.fillColor = new Color('#D97228');
+        cg.roundRect(-22, -52, 44, 5, 2.5); cg.fill();
+        const cursorOp = cursorNode.addComponent(UIOpacity); cursorOp.opacity = 0;
+        this.playSlotCursors.push(cursorOp);
+        // Flash glow border on digit entry
+        const glowNode = place(this.n('PlaySlotGlow-' + i, 375, 667, 108, 132, group), x, 840);
+        const gg = glowNode.addComponent(Graphics);
+        gg.strokeColor = new Color('#FFE38A'); gg.lineWidth = 5;
+        gg.roundRect(-51, -63, 102, 126, 12); gg.stroke();
+        const glowOp = glowNode.addComponent(UIOpacity); glowOp.opacity = 0;
+        this.playSlotGlows.push(glowOp);
         const digit=number(this.draft[i] ?? '',x,840,77,95,106);
-        touch(digit.node,()=>{this.selected=i;this.render();},editable);
+        digit.node.addComponent(UIOpacity);
+        this.playDigits.push(digit);
+        // Full-slot clickable hit target with instant local selection (no page rebuild)
+        const hitSlot = place(this.n('PlaySlotHit-' + i, 375, 667, 106, 128, group), x, 840);
+        if (editable) {
+          hitSlot.on(Node.EventType.TOUCH_END, () => {
+            this.audio.unlock(); this.audio.play('tap');
+            this.selected = this.selected === i ? -1 : i;
+            this.syncPlayInput(this.draft, this.draft);
+          });
+        }
       }
 
       for(let i=0;i<count;i++) {
-        const x=463.5+(i-(count-1)/2)*105,y=1030+(i===0||i===count-1?15:0);
+        const x=463.5+(i-(count-1)/2)*105,y=1022+(i===0||i===count-1?14:0);
         const card=art('card-paper',[x-69,y-95,x+69,y+95]);card.angle=count===4?[16,6,-6,-16][i]:((count-1)/2-i)*12;
         const digit=number(this.hideSecret?'?':r.ownSecret?.[i] ?? '',x,y,83,100,115);digit.node.angle=card.angle;
         touch(card,()=>{this.hideSecret=!this.hideSecret;this.render();});touch(digit.node,()=>{this.hideSecret=!this.hideSecret;this.render();});
       }
       this.battleHands(group, count, false, scale);
-      const portraitRect=[28,1000,208,1180];
+      // Positioned neatly in the lower-left pocket, clearing the left hand & sleeve cleanly.
+      const portraitRect=[42,1060,164,1182];
       const portrait=this.avatarFrame(me)??this.profileArt.get('avatar-'+me.avatar);
       const portraitBg=this.profileArt.get('portrait-background');
-      const portraitClip=place(this.n('BattlePortraitClip',375,667,180,180,group),118,1090);
+      const portraitClip=place(this.n('BattlePortraitClip',375,667,122,122,group),103,1121);
       portraitClip.addComponent(Mask).type=Mask.Type.GRAPHICS_ELLIPSE;
       const clipPortrait=(node:Node)=>{node.parent=portraitClip;node.setPosition(0,0);};
       if(portraitBg) clipPortrait(art('portrait-background',portraitRect,portraitBg));
       if(portrait) clipPortrait(art('portrait',portraitRect,portrait));
-      else label(AVATARS[me.avatar] ?? '客',118,1090,64,140,C.ink,120);
+      else label(AVATARS[me.avatar] ?? '客',103,1121,48,100,C.ink,90);
       const rim=this.profileArt.get('portrait-frame');
-      if(rim) art('portrait-frame',[23,995,213,1185],rim);
-      art('nameplate',[18,1154,213,1192]);
-      label(shortName(me.name,6),115,1173,29,181,C.cream);
-      const secretStatus=art('status',[285,1100,656,1155]);
+      if(rim) art('portrait-frame',[37,1055,169,1187],rim);
+      art('nameplate',[16,1162,190,1194]);
+      label(shortName(me.name,6),103,1178,24,162,C.cream);
+      const secretStatus=art('status',[295,1096,646,1148]);
       touch(secretStatus,()=>{this.hideSecret=!this.hideSecret;this.render();});
-      label(this.hideSecret?'底牌已隐藏 · 点击查看':'我的底牌 · 已锁定',470,1128,28,350,C.cream);
-      this.timerEffects = SpriteEffects.attach(art('turn').getComponent(Sprite)!);this.timerLabel=label('',470,1190,28,330,C.cream,48);
+      label(this.hideSecret?'底牌已隐藏 · 点击查看':'我的底牌 · 已锁定',470,1122,26,340,C.cream);
+      if (r.phase === 'reply' && r.current === me.id) {
+        const aura = place(this.n('ReplyAura', 375, 667, 424, 102, group), 470, 1192);
+        const ag = aura.addComponent(Graphics);
+        ag.strokeColor = new Color('#FF6A3D'); ag.lineWidth = 6;
+        ag.roundRect(-208, -46, 416, 92, 46); ag.stroke();
+        this.replyAura = aura.addComponent(UIOpacity); this.replyAura.opacity = 180;
+      }
+      this.timerEffects = SpriteEffects.attach(art('turn').getComponent(Sprite)!);
+      this.timerLabel=label('',470,1190,28,330,r.phase==='reply'&&r.current===me.id?'#FFD87A':C.cream,48);
     }
     if(this.opponentFeedbackActive)this.setOpponentSeatVisible(false);
     const prefix=prep?'prep-':'play-';
@@ -1152,9 +1486,22 @@ export class GameApp extends Component {
       const rect=BATTLE_RECTS[prefix+key];
       const keyRect=prep?rect:rect.map((v,i)=>i%2===0?470.5+(v-470.5)*.88:keyboardY(1425+(v-1425)*.84));
       const node=art(prefix+key,keyRect);
-      touch(node,()=>{if(key==='action') {if(prep)this.digit('随机','secret');else this.submitGuess();}
-        else this.digit(key==='delete'?'删除':key,prep?'secret':'guess');}, editable && (key!=='action'||prep||this.draft.length===count));
+      if (!prep && key === 'action') {
+        this.playActionButton = node;
+        if (editable) {
+          this.bindPressEffect(node, () => this.draft.length === count && !this.busy && this.net.online);
+          node.on(Node.EventType.TOUCH_START, () => { if (this.draft.length === count && !this.busy && read('motion', '1') === '1') node.setScale(.98, .98, 1); });
+          node.on(Node.EventType.TOUCH_CANCEL, () => node.setScale(1, 1, 1));
+          node.on(Node.EventType.TOUCH_END, () => { node.setScale(1, 1, 1); this.audio.unlock(); if (this.draft.length === count && !this.busy && this.net.online) this.submitGuess(); });
+        } else {
+          node.getComponent(Sprite)!.grayscale = true; node.addComponent(UIOpacity).opacity = 145;
+        }
+      } else {
+        touch(node,()=>{if(key==='action') {if(prep)this.digit('随机','secret');else this.submitGuess();}
+          else this.digit(key==='delete'?'删除':key,prep?'secret':'guess');}, editable && (key!=='action'||prep||this.draft.length===count));
+      }
     }
+    if (!prep) this.syncPlayInput(this.draft, this.draft);
   }
   private preparation(r: RoomView) {
     this.text(r.players.find(p => p.id !== this.net.state!.me.id)?.ready ? '对手已准备' : '对手正在设置', 375, 365, 22, C.gold);
@@ -1224,40 +1571,185 @@ export class GameApp extends Component {
     if (r.history.some(h => h.playerId === this.net.state!.me.id && h.digits === this.draft)) this.ask('repeat', submit); else submit();
   }
   private artResult(r: RoomView) {
-    const me=this.net.state!.me.id;
-    const available=this.screenHeight-this.layoutTop-bottomSafeInset()-20;
-    const scale=Math.min(750/941,available/1450);
-    const group=this.feedbackArt.group(this.root,'ArtResult',this.screenHeight/2-this.layoutTop-(available-1450*scale)/2,scale);
-    const art=(key:string,x:number,y:number,w:number,action?:()=>void)=>this.feedbackArt.image(group,key,x,y,w,action?()=>{this.audio.unlock();this.audio.play('tap');action();}:undefined);
-    const label=(text:string,x:number,y:number,w:number,h:number,size=30)=>this.feedbackArt.label(group,text,x,y,w,h,size);
-    const home=()=>{this.page='lobby';this.act('leave');};
-    if(r.phase==='cancelled') {
-      art(cancellationArt(r.result?.reason),0,650,720);
-      art('home',0,860,420,home);return;
+    const me = this.net.state!.me, meId = me.id;
+    const available = this.screenHeight - this.layoutTop - bottomSafeInset() - 20;
+    const scale = Math.min(750 / 941, available / 1410);
+    const group = this.feedbackArt.group(this.root, 'ArtResult', this.screenHeight / 2 - this.layoutTop - (available - 1410 * scale) / 2, scale);
+    const art = (key: string, x: number, y: number, w: number, action?: () => void, parent = group) => {
+      const node = this.feedbackArt.image(parent, key, x, y, w, action ? () => { this.audio.unlock(); this.audio.play('tap'); action(); } : undefined);
+      if (action) this.bindPressEffect(node);
+      return node;
+    };
+    const label = (text: string, x: number, y: number, w: number, h: number, size = 30, color = C.ink, parent = group) =>
+      this.feedbackArt.label(parent, text, x, y, w, h, size, color);
+    const shortName = (name: string, limit: number) => Array.from(name).length > limit ? Array.from(name).slice(0, limit - 1).join('') + '…' : name;
+    const home = () => { this.page = 'lobby'; this.act('leave'); };
+    if (r.phase === 'cancelled') {
+      art(cancellationArt(r.result?.reason), 0, 620, 700);
+      art('home', 0, 910, 410, home);
+      return;
     }
-    const win=r.result?.winner===me, draw=!r.result?.winner;
-    art(draw?'draw-title':win?'victory-title':'defeat-title',0,win?200:draw?180:200,draw?550:win?530:750);
-    label(resultCaption(r,me),0,win?316:!draw?318:380,win?430:650,50,28).color=new Color(!draw?C.ink:C.cream);
-    art('result-paper',0,810,840);
-    const peer=r.players.find(p=>p.id!==me);
-    const count=(id:string)=>r.history.filter(h=>h.playerId===id&&h.digits!==null).length;
-    label('我的猜测',-210,596,250,60,32);label(`${count(me)} 次`,235,596,150,60,36);
-    label('对手猜测',-210,688,250,60,32);label(`${count(peer?.id??'')} 次`,235,688,150,60,36);
-    label('我的底牌',-230,830,200,70,30);label('对手密码',-230,998,200,70,30);
-    for(const [digits,y] of [[r.ownSecret??'',830],[r.revealed?.[peer?.id??'']??'',998]] as const) {
-      for(let i=0;i<(r.digitCount??4);i++) {
-        const x=104.5+(i-((r.digitCount??4)-1)/2)*111;
-        const n=this.feedbackArt.group(group,'ResultDigit',-y);n.setPosition(x,-y);
-        const sprite=n.addComponent(Sprite);sprite.spriteFrame=this.battleArt.get('card-paper')??this.joinArt.get('digit-slot')??null;sprite.sizeMode=Sprite.SizeMode.CUSTOM;n.getComponent(UITransform)!.setContentSize(98,125);
-        const digit=label(digits[i]??'—',x,y,90,110,72);digit.font=this.friendDigitFont??null;
+
+    const win = r.result?.winner === meId, draw = !r.result?.winner;
+    const motion = read('motion', '1') === '1';
+    const shouldAnimate = motion && this.resultAnimatedRoomId !== r.id;
+    if (shouldAnimate) this.resultAnimatedRoomId = r.id;
+
+    // 1. Unified open outcome header (no boxy parchment frame competing with the recap sheet)
+    const headerGroup = this.feedbackArt.group(group, 'ResultHeader', 0);
+    let titleSprite: Sprite | null = null;
+    if (win) {
+      const titleNode = art('victory-title', 0, 174, 670, undefined, headerGroup);
+      titleSprite = titleNode.getComponent(Sprite);
+      const cap = label(resultCaption(r, meId), 0, 304, 420, 44, 26, '#FFF0C8', headerGroup);
+      cap.isBold = true;
+    } else if (!draw) {
+      const titleNode = art('defeat-title', 0, 178, 740, undefined, headerGroup);
+      titleSprite = titleNode.getComponent(Sprite);
+      label(resultCaption(r, meId), 0, 294, 460, 44, 26, C.ink, headerGroup);
+    } else {
+      const titleNode = art('draw-title', 0, 146, 470, undefined, headerGroup);
+      titleSprite = titleNode.getComponent(Sprite);
+      // Clean brass-trimmed capsule so draw reason text never floats over or touches the card border.
+      const pill = this.feedbackArt.group(headerGroup, 'DrawReasonPill', -332);
+      const pg = pill.addComponent(Graphics);
+      pg.fillColor = new Color('#261A13'); pg.roundRect(-220, -23, 440, 46, 23); pg.fill();
+      pg.strokeColor = new Color('#D8A856'); pg.lineWidth = 2.2; pg.roundRect(-219, -22, 438, 44, 22); pg.stroke();
+      const cap = label(resultCaption(r, meId), 0, 332, 410, 40, 24, '#FFF0C8', headerGroup);
+      cap.isBold = true;
+    }
+
+    // 2. Single clean parchment recap card (opponent password revealed first, dynamic 2/3/4 digits, compact 3-col stats)
+    const cardGroup = this.feedbackArt.group(group, 'ResultCard', 0);
+    art('result-paper', 0, 788, 816, undefined, cardGroup);
+
+    const peer = r.players.find(p => p.id !== meId);
+    const digitCount = r.digitCount ?? 4;
+    const guessCount = (id: string) => r.history.filter(h => h.playerId === id && h.digits !== null).length;
+    const cardW = digitCount === 2 ? 108 : digitCount === 3 ? 98 : 90;
+    const cardH = Math.round(cardW * 1.32);
+    const gap = digitCount === 2 ? 26 : digitCount === 3 ? 18 : 13;
+    const step = cardW + gap;
+    const cardPaper = this.battleArt.get('card-paper') ?? this.joinArt.get('digit-slot') ?? null;
+
+    const drawCardBand = (y: number, h: number, fill: string, stroke: string, lineWidth: number) => {
+      const band = this.feedbackArt.group(cardGroup, 'ResultBand', -y);
+      const bg = band.addComponent(Graphics);
+      bg.fillColor = new Color(fill); bg.roundRect(-344, -h / 2, 688, h, 16); bg.fill();
+      bg.strokeColor = new Color(stroke); bg.lineWidth = lineWidth; bg.roundRect(-343, -h / 2 + 1, 686, h - 2, 15); bg.stroke();
+    };
+
+    // Row 1 (Primary Focus): Opponent's revealed password
+    drawCardBand(620, 162, '#F4DFB7', '#CA984B', 2.2);
+    if (peer) this.playerPortrait(cardGroup, peer, -284, -620, 76);
+    const oppTag = label('对手密码', -182, 600, 134, 38, 26, '#962B12', cardGroup);
+    oppTag.isBold = true;
+    label(shortName(peer?.name ?? '对手', 6), -182, 640, 138, 34, 21, '#5D4329', cardGroup);
+    const oppSecret = r.revealed?.[peer?.id ?? ''] ?? '';
+    for (let i = 0; i < digitCount; i++) {
+      const cx = 122 + (i - (digitCount - 1) / 2) * step;
+      const card = this.feedbackArt.group(cardGroup, 'ResultOppDigit-' + i, -620);
+      card.setPosition(cx, -620);
+      const sp = card.addComponent(Sprite);
+      sp.spriteFrame = cardPaper; sp.sizeMode = Sprite.SizeMode.CUSTOM;
+      card.getComponent(UITransform)!.setContentSize(cardW, cardH);
+      const digit = label(oppSecret[i] ?? '—', 0, 0, cardW - 10, cardH - 12, digitCount === 2 ? 78 : 68, win ? '#8E2414' : C.ink, card);
+      digit.font = this.friendDigitFont ?? null;
+      if (shouldAnimate) {
+        sp.color = new Color('#2A4A64');
+        digit.node.active = false;
+        flipRevealCard(card, () => {
+          sp.color = Color.WHITE;
+          digit.node.active = true;
+          this.audio.play('tap');
+        }, 0.22 + i * 0.085);
       }
     }
-    art('records',0,1135,380,()=>{this.overlay='resultRecords';this.render();});
+
+    // Row 2 (Secondary Reference): Player's own secret
+    drawCardBand(796, 146, '#F7EAD0', '#D7B780', 1.6);
+    this.playerPortrait(cardGroup, me, -284, -796, 68);
+    const ownTag = label('我的底牌', -182, 778, 134, 36, 24, C.ink, cardGroup);
+    ownTag.isBold = true;
+    label(shortName(me.name, 6), -182, 814, 138, 32, 20, '#6F563C', cardGroup);
+    const mySecret = r.ownSecret ?? '';
+    const ownW = cardW - 6, ownH = Math.round(ownW * 1.3);
+    for (let i = 0; i < digitCount; i++) {
+      const cx = 122 + (i - (digitCount - 1) / 2) * step;
+      const card = this.feedbackArt.group(cardGroup, 'ResultOwnDigit-' + i, -796);
+      card.setPosition(cx, -796);
+      const sp = card.addComponent(Sprite);
+      sp.spriteFrame = cardPaper; sp.sizeMode = Sprite.SizeMode.CUSTOM;
+      card.getComponent(UITransform)!.setContentSize(ownW, ownH);
+      const digit = label(mySecret[i] ?? '—', 0, 0, ownW - 10, ownH - 10, digitCount === 2 ? 72 : 64, C.ink, card);
+      digit.font = this.friendDigitFont ?? null;
+    }
+
+    // Row 3: Compact 3-column horizontal stats strip (replaces two sparse full-width rows)
+    const statBar = this.feedbackArt.group(cardGroup, 'ResultStats', -946);
+    const sg = statBar.addComponent(Graphics);
+    sg.fillColor = new Color('#F4E5C5'); sg.roundRect(-344, -46, 688, 92, 16); sg.fill();
+    sg.strokeColor = new Color('#CFA562'); sg.lineWidth = 1.6; sg.roundRect(-343, -45, 686, 90, 15); sg.stroke();
+    sg.strokeColor = new Color('#D2B078'); sg.lineWidth = 1.5;
+    for (const dx of [-114, 114]) { sg.moveTo(dx, -26); sg.lineTo(dx, 26); }
+    sg.stroke();
+
+    const duration = formatMatchDuration(r.startAt, r.endedAt);
+    const cols: [string, string, number][] = [
+      [`${guessCount(meId)} 次`, '我的猜测', -229],
+      [`${guessCount(peer?.id ?? '')} 次`, '对手猜测', 0],
+      duration
+        ? [duration, `${digitCount}位 · 第${r.round}轮`, 229]
+        : [`第 ${r.round} 轮`, `${digitCount} 位密码`, 229],
+    ];
+    for (const [val, sub, cx] of cols) {
+      const vLbl = label(val, cx, 932, 200, 44, 33, C.ink, cardGroup);
+      if (/^[0-9:]+$/.test(val)) vLbl.font = this.friendDigitFont ?? null;
+      vLbl.isBold = true;
+      label(sub, cx, 972, 204, 32, 20, '#73583B', cardGroup);
+    }
+
+    // Compact records link tucked cleanly inside the lower parchment
+    art('records', 0, 1076, 336, () => { this.overlay = 'resultRecords'; this.render(); }, cardGroup);
+
+    // 3. Unified bottom action bar (same ArtResult coordinate space & consistent warm-orange primary CTA for both modes!)
+    const actionGroup = this.feedbackArt.group(group, 'ResultActions', 0);
+    let primaryBtnSprite: Sprite | null = null;
     if (r.mode === 'friend') {
-      this.button('确认 · 返回房间', 375, 1190, 610, 82, () => this.act('returnToRoom'), true, !this.busy);
+      const backBtn = art('rematch', 0, 1292, 620, () => { if (!this.busy) this.act('returnToRoom'); }, actionGroup);
+      if (this.busy) backBtn.addComponent(UIOpacity).opacity = 150;
+      primaryBtnSprite = backBtn.getComponent(Sprite);
+      const backLbl = label('确认 · 返回房间', 0, 0, 520, 76, 36, '#FFF5DC', backBtn);
+      backLbl.isBold = true;
     } else {
-      art('match',-200,1300,368,()=>{if(!this.busy)this.selectMode('public');});
-      art('result-home',200,1300,362,home);
+      const matchBtn = art('match', -200, 1292, 376, () => { if (!this.busy) this.selectMode('public'); }, actionGroup);
+      if (this.busy) matchBtn.addComponent(UIOpacity).opacity = 150;
+      primaryBtnSprite = matchBtn.getComponent(Sprite);
+      art('result-home', 200, 1292, 370, home, actionGroup);
+    }
+
+    // 4. Choreographed entrance & victory gold foil confetti
+    if (shouldAnimate) {
+      const hOp = headerGroup.addComponent(UIOpacity); hOp.opacity = 0;
+      headerGroup.setScale(0.82, 0.82, 1);
+      tween(hOp).to(0.22, { opacity: 255 }).start();
+      tween(headerGroup).to(0.28, { scale: Vec3.ONE }, { easing: 'backOut' }).call(() => {
+        if (titleSprite?.isValid) SpriteEffects.attach(titleSprite).sweep();
+      }).start();
+
+      const cOp = cardGroup.addComponent(UIOpacity); cOp.opacity = 0;
+      cardGroup.setPosition(0, -24);
+      tween(cOp).delay(0.08).to(0.24, { opacity: 255 }).start();
+      tween(cardGroup).delay(0.08).to(0.28, { position: Vec3.ZERO }, { easing: 'quadOut' }).start();
+
+      const aOp = actionGroup.addComponent(UIOpacity); aOp.opacity = 0;
+      actionGroup.setPosition(0, -18);
+      tween(aOp).delay(0.32).to(0.22, { opacity: 255 }).start();
+      tween(actionGroup).delay(0.32).to(0.24, { position: Vec3.ZERO }, { easing: 'quadOut' }).call(() => {
+        if (primaryBtnSprite?.isValid) SpriteEffects.attach(primaryBtnSprite).sweep();
+      }).start();
+
+      if (win) burstParticles(this.effects, 0, this.screenHeight * 0.2, 'confetti');
     }
   }
   private result(r: RoomView) {
@@ -1580,7 +2072,24 @@ export class GameApp extends Component {
   }
   update(dt: number) {
     this.audio?.update(dt);
-    this.timerEffects?.pulse(countdownUrgency(this.net.state?.room ?? undefined, this.net.state?.me.id, this.net.now()));
+    const motion = read('motion', '1') === '1';
+    const urgency = countdownUrgency(this.net.state?.room ?? undefined, this.net.state?.me.id, this.net.now());
+    this.timerEffects?.pulse(urgency);
+    if (motion) {
+      const t = game.totalTime / 1000;
+      if (this.opponentPulseRing?.isValid) this.opponentPulseRing.opacity = Math.round(95 + 125 * (0.5 + 0.5 * Math.sin(t * 3.4)));
+      if (this.opponentBacksNode?.isValid && this.opponentPulseRing?.isValid) {
+        const s = 1 + 0.015 * Math.sin(t * 2.8);
+        this.opponentBacksNode.setScale(s, s, 1);
+      }
+      if (this.replyAura?.isValid) this.replyAura.opacity = Math.round(95 + 150 * (0.5 + 0.5 * Math.sin(t * 6.5)));
+      if (this.timerLabel?.isValid && urgency > 0) {
+        const beat = 1 + 0.075 * urgency * (0.5 + 0.5 * Math.sin(t * 8));
+        this.timerLabel.node.setScale(beat, beat, 1);
+      } else if (this.timerLabel?.isValid && this.timerLabel.node.scale.x !== 1) {
+        this.timerLabel.node.setScale(1, 1, 1);
+      }
+    }
     if (this.matchingMotion) {
       if (read('motion', '1') !== '1') this.finishMatchingMotion();
       else if (++this.matchingMotionFrames > 2) {
@@ -1664,7 +2173,17 @@ export class GameApp extends Component {
     if (!room || !state || !this.net.online || this.busy || !['playing','reply'].includes(room.phase) || room.current !== state.me.id || this.net.now() < room.startAt || this.net.now() >= room.deadline) {
       this.toast('轮到你时可复制记录并修改'); return;
     }
-    this.draft = digits; this.selected = -1; this.learning.close(); this.overlay = ''; this.render();
+    const previous = this.draft;
+    this.draft = digits; this.selected = -1;
+    this.audio.play('tap'); vibrate('light');
+    const inline = !this.learning.visible && !this.overlay && this.playDigits.length === digits.length && this.playDigits.every(l => l.isValid);
+    if (inline) {
+      this.syncPlayInput(previous, digits, true);
+      this.toast('已填入记录，点数字槽可单改一位');
+      return;
+    }
+    this.learning.close(); this.overlay = ''; this.render();
+    if (this.playDigits.length === digits.length) this.syncPlayInput('', digits, true);
   }
   private modalKey(): ModalKind | undefined {
     return this.overlay === 'confirm' ? this.confirmation?.kind
@@ -1803,10 +2322,13 @@ export class GameApp extends Component {
         if (r.phase === 'waiting') this.timerLabel.string = `${this.friendArtReady ? '' : '房间有效期  '}${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, '0')}`;
         else if (r.phase === 'preparing') this.timerLabel.string = this.battleArtReady ? String(remaining) : `准备倒计时 ${remaining}s`;
         else if (now < r.startAt) this.timerLabel.string = `即将开局 ${Math.ceil((r.startAt - now) / 1000)}s`;
-        else this.timerLabel.string = r.phase === 'reply'
-          ? `${r.current === s.me.id ? '最后补猜' : '等待对手补猜'}  ${remaining}s`
-          : `${r.current === s.me.id ? '轮到你了' : '对手正在猜测'}  ${remaining}s`;
-        if (['playing', 'reply'].includes(r.phase) && remaining <= 5 && r.current === s.me.id && this.warnedTurn !== r.turn) { this.warnedTurn = r.turn; vibrate(); this.audio.play('warning'); }
+        else {
+          const dots = '.'.repeat((Math.floor(now / 500) % 3) + 1);
+          this.timerLabel.string = r.phase === 'reply'
+            ? (r.current === s.me.id ? `最后补猜！ ${remaining}s` : `对手补猜中${dots} ${remaining}s`)
+            : (r.current === s.me.id ? `轮到你了  ${remaining}s` : `对手思考中${dots} ${remaining}s`);
+        }
+        if (['playing', 'reply'].includes(r.phase) && remaining <= 5 && r.current === s.me.id && this.warnedTurn !== r.turn) { this.warnedTurn = r.turn; vibrate('medium'); this.audio.play('warning'); }
       }
     }
     if (this.toastLabel && Date.now() >= this.noticeUntil) this.dismissNotice();
