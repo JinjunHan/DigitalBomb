@@ -111,7 +111,7 @@ export class LearningPanel {
     const node = this.node('Learning-' + value.slice(0, 24), x, y, w, h);
     const label = node.addComponent(Label); label.string = value; label.fontSize = size; label.lineHeight = size * 1.3;
     label.color = new Color(color); label.horizontalAlign = Label.HorizontalAlign.CENTER; label.verticalAlign = Label.VerticalAlign.CENTER;
-    label.overflow = Label.Overflow.SHRINK; label.fontFamily = 'Georgia, Songti SC, serif'; return label;
+    label.overflow = Label.Overflow.SHRINK; label.fontFamily = 'Helvetica Neue, Roboto, Arial, Songti SC, Noto Serif CJK SC, serif'; return label;
   }
   private touch(node: Node, name: string, action: () => void, enabled = true) {
     node.name = 'LearningControl-' + name;

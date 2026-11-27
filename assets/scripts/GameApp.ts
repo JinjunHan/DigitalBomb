@@ -34,6 +34,7 @@ interface StartupScreen {
   draw(progress: number, status: string): void;
 }
 const { ccclass } = _decorator;
+const UI_FONT = 'Helvetica Neue, Roboto, Arial, Songti SC, Noto Serif CJK SC, serif';
 const C = { ink: '#352719', cream: '#F7E7C8', paper: '#EAD5AC', gold: '#D8AA58', teal: '#173E3C', dark: '#102D2C', muted: '#C3C8B6', orange: '#D96A32', blue: '#2A4656' };
 const reasons: Record<string, string> = { same_round: '同轮破解，旗鼓相当', reply_missed: '后手补猜未命中', reply_timeout: '后手补猜超时', cracked: '密码全部破解', round_limit: '本局达到轮数上限', timeout: '连续两次行动超时', disconnect: '对方未能重新连接', resigned: '一方认输', prepare_timeout: '准备超时，本局不计胜负', room_expired: '房间已过期', player_left: '玩家离开，本局已取消', both_offline: '双方掉线，本局不计胜负' };
 
@@ -383,7 +384,7 @@ export class GameApp extends Component {
   }
   private text(value: string, x: number, y: number, size = 26, color = C.cream, width = 660, height = 60, parent = this.root) {
     const n = this.n(value.slice(0, 30), x, y, width, height, parent), l = n.addComponent(Label); l.string = value; l.fontSize = size; l.lineHeight = size * 1.35;
-    l.color = new Color(color); l.horizontalAlign = Label.HorizontalAlign.CENTER; l.verticalAlign = Label.VerticalAlign.CENTER; l.overflow = Label.Overflow.SHRINK; l.fontFamily = 'Georgia, Songti SC, serif'; return l;
+    l.color = new Color(color); l.horizontalAlign = Label.HorizontalAlign.CENTER; l.verticalAlign = Label.VerticalAlign.CENTER; l.overflow = Label.Overflow.SHRINK; l.fontFamily = UI_FONT; return l;
   }
   /** Bind only enabled controls; material allocation is deferred until first press. */
   private bindPressEffect(node: Node, enabled: () => boolean = () => true) {
@@ -518,8 +519,8 @@ export class GameApp extends Component {
         const scoreColor = tier === 'zero' ? '#2A5563' : tier === 'hot' ? '#B42A1B' : tier === 'crack' ? '#A35C05' : tier === 'warm' ? '#9C4E0E' : C.ink;
         const headingLabel = this.feedbackArt.label(group, headingText, 0, -48, 310, 48, 33, tier === 'hot' ? '#A82616' : C.ink);
         headingLabel.isBold = true;
-        const value = this.feedbackArt.label(group, pending ? '···' : `${event.hits} / ${count}`, 0, 46, 290, 108, 78, scoreColor);
-        value.font = this.friendDigitFont ?? null;
+        const value = this.feedbackArt.label(group, pending ? '···' : `${event.hits} / ${count}`, 0, 46, 290, 108, 76, scoreColor);
+        value.isBold = true;
         if (insight?.deductionHighlight) {
           const pill = this.feedbackArt.group(group, 'InsightPill', -145);
           const pg = pill.addComponent(Graphics);
@@ -549,8 +550,8 @@ export class GameApp extends Component {
       } else if (opponent) {
         const peer = room?.players.find(p => p.id !== meId);
         if (peer) this.playerPortrait(group, peer, -206.5, -14, 98, false);
-        const value = this.feedbackArt.label(group, `${event.hits} / ${count}`, 22, -10, 285, 96, 68, event.urgent ? '#8B1E1A' : C.ink);
-        value.font = this.friendDigitFont ?? null;
+        const value = this.feedbackArt.label(group, `${event.hits} / ${count}`, 22, -10, 285, 96, 66, event.urgent ? '#8B1E1A' : C.ink);
+        value.isBold = true;
         if (event.urgent) {
           shakeNode(this.root, 6);
           burstParticles(this.effects, 0, groupY, 'hot');
@@ -861,7 +862,7 @@ export class GameApp extends Component {
     // Use the upright first cell only; matching hourglass is intentionally static.
     sprite('hourglass-sheet', [302.5,537,638.5,873]);
     this.timerLabel = this.text('',375,667,57,'#FFD978',225,72,group);
-    this.timerLabel.fontFamily = 'Times New Roman'; this.timerLabel.isBold = true;
+    this.timerLabel.fontFamily = UI_FONT; this.timerLabel.isBold = true;
     this.timerLabel.node.setPosition(0,-913);
     const mode=this.text(modeLabel(this.net.state?.queuedDigitCount ?? 4),375,667,29,C.cream,520,50,group);mode.node.setPosition(0,-995);
     const me=this.net.state!.me, portrait=this.avatarFrame(me)??this.profileArt.get('avatar-'+me.avatar);
@@ -1315,8 +1316,8 @@ export class GameApp extends Component {
       if(count===4)art('heading');
       else {art('mode-heading',[179,362,762,463],this.modalArt.get('tab-off')??this.profileArt.get('input'));label(`设置你的 ${count} 位密码`,470,411,40,530,C.ink,70);}
       this.timerEffects = SpriteEffects.attach(art('timer').getComponent(Sprite)!);
-      this.timerLabel=label('',497,489,42,70,'#FFD978',54);
-      if(this.friendDigitFont) this.timerLabel.font=this.friendDigitFont;
+      this.timerLabel=label('',497,489,40,70,'#FFD978',54);
+      this.timerLabel.isBold = true;
       this.timerLabel.lineHeight=46;
       label('s',540,493,29,20,'#FFD978',38);
       const rules=art('rules',[243,523,699,589]); touch(rules,()=>this.openLearning('rules'));
@@ -1704,7 +1705,6 @@ export class GameApp extends Component {
     ];
     for (const [val, sub, cx] of cols) {
       const vLbl = label(val, cx, 932, 200, 44, 33, C.ink, cardGroup);
-      if (/^[0-9:]+$/.test(val)) vLbl.font = this.friendDigitFont ?? null;
       vLbl.isBold = true;
       label(sub, cx, 972, 204, 32, 20, '#73583B', cardGroup);
     }

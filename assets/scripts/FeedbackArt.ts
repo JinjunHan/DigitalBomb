@@ -29,7 +29,7 @@ export class FeedbackArt {
   }
   label(parent: Node, text: string, x: number, y: number, width: number, height: number, size = 26, color = '#352719') {
     const node = this.group(parent, 'FeedbackText', -y); node.setPosition(x, -y);node.getComponent(UITransform)!.setContentSize(width, height);
-    const label = node.addComponent(Label); label.string = text; label.fontFamily = 'Georgia, Songti SC, serif'; label.fontSize = size; label.lineHeight = size * 1.3; label.color = new Color(color); label.horizontalAlign = Label.HorizontalAlign.CENTER; label.verticalAlign = Label.VerticalAlign.CENTER; label.overflow = Label.Overflow.SHRINK;
+    const label = node.addComponent(Label); label.string = text; label.fontFamily = 'Helvetica Neue, Roboto, Arial, Songti SC, Noto Serif CJK SC, serif'; label.fontSize = size; label.lineHeight = size * 1.3; label.color = new Color(color); label.horizontalAlign = Label.HorizontalAlign.CENTER; label.verticalAlign = Label.VerticalAlign.CENTER; label.overflow = Label.Overflow.SHRINK;
     return label;
   }
 }

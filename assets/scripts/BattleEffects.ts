@@ -130,7 +130,7 @@ export function floatDeltaBadge(parent: Node, text: string, x: number, y: number
   labelNode.addComponent(UITransform).setContentSize(w - 16, h - 4);
   const label = labelNode.addComponent(Label);
   label.string = text;
-  label.fontFamily = 'Georgia, Songti SC, serif';
+  label.fontFamily = 'Helvetica Neue, Roboto, Arial, Songti SC, Noto Serif CJK SC, serif';
   label.fontSize = 26;
   label.lineHeight = 32;
   label.isBold = true;
