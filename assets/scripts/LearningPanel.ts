@@ -1,17 +1,17 @@
 import { BlockInputEvents, Color, Graphics, Label, Layers, Node, Sprite, SpriteFrame, UIOpacity, UITransform, resources, Texture2D } from 'cc';
-import { clueCaption, compareClues, deduce, STANDARD_ROUNDS, STANDARD_TURN_MS, type Clue, type DigitCount } from './shared/deduction';
+import { clueCaption, compareClues, composeQuickDraft, consistentCandidate, deduce, STANDARD_ROUNDS, STANDARD_TURN_MS, type Clue, type DigitCount } from './shared/deduction';
 import { Practice, Tutorial } from './shared/learning';
 import type { RoomView } from './shared/protocol';
 import { modeLabel, type MatchMode } from './shared/game-mode';
 
-const LEARNING_ART = ["paper", "back", "title-online", "title-friend", "title-hub", "title-tutorial", "mode-2", "mode-3", "mode-4", "check", "match", "create", "start", "practice-2", "practice-3", "practice-4", "rules", "home", "hint", "key-1", "key-2", "key-3", "key-4", "key-5", "key-6", "key-7", "key-8", "key-9", "key-0", "key-delete", "key-submit", "tab-positions", "tab-history", "baseline", "copy", "return", "card", "answer", "panel", "banner", "subtitle"];
+const LEARNING_ART = ["paper", "back", "title-online", "title-friend", "title-hub", "title-tutorial", "mode-2", "mode-3", "mode-4", "check", "match", "create", "start", "practice-2", "practice-3", "practice-4", "rules", "home", "hint", "key-1", "key-2", "key-3", "key-4", "key-5", "key-6", "key-7", "key-8", "key-9", "key-0", "key-delete", "key-submit", "tab-positions", "tab-positions-off", "tab-history", "tab-history-off", "baseline", "copy", "return", "card", "answer", "panel", "banner", "subtitle"];
 
 interface Context {
   parent: Node; height: number; top: number; bottom: number;
   paper?: SpriteFrame; button?: SpriteFrame; card?: SpriteFrame;
   cardDigits?: Record<'ink' | 'crimson', Map<string, SpriteFrame>>;
   room?: RoomView | null; me: string; now: number;
-  redraw: () => void; copy: (digits: string) => void; completed: () => void;
+  redraw: () => void; copy: (digits: string, message?: string) => void; completed: () => void;
 }
 type Page = 'menu' | 'rules' | 'tutorial' | 'practice' | 'clues' | 'mode' | 'confirmation';
 /** Local teaching and practice never send guesses to the multiplayer service. */
@@ -29,6 +29,9 @@ export class LearningPanel {
   private baseline = -1;
   private cacheKey = '';
   private cache = deduce([]);
+  private picks: string[] = [];
+  private picksKey = '';
+  private clueHint = '';
   private context!: Context;
   private group!: Node;
   private timer?: Label;
@@ -92,7 +95,7 @@ export class LearningPanel {
     // Publish the whole batch atomically: network redraws never expose half a skin.
     resources.load(LEARNING_ART.map(name => name === 'paper' ? 'art/profile/paper/texture' : 'art/learning-v2/' + name + '/texture'), Texture2D, (error, textures) => {
       if (error) { this.failed = true; this.loading = false; }
-      else textures.forEach((texture, i) => { const frame = new SpriteFrame(); frame.texture = texture; if (LEARNING_ART[i] === 'paper') { frame.insetLeft=110; frame.insetRight=110; frame.insetTop=160; frame.insetBottom=130; } if (['answer','subtitle','banner','card'].includes(LEARNING_ART[i])) { const name=LEARNING_ART[i]; const x=name==='answer'?52:name==='card'?12:30; const y=name==='answer'?38:name==='card'?12:22; frame.insetLeft=x; frame.insetRight=x; frame.insetTop=y; frame.insetBottom=y; } this.frames.set(LEARNING_ART[i], frame); });
+      else textures.forEach((texture, i) => { const frame = new SpriteFrame(); frame.texture = texture; const name = LEARNING_ART[i]; if (name === 'paper') { frame.insetLeft=110; frame.insetRight=110; frame.insetTop=160; frame.insetBottom=130; } if (['answer','subtitle','banner','card'].includes(name)) { const x=name==='answer'?52:name==='card'?12:name==='banner'?56:30; const y=name==='answer'?38:name==='card'?12:22; frame.insetLeft=x; frame.insetRight=x; frame.insetTop=y; frame.insetBottom=name==='banner'?24:y; } this.frames.set(name, frame); });
       if (this.visible && this.context.parent.isValid) this.refresh();
     });
   }
@@ -171,8 +174,8 @@ export class LearningPanel {
     else if (this.page === 'practice') this.training();
     else this.clues();
     if (context.room && ['playing','reply','preparing'].includes(context.room.phase)) {
-      this.art('banner',470,1390,720,95);
-      this.timer = this.text('',470,1390,670,70,29,'#FFE5A9'); this.update(context.now);
+      this.art('banner',470,1365,710,76);
+      this.timer = this.text('',470,1362,650,58,27,'#FFE5A9'); this.update(context.now);
     }
   }
   private heading(value: string, subtitle: string, asset?: string) {
@@ -190,7 +193,7 @@ export class LearningPanel {
     }
     this.text(`已选 ${modeLabel(this.selectedMode)} · 确认后记住`,470,1120,720,60,33);
     this.art('banner',470,1220,720,90);
-    this.text(friend?'好友加入后使用相同规则':'每回合 60 秒  |  最多 30 轮',470,1220,650,65,33,'#FFE5A9');
+    this.text(friend?'好友加入后使用相同规则':'每回合 60 秒  |  最多 30 轮',470,1217,650,65,33,'#FFE5A9');
     this.fixed(friend?'create':'match',friend?'创建房间':'开始匹配',470,1380,595,()=>this.chooseMode?.(this.selectedMode));
     this.text(friend?'房间口令仍为四位':'仅匹配相同位数的对手',470,1498,700,60,29);
   }
@@ -331,39 +334,247 @@ export class LearningPanel {
     this.text(this.slot>=0?(this.slot<this.draft.length?`正在修改第 ${this.slot+1} 位 · 点击键盘替换`:`接着填写第 ${this.slot+1} 位 · 点击键盘输入`):`已输入 ${this.draft.length}/${practice.size} 位 · 点击卡牌可修改`,470,1050,680,40,26);
     this.fixed('hint',`推理提示 · ${practice.history.length} 条记录`,747,970,215,()=>this.go('clues'));
   }
+  private syncPicks(size: DigitCount, key: string, result: ReturnType<typeof deduce>) {
+    if (this.picksKey === key && this.picks.length === size) return;
+    this.picksKey = key;
+    this.clueHint = '';
+    this.picks = result.consistent
+      ? result.positions.map(p => (p.possible.length === 1 ? p.possible[0] : ''))
+      : Array.from({ length: size }, () => '');
+  }
+  private boxPanel(x: number, y: number, w: number, h: number, fill: string, stroke: string, radius = 14, lineWidth = 2) {
+    const n = this.node('LearningBox', x, y, w, h);
+    const g = n.addComponent(Graphics);
+    g.fillColor = new Color(fill); g.roundRect(-w / 2, -h / 2, w, h, radius); g.fill();
+    g.strokeColor = new Color(stroke); g.lineWidth = lineWidth;
+    g.roundRect(-w / 2 + 1, -h / 2 + 1, w - 2, h - 2, Math.max(2, radius - 1)); g.stroke();
+    return n;
+  }
   private clues() {
-    const {room,me}=this.context;
-    const history:Clue[]=room?room.history.filter(h=>h.playerId===me):this.practice?.history??[];
-    const size:DigitCount=room?room.digitCount??4:this.practice?.size??4;
-    this.art('banner',470,205,650,100);
-    this.text('我的推理笔记',470,205,600,80,46,'#FFE5A9');
-    const left=this.fixed('tab-positions','逐位排除',310,317,350,()=>{this.tab='positions';this.refresh();});
-    const right=this.fixed('tab-history','记录与对比',660,317,330,()=>{this.tab='history';this.refresh();});
-    (this.tab==='positions'?right:left).getComponent(Sprite)!.color=new Color('#B5A18B');
-    if(this.tab==='history') {this.history(history,size);return;}
-    const key=JSON.stringify([size,history.map(h=>[h.digits,h.hits])]);
-    if(key!==this.cacheKey){this.cacheKey=key;this.cache=deduce(history,size);}
-    const result=this.cache;
-    const recent=history.slice(-3);
-    if(!recent.length)this.text('提交猜测后，这里会自动整理线索',470,435,720,80,33);
-    recent.forEach((h,i)=>{this.art('answer',245+i*230,435,215,100);this.text(`${h.digits??'超时'} → ${h.hits??'—'}/${size}`,245+i*230,435,200,75,29);});
-    this.art('banner',470,552,580,88);
-    this.text(result.consistent?`剩余 ${result.count} 种可能`:'记录不一致，请等待同步',470,552,540,70,40,'#FFE5A9');
-    if(result.consistent)result.positions.forEach((position,i)=>{
-      const y=680+i*143;
-      this.art('answer',477,y,745,127);
-      this.art('banner',181,y,145,90);
-      this.text(`第 ${i+1} 位`,181,y,135,60,33,'#FFE5A9');
-      for(let d=0;d<10;d++){
-        const x=290+d*58, excluded=position.excluded.includes(String(d)), confirmed=position.possible.length===1&&!excluded;
-        const card=this.art('card',x,y,52,94);card.getComponent(Sprite)!.color=new Color(confirmed?'#75B87B':excluded?'#E6B3A0':'#FFFFFF');
-        this.text(String(d),x,y-12,48,55,37,confirmed?'#174A27':'#321502');
-        if(excluded||confirmed)this.text(confirmed?'✓':'×',x,y+25,48,40,32,confirmed?'#145526':'#A51D16');
+    const { room, me } = this.context;
+    const history: Clue[] = room ? room.history.filter(h => h.playerId === me) : this.practice?.history ?? [];
+    const size: DigitCount = room ? room.digitCount ?? 4 : this.practice?.size ?? 4;
+
+    // 1. Clean header plaque + redesigned active/inactive twin ledger tabs
+    this.art('banner', 470, 214, 590, 86);
+    const titleLbl = this.text('我的推理笔记', 470, 211, 520, 68, 42, '#FFE5A9');
+    titleLbl.isBold = true;
+
+    const posActive = this.tab === 'positions';
+    this.fixed(posActive ? 'tab-positions' : 'tab-positions-off', '逐位排除', 302, 314, 326, () => { this.tab = 'positions'; this.refresh(); });
+    this.fixed(posActive ? 'tab-history-off' : 'tab-history', '记录与对比', 638, 314, 326, () => { this.tab = 'history'; this.refresh(); });
+    if (!posActive) { this.history(history, size); return; }
+
+    const key = JSON.stringify([size, history.map(h => [h.digits, h.hits])]);
+    if (key !== this.cacheKey) { this.cacheKey = key; this.cache = deduce(history, size); }
+    const result = this.cache;
+    this.syncPicks(size, key, result);
+
+    // 2. Compact unified summary strip: remaining count badge + recent 3 clues chips
+    this.boxPanel(470, 404, 742, 78, '#F6E7C9', '#CFA562', 16, 1.8);
+    this.boxPanel(228, 404, 240, 52, '#2B190E', '#C99848', 26, 2);
+    const remLbl = this.text(result.consistent ? `剩余 ${result.count} 种可能` : '线索同步中', 228, 402, 226, 44, 24, '#FFE5A9');
+    remLbl.isBold = true;
+
+    const recent = history.slice(-3);
+    if (!recent.length) {
+      this.text('提交猜测后，这里会自动整理每轮线索', 595, 403, 460, 44, 23, '#7C5D3B');
+    } else {
+      const chipW = recent.length === 1 ? 230 : recent.length === 2 ? 214 : 150;
+      const gap = 10;
+      const startX = 360 + (472 - (recent.length * chipW + (recent.length - 1) * gap)) / 2 + chipW / 2;
+      recent.forEach((h, i) => {
+        const cx = startX + i * (chipW + gap);
+        const hot = h.hits !== null && h.hits >= Math.max(1, size - 1);
+        this.boxPanel(cx, 404, chipW, 50, hot ? '#F9E1B5' : '#EFE0BE', hot ? '#C97B2A' : '#CBB07F', 12, 1.6);
+        const cl = this.text(`${h.digits ?? '超时'} · ${h.hits ?? '—'}/${size}`, cx, 402, chipW - 10, 42, recent.length === 3 ? 21 : 23, hot ? '#942812' : '#3B2311');
+        cl.isBold = true;
+      });
+    }
+
+    // 3. Interactive Position Elimination & Quick-Pick Matrix (cleanly spaced for 2/3/4 digits)
+    const rowStep = size === 4 ? 108 : size === 3 ? 124 : 138;
+    const rowH = size === 4 ? 98 : 108;
+    const matrixTop = size === 4 ? 506 : size === 3 ? 544 : 590;
+
+    if (result.consistent) {
+      result.positions.forEach((position, i) => {
+        const y = matrixTop + i * rowStep;
+        const pickedDigit = this.picks[i] ?? '';
+        const confirmedDigit = position.possible.length === 1 ? position.possible[0] : '';
+        this.boxPanel(470, y, 742, rowH, '#F8ECD3', confirmedDigit ? '#4E9A5E' : pickedDigit ? '#D48A30' : '#D4B47E', 14, confirmedDigit || pickedDigit ? 2.2 : 1.6);
+
+        // Left position badge
+        this.boxPanel(164, y, 112, 74, '#2C1A0F', '#BE8E44', 12, 1.8);
+        const posLbl = this.text(`第 ${i + 1} 位`, 164, confirmedDigit || pickedDigit ? y - 12 : y - 2, 102, 38, 26, '#FFE5A9');
+        posLbl.isBold = true;
+        if (confirmedDigit) {
+          const st = this.text(`已定 ${confirmedDigit}`, 164, y + 18, 102, 26, 18, '#8EE69E');
+          st.isBold = true;
+        } else if (pickedDigit) {
+          const st = this.text(`已选 ${pickedDigit}`, 164, y + 18, 102, 26, 18, '#FFD472');
+          st.isBold = true;
+        }
+
+        // 10 interactive digit tiles (0..9)
+        for (let d = 0; d < 10; d++) {
+          const ch = String(d);
+          const x = 259 + d * 60;
+          const excluded = position.excluded.includes(ch);
+          const confirmed = confirmedDigit === ch;
+          const selected = !confirmed && pickedDigit === ch;
+          const fill = confirmed ? '#D7F1D8' : selected ? '#FFE18A' : excluded ? '#EBD5C8' : '#FFF7E6';
+          const border = confirmed ? '#2E8747' : selected ? '#C95A10' : excluded ? '#CFA796' : '#C9A46E';
+          const tile = this.boxPanel(x, y, 53, 80, fill, border, 9, selected || confirmed ? 2.8 : 1.5);
+          const dLbl = this.text(ch, x, excluded || confirmed || selected ? y - 12 : y - 2, 46, 46, 33, confirmed ? '#155427' : selected ? '#8E250B' : excluded ? '#9D7B6C' : '#311A0A');
+          dLbl.isBold = true;
+          if (confirmed) {
+            const m = this.text('✓', x, y + 21, 46, 28, 22, '#17662E'); m.isBold = true;
+          } else if (selected) {
+            const m = this.text('●', x, y + 21, 46, 26, 16, '#C95A10'); m.isBold = true;
+          } else if (excluded) {
+            this.text('×', x, y + 21, 46, 28, 22, '#B34338');
+          }
+
+          this.touch(tile, `pick-${i}-${d}`, () => {
+            if (excluded) {
+              this.clueHint = `第 ${i + 1} 位的 ${ch} 已排除，可点击其余空白候选位快速组牌`;
+              this.refresh();
+              return;
+            }
+            if (confirmed) {
+              this.picks[i] = ch;
+              this.clueHint = `第 ${i + 1} 位已确定为 ${ch}，已自动保留在组牌栏`;
+              this.refresh();
+              return;
+            }
+            this.picks[i] = this.picks[i] === ch ? '' : ch;
+            this.clueHint = '';
+            this.refresh();
+          });
+        }
+      });
+    } else {
+      this.text('当前记录不一致，请等待同步后查看逐位排除', 470, 660, 680, 80, 30, '#7C5D3B');
+    }
+
+    // 4. Crisp 1-line legend
+    const legendY = matrixTop + (size - 1) * rowStep + Math.round(rowH / 2) + 38;
+    this.text('✓ 已确定   ·   ● 已选入组牌   ·   空白 点击可选   ·   × 已排除', 470, legendY, 740, 38, 22, '#6A4C2E');
+
+    // 5. Quick-Input Composer Panel (click possible digits above -> instant fill into guess!)
+    const composerY = 1106;
+    const composed = composeQuickDraft(history, size, this.picks);
+    const canInput = !room
+      ? !!this.practice && !this.practice.solved
+      : ['playing', 'reply'].includes(room.phase) && room.current === me && this.context.now >= room.startAt && this.context.now < room.deadline;
+
+    this.boxPanel(470, composerY, 742, 168, '#F4E1BA', '#C69143', 18, 2.4);
+    const compTitle = this.text('快速组牌', 176, composerY - 34, 124, 36, 26, '#3D200A');
+    compTitle.isBold = true;
+
+    // Mini action chip: Smart Fill (智能补全)
+    const fillChip = this.boxPanel(176, composerY + 24, 108, 42, '#EFE0BE', '#B88944', 10, 1.5);
+    const fillChipLbl = this.text('智能补全', 176, composerY + 22, 102, 34, 20, '#5A3514');
+    fillChipLbl.isBold = true;
+    this.touch(fillChip, 'quick-complete', () => {
+      const candidate = consistentCandidate(history, size, this.picks);
+      if (candidate) {
+        this.picks = Array.from(candidate);
+        this.clueHint = '已按当前已选位补全一组兼容候选，可直接填入猜测';
+      } else {
+        this.clueHint = '当前所选数字组合与历史线索冲突，请先点重置或调整某一位';
       }
-    });
-    this.text('✓ 已确定     空白 仍可能     × 已排除',470,1215,730,65,31);
-    this.text('可能数字不能任意组合\n仅根据你的猜测反馈推导',470,1290,720,95,29);
-    this.fixed('return','返回猜测',474,1500,518,()=>this.back());
+      this.refresh();
+    }, result.consistent);
+
+    // Live preview card slots
+    const slotW = size === 4 ? 72 : size === 3 ? 82 : 92;
+    const slotH = Math.round(slotW * 1.24);
+    const slotGap = size === 4 ? 12 : 18;
+    const slotsCenterX = 418;
+    for (let i = 0; i < size; i++) {
+      const sx = slotsCenterX + (i - (size - 1) / 2) * (slotW + slotGap);
+      const ch = this.picks[i] ?? '';
+      const confirmed = result.consistent && result.positions[i]?.possible.length === 1 && result.positions[i].possible[0] === ch;
+      const slotNode = this.boxPanel(sx, composerY - 8, slotW, slotH, ch ? '#FFF8E8' : '#EED9B0', confirmed ? '#2E8747' : ch ? '#C96A1B' : '#C4A26F', 10, ch ? 2.4 : 1.5);
+      if (ch) {
+        const artFrame = this.context.cardDigits?.[confirmed ? 'ink' : 'crimson'].get(ch);
+        if (artFrame) {
+          const h = Math.round(slotH * 0.72);
+          const dn = new Node('ComposerDigit-' + ch);
+          dn.layer = Layers.Enum.UI_2D; slotNode.addChild(dn); dn.setPosition(0, 0);
+          const sp = dn.addComponent(Sprite); sp.spriteFrame = artFrame; sp.sizeMode = Sprite.SizeMode.CUSTOM;
+          dn.getComponent(UITransform)!.setContentSize(Math.round(h * (144 / 180)), h);
+        } else {
+          const l = this.text(ch, sx, composerY - 10, slotW - 8, slotH - 8, 44, confirmed ? '#155427' : '#8E250B');
+          l.isBold = true;
+        }
+        if (!confirmed) {
+          this.touch(slotNode, `clear-slot-${i}`, () => { this.picks[i] = ''; this.clueHint = ''; this.refresh(); });
+        }
+      } else {
+        this.text(`第${i + 1}位`, sx, composerY - 10, slotW - 6, 36, 18, '#9A7D56');
+      }
+    }
+
+    // Small reset link under slots when user has any non-confirmed pick
+    const hasCustomPick = this.picks.some((ch, i) => !!ch && !(result.consistent && result.positions[i]?.possible.length === 1 && result.positions[i].possible[0] === ch));
+    if (hasCustomPick) {
+      const resetLbl = this.text('清空自选', slotsCenterX, composerY + 56, 160, 32, 20, '#8A5628');
+      this.touch(resetLbl.node, 'quick-reset', () => {
+        this.picks = result.consistent
+          ? result.positions.map(p => (p.possible.length === 1 ? p.possible[0] : ''))
+          : Array.from({ length: size }, () => '');
+        this.clueHint = '';
+        this.refresh();
+      });
+    } else {
+      this.text('点上方数字即可填入对应位', slotsCenterX, composerY + 56, 320, 32, 19, '#7B5B38');
+    }
+
+    // Primary "Fill Guess" CTA right inside the composer
+    const canFill = canInput && composed.pickedCount > 0;
+    const ctaText = !canInput
+      ? (room ? '等待你的回合' : '本局已结束')
+      : composed.pickedCount === 0
+        ? '请先选数字'
+        : composed.completed
+          ? '补全并填入'
+          : composed.digits.length === size
+            ? '填入猜测'
+            : `填入前 ${composed.digits.length} 位`;
+    const ctaBtn = this.boxPanel(722, composerY - 2, 190, 86, canFill ? '#C84218' : '#B9A389', canFill ? '#F0BE62' : '#9B8770', 14, 2.4);
+    const ctaLbl = this.text(ctaText, 722, composerY - 4, 178, 54, composed.completed ? 26 : 27, canFill ? '#FFF6DF' : '#6A5B4B');
+    ctaLbl.isBold = true;
+    this.touch(ctaBtn, 'quick-fill', () => {
+      if (!composed.digits) return;
+      const msg = !composed.consistent
+        ? '已填入当前组合（提示：与部分历史线索冲突，可点槽位微调）'
+        : composed.completed
+          ? '已保留所选位并补齐兼容候选，点数字槽可单改'
+          : composed.digits.length === size
+            ? '已从推理笔记填入，可直接提交或微调'
+            : `已填入前 ${composed.digits.length} 位，继续输入剩余位`;
+      if (room) {
+        this.context.copy(composed.digits, msg);
+      } else if (this.practice) {
+        this.draft = composed.digits;
+        this.slot = -1;
+        this.message = msg;
+        this.go('practice');
+      }
+    }, canFill);
+
+    // Inline feedback / note underneath composer
+    const noteText = this.clueHint
+      || (!composed.consistent && composed.pickedCount > 0
+        ? '提示：当前自选组合与历史线索存在冲突，可点「智能补全」或微调'
+        : '注：可能数字受多条线索联动约束，并非每位可任意组合');
+    this.text(noteText, 470, 1244, 730, 52, 22, !composed.consistent && composed.pickedCount > 0 ? '#A22A16' : '#735434');
+
+    // 6. Redesigned spotless bottom return button
+    this.fixed('return', '返回猜测', 470, 1492, 472, () => this.back());
   }
   private history(history:Clue[],size:DigitCount) {
     const pages=Math.max(1,Math.ceil(history.length/3));this.recordPage=this.recordPage<0?pages-1:Math.min(this.recordPage,pages-1);

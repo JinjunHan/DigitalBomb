@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { countHits, deduce, compareClues } from '../assets/scripts/shared/deduction';
+import { countHits, deduce, compareClues, consistentCandidate, composeQuickDraft } from '../assets/scripts/shared/deduction';
 import { Practice, Tutorial } from '../assets/scripts/shared/learning';
 import { Match, DEFAULT_RULES, type Seat } from '../server/game';
 
@@ -72,4 +72,32 @@ test('draw happens only after both players use their thirtieth opportunity', () 
   for (let turn = 0; turn < 59; turn++) match.guess(turn % 2 ? 'b' : 'a', '9999', turn, turn + 3);
   assert.equal(match.phase, 'playing');
   match.guess('b', '9999', 59, 62); assert.equal(match.result?.reason, 'round_limit');
+});
+test('quick-input composer supports prefix picks, scattered auto-completion, and conflict detection', () => {
+  const clues = [{ digits: '1234', hits: 2 }, { digits: '9234', hits: 1 }, { digits: '0000', hits: 0 }];
+  // Prefix picks stay exact without inventing remaining slots.
+  const prefix = composeQuickDraft(clues, 4, ['1', '5', '', '']);
+  assert.equal(prefix.digits, '15');
+  assert.equal(prefix.completed, false);
+  assert.equal(prefix.consistent, true);
+  assert.equal(prefix.pickedCount, 2);
+
+  // Scattered picks auto-complete gaps with a candidate consistent with all public clues.
+  const scattered = composeQuickDraft(clues, 4, ['1', '', '3', '']);
+  assert.equal(scattered.digits.length, 4);
+  assert.equal(scattered.digits[0], '1');
+  assert.equal(scattered.digits[2], '3');
+  assert.equal(scattered.completed, true);
+  assert.equal(scattered.consistent, true);
+  assert.ok(clues.every(c => countHits(scattered.digits, c.digits) === c.hits));
+
+  // Conflicting picks flag consistent=false instead of pretending validity.
+  const conflict = composeQuickDraft(clues, 4, ['9', '', '3', '']);
+  assert.equal(conflict.consistent, false);
+  assert.equal(consistentCandidate(clues, 4, ['9', '', '3', '']), null);
+
+  // Works cleanly for 2-digit and 3-digit modes.
+  const two = composeQuickDraft([{ digits: '12', hits: 1 }], 2, ['', '5']);
+  assert.equal(two.digits, '15');
+  assert.equal(two.consistent, true);
 });

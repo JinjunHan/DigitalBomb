@@ -6,6 +6,7 @@ export class Connection {
   state: Snapshot | null = null; online = false; offset = 0;
   onState: () => void = () => {}; onStatus: () => void = () => {}; onError: (s: string) => void = () => {};
   private ws: any; private token = ''; private stopped = false; private retry?: ReturnType<typeof setTimeout>; private heartbeat?: ReturnType<typeof setInterval>;
+  private retryAttempt = 0;
   private pending = new Map<string, { cmd: Command; resolve: () => void; reject: (e: Error) => void; timeout: ReturnType<typeof setTimeout> }>();
   private sequence = 0;
   now() { return Date.now() + this.offset; }
@@ -41,14 +42,30 @@ export class Connection {
     if (this.stopped) return;
     this.token = auth.token; write('token', auth.token); this.open();
   }
+  reconnectNow() {
+    if (this.stopped || this.online) return;
+    clearTimeout(this.retry);
+    this.retry = undefined;
+    this.retryAttempt = 0;
+    if (this.token) {
+      const prev = this.ws;
+      this.ws = undefined;
+      try { prev?.close(); } catch { /* ignore */ }
+      this.open();
+    }
+  }
   private open() {
     if (this.stopped) return;
+    clearTimeout(this.retry);
+    this.retry = undefined;
     const url = apiBase().replace(/^http/, 'ws') + '/ws';
-    const opened = () => { this.send({ action: 'auth', token: this.token, sharingViaHttp: true }); };
+    let socket: any;
+    const opened = () => { if (this.ws !== socket) return; this.send({ action: 'auth', token: this.token, sharingViaHttp: true }); };
     const message = (event: any) => {
+      if (this.ws !== socket) return;
       let m: ServerMessage; try { m = JSON.parse(event.data); } catch { return; }
       if (m.type === 'state' && m.state) {
-        const wasOffline = !this.online; this.online = true; this.offset = m.state.serverNow - Date.now(); this.state = { ...m.state, wechatSharingEnabled: this.sharing.enabled, wechatShareImages: this.sharing.images };
+        const wasOffline = !this.online; this.online = true; this.retryAttempt = 0; this.offset = m.state.serverNow - Date.now(); this.state = { ...m.state, wechatSharingEnabled: this.sharing.enabled, wechatShareImages: this.sharing.images };
         if (wasOffline) { for (const p of this.pending.values()) this.send(p.cmd); this.onStatus(); }
         this.onState(); return;
       }
@@ -57,13 +74,17 @@ export class Connection {
       else if (m.type === 'error') this.onError(m.message ?? '操作失败');
     };
     const closed = (event: any) => {
+      if (this.ws !== socket) return;
       this.online = false; if (this.heartbeat) clearInterval(this.heartbeat); this.onStatus();
       if (event.code === 4001) { this.stopped = true; this.onError('账号已在另一窗口登录，请使用无痕窗口体验另一位玩家'); return; }
-      if (!this.stopped) this.retry = setTimeout(() => this.open(), 2000);
+      if (!this.stopped) {
+        const delay = Math.min(4000, [1000, 1800, 2800, 4000][this.retryAttempt++] ?? 4000);
+        this.retry = setTimeout(() => this.open(), delay);
+      }
     };
     if (wechat()) {
-      this.ws = wechat().connectSocket({ url }); this.ws.onOpen(opened); this.ws.onMessage(message); this.ws.onClose(closed); this.ws.onError(() => {});
-    } else { this.ws = new WebSocket(url); this.ws.onopen = opened; this.ws.onmessage = message; this.ws.onclose = closed; this.ws.onerror = () => {}; }
+      socket = wechat().connectSocket({ url }); this.ws = socket; socket.onOpen(opened); socket.onMessage(message); socket.onClose(closed); socket.onError(() => {});
+    } else { socket = new WebSocket(url); this.ws = socket; socket.onopen = opened; socket.onmessage = message; socket.onclose = closed; socket.onerror = () => {}; }
     if (this.heartbeat) clearInterval(this.heartbeat);
     this.heartbeat = setInterval(() => { if (this.online) this.send({ action: 'heartbeat' }); }, 5000);
   }

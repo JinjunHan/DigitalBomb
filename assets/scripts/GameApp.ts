@@ -140,6 +140,10 @@ export class GameApp extends Component {
   private nickname = ''; private avatar = 0; private busy = false; private notice = ''; private noticeUntil = 0;
   private noticeNode?: Node;
   private noticePage = '';
+  private reconnectBar?: Node;
+  private reconnectDot?: UIOpacity;
+  private reconnectText?: Label;
+  private wasOfflineNotice = false;
   private timerLabel?: Label; private toastLabel?: Label; private lastKey = ''; private lastRoom = ''; private lastPhase = ''; private lastTurn = -1; private warnedTurn = -1; private openingRendered = false;
   private confirmAction?: () => void; private hideSecret = false;
   private screenHeight = 1334; private layoutTop = 80; private layoutScale = 1;
@@ -193,7 +197,7 @@ export class GameApp extends Component {
       if (err || !this.isValid) return;
       this.friendDigitFont = font; this.render();
     });
-    const friendNames = ['back', 'heading', 'waiting', 'count', 'paper', 'copy', 'nameplate', 'seated', 'close'];
+    const friendNames = ['back', 'heading', 'waiting', 'count', 'paper', 'copy', 'invite', 'nameplate', 'seated', 'close'];
     for (const name of friendNames) {
       resources.load('art/friend/' + name + '/texture', Texture2D, (err, texture) => {
         if (err || !this.isValid) return;
@@ -269,7 +273,11 @@ export class GameApp extends Component {
   }
   onDestroy() { this.finishMatchingMotion(); clearTimeout(this.pendingFinishTimer); this.opponentCard?.destroy(); for (const map of [this.cardDigitFrames.ink, this.cardDigitFrames.crimson]) { for (const f of map.values()) f.destroy(); map.clear(); } clearTimeout(this.loginDeadline); this.releaseStartup(); this.wxFlow?.destroy(); if (this.feedbackArt) this.feedbackArt.disposed = true; this.friendReturn?.destroy(); this.modals?.destroy(); this.stopJoinMotion(); this.stopPlayMotion(); this.scenery?.destroy(); view.off('canvas-resize', this.resizeLayout, this); this.audio.dispose(); if (this.profilePanel) Tween.stopAllByTarget(this.profilePanel); this.clearEffects(); this.net.stop(); input.off(Input.EventType.KEY_DOWN, this.onKey, this); game.off(Game.EVENT_SHOW, this.onShow, this); game.off(Game.EVENT_HIDE, this.onHide, this); }
   private onHide() { this.wxFlow?.clearButton();this.audio.background(true); }
-  private onShow() { this.audio.background(false); if (this.net.online) { void this.net.refreshSharing(); this.net.command('sync').catch(() => {}); } }
+  private onShow() {
+    this.audio.background(false);
+    if (this.net.online) { void this.net.refreshSharing(); this.net.command('sync').catch(() => {}); }
+    else if (this.net.state) this.net.reconnectNow();
+  }
   private loadStartupTexture(path: string, loaded: (texture: Texture2D) => void) {
     this.startupAssets.add(path, () => new Promise<void>((resolve, reject) => {
       resources.load(path, Texture2D, (error, texture) => {
@@ -690,6 +698,8 @@ export class GameApp extends Component {
     if(this.noticePage!==noticePage){this.dismissNotice();this.noticePage=noticePage;}
     if(this.noticeNode?.isValid){this.noticeNode.removeFromParent();this.noticeNode.destroy();}
     this.noticeNode=undefined;
+    if(this.reconnectBar?.isValid){this.reconnectBar.removeFromParent();this.reconnectBar.destroy();}
+    this.reconnectBar=undefined; this.reconnectDot=undefined; this.reconnectText=undefined;
     this.stopJoinMotion(); this.joinDigits = []; this.joinGlows = []; this.joinButton = undefined; this.joinPaper = undefined;
     this.stopPlayMotion(); this.playDigits = []; this.playSlotGlows = []; this.playSlotCursors = []; this.playActionButton = undefined; this.playGuessPanel = undefined;
     this.opponentPulseRing = undefined; this.opponentBacksNode = undefined; this.replyAura = undefined;
@@ -736,11 +746,43 @@ export class GameApp extends Component {
       paper: this.profileArt.get('paper'), button: this.modalArt.get('tab-off'), card: this.battleArt.get('card-paper'),
       cardDigits: this.cardDigitFrames.ink.size === 11 ? this.cardDigitFrames : undefined,
       room: s?.room, me: s?.me.id ?? '', now: this.net.now(), redraw: () => this.render(),
-      copy: digits => this.copyGuess(digits), completed: () => write('learning-complete-v1-'+s!.me.id,'1'),
+      copy: (digits, message) => this.copyGuess(digits, message), completed: () => write('learning-complete-v1-'+s!.me.id,'1'),
     });
-    const modalKey = starting ? undefined : s && !this.net.online ? 'reconnect' : this.modalKey();
+    const modalKey = starting ? undefined : this.modalKey();
     this.modals.begin(this.modalArtReady ? modalKey : undefined, read('motion', '1') === '1');
     if (modalKey) this.artModal(modalKey);
+    if (!starting && s && !this.net.online) {
+      this.wasOfflineNotice = true;
+      const bar = this.n('ReconnectBanner', 375, 667, 424, 52, this.noticeLayer);
+      bar.setPosition(0, -this.screenHeight / 2 + bottomSafeInset() + 40);
+      const g = bar.addComponent(Graphics);
+      g.fillColor = new Color(28, 17, 10, 228);
+      g.roundRect(-212, -26, 424, 52, 26); g.fill();
+      g.strokeColor = new Color(216, 170, 88, 215); g.lineWidth = 1.8;
+      g.roundRect(-211, -25, 422, 50, 25); g.stroke();
+      const dot = this.n('ReconnectDot', 375, 667, 16, 16, bar);
+      dot.setPosition(-178, 0);
+      const dg = dot.addComponent(Graphics);
+      dg.fillColor = new Color('#F5B841'); dg.circle(0, 0, 6); dg.fill();
+      this.reconnectDot = dot.addComponent(UIOpacity);
+      const txt = this.text(this.reconnecting ? '正在重新连接…' : '网络波动，自动重连中…', 375, 667, 22, '#F7E7C8', 278, 42, bar);
+      txt.node.setPosition(-16, 1); txt.enableWrapText = false;
+      this.reconnectText = txt;
+      const retryBtn = this.n('ReconnectTap', 375, 667, 74, 34, bar);
+      retryBtn.setPosition(160, 0);
+      const rg = retryBtn.addComponent(Graphics);
+      rg.fillColor = new Color(216, 170, 88, 45); rg.roundRect(-36, -16, 72, 32, 16); rg.fill();
+      rg.strokeColor = new Color(216, 170, 88, 165); rg.lineWidth = 1.2; rg.roundRect(-35, -15, 70, 30, 15); rg.stroke();
+      const rl = this.text('重试', 375, 667, 20, '#FFD978', 68, 32, retryBtn);
+      rl.node.setPosition(0, 1); rl.isBold = true;
+      bar.on(Node.EventType.TOUCH_END, () => { this.audio.unlock(); this.audio.play('tap'); void this.retryConnection(); });
+      this.reconnectBar = bar;
+    } else if (this.wasOfflineNotice && this.net.online) {
+      this.wasOfflineNotice = false;
+      this.noticePage = this.noticeContext();
+      this.notice = '连接已恢复';
+      this.noticeUntil = Date.now() + 2400;
+    }
     if (this.notice && Date.now() < this.noticeUntil) {
       if (this.feedbackArt.ready) {
         const group=this.feedbackArt.group(this.noticeLayer,'Notice',0);this.noticeNode=group;
@@ -1220,8 +1262,14 @@ export class GameApp extends Component {
       digit.lineHeight = 112; digit.enableWrapText = false;
     }
     const canShare = !!wechat() && this.net.state?.wechatSharingEnabled === true;
-    art('copy', canShare?290:470.5, 872.5, canShare?320:397, canShare?85:105, () => { if (r.code) { this.copyRoomCode(r.code); } });
-    if(canShare){const invite=label('邀请微信好友 ›',660,872,28,C.ink,310,85);invite.node.name='WechatInvite';invite.node.on(Node.EventType.TOUCH_END,()=>{try{this.wxFlow.share();}catch(e){this.toast((e as Error).message);}});}
+    art('copy', canShare ? 302 : 470.5, 872.5, canShare ? 316 : 397, canShare ? 84 : 105, () => { if (r.code) { this.copyRoomCode(r.code); } });
+    if (canShare) {
+      const inviteBtn = art('invite', 642, 872.5, 316, 84, () => { try { this.wxFlow.share(); } catch (e) { this.toast((e as Error).message); } });
+      inviteBtn.name = 'WechatInvite';
+      const inviteLbl = this.text('邀请微信好友', 375, 667, 28, '#FFF6DE', 206, 50, inviteBtn);
+      inviteLbl.node.setPosition(34, 2);
+      inviteLbl.isBold = true; inviteLbl.enableWrapText = false;
+    }
     this.timerLabel = label('', 569, 1024, 27, C.ink, 88, 40);
     const me = this.net.state!.me;
     // Actual player portrait, followed by the existing hollow decorative rim.
@@ -2132,6 +2180,7 @@ export class GameApp extends Component {
         this.opponentBacksNode.setScale(s, s, 1);
       }
       if (this.replyAura?.isValid) this.replyAura.opacity = Math.round(95 + 150 * (0.5 + 0.5 * Math.sin(t * 6.5)));
+      if (this.reconnectDot?.isValid) this.reconnectDot.opacity = Math.round(110 + 145 * (0.5 + 0.5 * Math.sin(t * 4.5)));
       if (this.timerLabel?.isValid && urgency > 0) {
         const beat = 1 + 0.075 * urgency * (0.5 + 0.5 * Math.sin(t * 8));
         this.timerLabel.node.setScale(beat, beat, 1);
@@ -2217,22 +2266,28 @@ export class GameApp extends Component {
   private openLearning(page: 'menu' | 'rules' | 'clues') {
     this.overlay = ''; this.learning.open(page); this.render();
   }
-  private copyGuess(digits: string) {
+  private copyGuess(digits: string, message?: string) {
     const state = this.net.state, room = state?.room;
     if (!room || !state || !this.net.online || this.busy || !['playing','reply'].includes(room.phase) || room.current !== state.me.id || this.net.now() < room.startAt || this.net.now() >= room.deadline) {
-      this.toast('轮到你时可复制记录并修改'); return;
+      this.toast('轮到你时可填入或修改猜测'); return;
     }
     const previous = this.draft;
     this.draft = digits; this.selected = -1;
     this.audio.play('tap'); vibrate('light');
-    const inline = !this.learning.visible && !this.overlay && this.playDigits.length === digits.length && this.playDigits.every(l => l.isValid);
+    const inline = !this.learning.visible && !this.overlay && this.playDigits.length >= digits.length && this.playDigits.every(l => l.isValid);
     if (inline) {
       this.syncPlayInput(previous, digits, true);
-      this.toast('已填入记录，点数字槽可单改一位');
+      this.toast(message ?? '已填入记录，点数字槽可单改一位');
       return;
     }
-    this.learning.close(); this.overlay = ''; this.render();
-    if (this.playDigits.length === digits.length) this.syncPlayInput('', digits, true);
+    this.learning.close(); this.overlay = '';
+    if (message) {
+      this.noticePage = this.noticeContext();
+      this.notice = message;
+      this.noticeUntil = Date.now() + 4500;
+    }
+    this.render();
+    if (this.playDigits.length >= digits.length && digits.length > 0) this.syncPlayInput('', digits, true);
   }
   private modalKey(): ModalKind | undefined {
     return this.overlay === 'confirm' ? this.confirmation?.kind
@@ -2378,6 +2433,10 @@ export class GameApp extends Component {
         }
         if (['playing', 'reply'].includes(r.phase) && remaining <= 5 && r.current === s.me.id && this.warnedTurn !== r.turn) { this.warnedTurn = r.turn; vibrate('medium'); this.audio.play('warning'); }
       }
+    }
+    if (this.reconnectText?.isValid) {
+      const dots = '.'.repeat((Math.floor(now / 450) % 3) + 1);
+      this.reconnectText.string = this.reconnecting ? `正在重新连接${dots}` : `网络波动，自动重连中${dots}`;
     }
     if (this.toastLabel && Date.now() >= this.noticeUntil) this.dismissNotice();
   };

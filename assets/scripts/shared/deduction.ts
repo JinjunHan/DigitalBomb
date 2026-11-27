@@ -45,3 +45,55 @@ export function clueCaption(clue: Clue): string {
   if (clue.hits === clue.digits.length) return '所有数字与位置都正确，密码已破解。';
   return `有 ${clue.hits} 位数字与位置都正确，具体位置仍需结合记录判断。`;
 }
+/** Find the first logically consistent candidate matching fixed picks from public clues only. */
+export function consistentCandidate(
+  history: readonly Clue[],
+  size: DigitCount,
+  picks: readonly (string | null | undefined)[],
+): string | null {
+  const clues = history.filter(h => h.digits !== null);
+  const valid = clues.every(h => new RegExp(`^\\d{${size}}$`).test(h.digits!) && Number.isInteger(h.hits) && h.hits! >= 0 && h.hits! <= size);
+  if (!valid) return null;
+  const fixed = Array.from({ length: size }, (_, i) => (picks[i] && /^\d$/.test(picks[i]!) ? picks[i]! : null));
+  for (let n = 0; n < 10 ** size; n++) {
+    const candidate = String(n).padStart(size, '0');
+    let ok = true;
+    for (let i = 0; i < size; i++) {
+      if (fixed[i] !== null && candidate[i] !== fixed[i]) { ok = false; break; }
+    }
+    if (!ok) continue;
+    if (clues.every(h => countHits(candidate, h.digits!) === h.hits)) return candidate;
+  }
+  return null;
+}
+export interface ComposedDraft {
+  digits: string;
+  completed: boolean;
+  consistent: boolean;
+  pickedCount: number;
+}
+/** Compose a quick-input guess from partial or full position picks using public history only. */
+export function composeQuickDraft(
+  history: readonly Clue[],
+  size: DigitCount,
+  picks: readonly (string | null | undefined)[],
+): ComposedDraft {
+  const fixed = Array.from({ length: size }, (_, i) => (picks[i] && /^\d$/.test(picks[i]!) ? picks[i]! : ''));
+  const pickedCount = fixed.filter(Boolean).length;
+  if (!pickedCount) return { digits: '', completed: false, consistent: true, pickedCount: 0 };
+  const match = consistentCandidate(history, size, fixed);
+  const firstGap = fixed.indexOf('');
+  const contiguousPrefix = firstGap === -1 || fixed.slice(firstGap).every(ch => !ch);
+  if (firstGap === -1) {
+    return { digits: fixed.join(''), completed: false, consistent: match !== null, pickedCount };
+  }
+  if (contiguousPrefix) {
+    return { digits: fixed.slice(0, firstGap).join(''), completed: false, consistent: match !== null, pickedCount };
+  }
+  if (match) {
+    return { digits: match, completed: true, consistent: true, pickedCount };
+  }
+  const analysis = deduce(history, size);
+  const filled = fixed.map((ch, i) => ch || analysis.positions[i]?.possible[0] || '0').join('');
+  return { digits: filled, completed: true, consistent: false, pickedCount };
+}

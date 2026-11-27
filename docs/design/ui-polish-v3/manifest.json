@@ -1,0 +1,103 @@
+{
+  "note": "Reconstructed unified transparent-contour UI assets from pristine turn-plaque master & painted repo textures (image-generator quota temporarily exhausted).",
+  "assets": {
+    "title-online": {
+      "size": [
+        410,
+        86
+      ],
+      "kb": 16.5
+    },
+    "title-friend": {
+      "size": [
+        410,
+        80
+      ],
+      "kb": 15.5
+    },
+    "title-hub": {
+      "size": [
+        410,
+        86
+      ],
+      "kb": 16.6
+    },
+    "title-tutorial": {
+      "size": [
+        410,
+        86
+      ],
+      "kb": 16.3
+    },
+    "banner": {
+      "size": [
+        240,
+        84
+      ],
+      "kb": 10.2
+    },
+    "match": {
+      "size": [
+        368,
+        110
+      ],
+      "kb": 21.1
+    },
+    "result-home": {
+      "size": [
+        362,
+        110
+      ],
+      "kb": 19.9
+    },
+    "rematch": {
+      "size": [
+        767,
+        149
+      ],
+      "kb": 54.3
+    },
+    "invite": {
+      "size": [
+        397,
+        105
+      ],
+      "kb": 23.4
+    },
+    "tab-positions": {
+      "size": [
+        320,
+        78
+      ],
+      "kb": 14.3
+    },
+    "tab-positions-off": {
+      "size": [
+        320,
+        78
+      ],
+      "kb": 14.1
+    },
+    "tab-history": {
+      "size": [
+        320,
+        78
+      ],
+      "kb": 14.1
+    },
+    "tab-history-off": {
+      "size": [
+        320,
+        78
+      ],
+      "kb": 13.8
+    },
+    "return": {
+      "size": [
+        414,
+        106
+      ],
+      "kb": 23.0
+    }
+  }
+}
