@@ -519,8 +519,8 @@ export class GameApp extends Component {
         const scoreColor = tier === 'zero' ? '#2A5563' : tier === 'hot' ? '#B42A1B' : tier === 'crack' ? '#A35C05' : tier === 'warm' ? '#9C4E0E' : C.ink;
         const headingLabel = this.feedbackArt.label(group, headingText, 0, -48, 310, 48, 33, tier === 'hot' ? '#A82616' : C.ink);
         headingLabel.isBold = true;
-        const value = this.feedbackArt.label(group, pending ? '···' : `${event.hits} / ${count}`, 0, 46, 290, 108, 76, scoreColor);
-        value.isBold = true;
+        const value = this.feedbackArt.label(group, pending ? '···' : `${event.hits} / ${count}`, 0, 46, 290, 108, 74, scoreColor);
+        if (this.friendDigitFont && !pending) value.font = this.friendDigitFont; else value.isBold = true;
         if (insight?.deductionHighlight) {
           const pill = this.feedbackArt.group(group, 'InsightPill', -145);
           const pg = pill.addComponent(Graphics);
@@ -550,8 +550,8 @@ export class GameApp extends Component {
       } else if (opponent) {
         const peer = room?.players.find(p => p.id !== meId);
         if (peer) this.playerPortrait(group, peer, -206.5, -14, 98, false);
-        const value = this.feedbackArt.label(group, `${event.hits} / ${count}`, 22, -10, 285, 96, 66, event.urgent ? '#8B1E1A' : C.ink);
-        value.isBold = true;
+        const value = this.feedbackArt.label(group, `${event.hits} / ${count}`, 22, -10, 285, 96, 64, event.urgent ? '#8B1E1A' : C.ink);
+        if (this.friendDigitFont) value.font = this.friendDigitFont; else value.isBold = true;
         if (event.urgent) {
           shakeNode(this.root, 6);
           burstParticles(this.effects, 0, groupY, 'hot');
@@ -863,6 +863,7 @@ export class GameApp extends Component {
     sprite('hourglass-sheet', [302.5,537,638.5,873]);
     this.timerLabel = this.text('',375,667,57,'#FFD978',225,72,group);
     this.timerLabel.fontFamily = UI_FONT; this.timerLabel.isBold = true;
+    if (this.friendDigitFont) this.timerLabel.font = this.friendDigitFont;
     this.timerLabel.node.setPosition(0,-913);
     const mode=this.text(modeLabel(this.net.state?.queuedDigitCount ?? 4),375,667,29,C.cream,520,50,group);mode.node.setPosition(0,-995);
     const me=this.net.state!.me, portrait=this.avatarFrame(me)??this.profileArt.get('avatar-'+me.avatar);
@@ -1016,7 +1017,8 @@ export class GameApp extends Component {
     this.playDigits.forEach((label, i) => {
       if (!label.isValid) return;
       const node = label.node, op = node.getComponent(UIOpacity)!, glow = this.playSlotGlows[i], cursor = this.playSlotCursors[i];
-      const restX = 472 + (i - (count - 1) / 2) * 116 - 470.5, restY = -840;
+      const slotX = count === 4 ? 470.25 + (i - 1.5) * 114.8 : 470.5 + (i - (count - 1) / 2) * 116;
+      const restX = slotX - 470.5, restY = -838;
       if (cursor?.isValid) {
         Tween.stopAllByTarget(cursor);
         if (i === activeSlot) {
@@ -1305,6 +1307,7 @@ export class GameApp extends Component {
       this.roundRoll.sync(r.id,r.round,read('motion','1')==='1');
       const oldDigit=navText(String(this.roundRoll.previous),0,50,clip);
       const newDigit=navText(String(r.round),0,50,clip);
+      if (this.friendDigitFont) { oldDigit.font = this.friendDigitFont; newDigit.font = this.friendDigitFont; }
       oldDigit.node.name='RoundPrevious';newDigit.node.name='RoundCurrent';
       this.roundOld=oldDigit.node;this.roundNew=newDigit.node;
       this.applyRoundRoll();
@@ -1317,7 +1320,7 @@ export class GameApp extends Component {
       else {art('mode-heading',[179,362,762,463],this.modalArt.get('tab-off')??this.profileArt.get('input'));label(`设置你的 ${count} 位密码`,470,411,40,530,C.ink,70);}
       this.timerEffects = SpriteEffects.attach(art('timer').getComponent(Sprite)!);
       this.timerLabel=label('',497,489,40,70,'#FFD978',54);
-      this.timerLabel.isBold = true;
+      if (this.friendDigitFont) this.timerLabel.font = this.friendDigitFont; else this.timerLabel.isBold = true;
       this.timerLabel.lineHeight=46;
       label('s',540,493,29,20,'#FFD978',38);
       const rules=art('rules',[243,523,699,589]); touch(rules,()=>this.openLearning('rules'));
@@ -1373,8 +1376,9 @@ export class GameApp extends Component {
         const roundLbl = label(`第${Math.floor(h.turn/2)+1}轮`,231,y,29,145,C.ink,44,content);
         roundLbl.node.parent = rowWrap; roundLbl.node.setPosition(231 - 470.5, 0);
         if(h.digits)for(let j=0;j<count;j++){
-          const dLbl = number(h.digits[j],481+(j-(count-1)/2)*88,y,45,67,68,content);
-          dLbl.node.parent = rowWrap; dLbl.node.setPosition(481 + (j - (count - 1) / 2) * 88 - 470.5, 0);
+          const dx = count === 4 ? 480 + (j - 1.5) * 87 : 480 + (j - (count - 1) / 2) * 88;
+          const dLbl = number(h.digits[j],dx,y,43,66,64,content);
+          dLbl.node.parent = rowWrap; dLbl.node.setPosition(dx - 470.5, 0);
         } else {
           const tLbl = label('本次超时',481,y,29,350,C.ink,44,content);
           tLbl.node.parent = rowWrap; tLbl.node.setPosition(481 - 470.5, 0);
@@ -1388,8 +1392,9 @@ export class GameApp extends Component {
         pg.roundRect(-52, -25, 104, 50, 25); pg.fill();
         pg.strokeColor = new Color(palette.border); pg.lineWidth = 2.2;
         pg.roundRect(-51, -24, 102, 48, 24); pg.stroke();
-        const hitLbl = this.text(h.hits===null?'—':`${h.hits}/${count}`, 375, 667, 33, palette.text, 100, 48, pill);
-        hitLbl.node.setPosition(0, 0); hitLbl.isBold = true; hitLbl.enableWrapText = false;
+        const hitLbl = this.text(h.hits===null?'—':`${h.hits}/${count}`, 375, 667, 30, palette.text, 100, 46, pill);
+        hitLbl.node.setPosition(0, 0); hitLbl.enableWrapText = false;
+        if (this.friendDigitFont) { hitLbl.font = this.friendDigitFont; hitLbl.lineHeight = 36; } else hitLbl.isBold = true;
         if (latest && h.turn > this.lastAnimatedRecordTurn) {
           this.lastAnimatedRecordTurn = h.turn;
           if (motion) {
@@ -1414,29 +1419,29 @@ export class GameApp extends Component {
       if(count===4) this.playGuessPanel = SpriteEffects.attach(art('guess').getComponent(Sprite)!);
       else label('本次猜测',470,759,33,500,C.cream,55);
       for(let i=0;i<count;i++) {
-        const x=472+(i-(count-1)/2)*116;
+        const x = count === 4 ? 470.25 + (i - 1.5) * 114.8 : 470.5 + (i - (count - 1) / 2) * 116;
         if(count!==4)art('mode-slot',[x-49,773,x+49,907],this.battleArt.get('card-paper'));
-        // Active slot cursor highlight (golden outline + subtle bottom bar)
-        const cursorNode = place(this.n('PlaySlotCursor-' + i, 375, 667, 104, 128, group), x, 840);
+        // Active slot cursor highlight fitted tightly to guess.png's 94x104 inner slot frame.
+        const cursorNode = place(this.n('PlaySlotCursor-' + i, 375, 667, 100, 108, group), x, 838);
         const cg = cursorNode.addComponent(Graphics);
-        cg.strokeColor = new Color('#E6A230'); cg.lineWidth = 4;
-        cg.roundRect(-50, -61, 100, 122, 11); cg.stroke();
+        cg.strokeColor = new Color('#E6A230'); cg.lineWidth = 3.8;
+        cg.roundRect(-48, -51, 96, 102, 10); cg.stroke();
         cg.fillColor = new Color('#D97228');
-        cg.roundRect(-22, -52, 44, 5, 2.5); cg.fill();
+        cg.roundRect(-20, -44, 40, 4.5, 2.2); cg.fill();
         const cursorOp = cursorNode.addComponent(UIOpacity); cursorOp.opacity = 0;
         this.playSlotCursors.push(cursorOp);
         // Flash glow border on digit entry
-        const glowNode = place(this.n('PlaySlotGlow-' + i, 375, 667, 108, 132, group), x, 840);
+        const glowNode = place(this.n('PlaySlotGlow-' + i, 375, 667, 104, 112, group), x, 838);
         const gg = glowNode.addComponent(Graphics);
-        gg.strokeColor = new Color('#FFE38A'); gg.lineWidth = 5;
-        gg.roundRect(-51, -63, 102, 126, 12); gg.stroke();
+        gg.strokeColor = new Color('#FFE38A'); gg.lineWidth = 4.5;
+        gg.roundRect(-50, -53, 100, 106, 11); gg.stroke();
         const glowOp = glowNode.addComponent(UIOpacity); glowOp.opacity = 0;
         this.playSlotGlows.push(glowOp);
-        const digit=number(this.draft[i] ?? '',x,840,77,95,106);
+        const digit=number(this.draft[i] ?? '',x,838,66,90,96);
         digit.node.addComponent(UIOpacity);
         this.playDigits.push(digit);
         // Full-slot clickable hit target with instant local selection (no page rebuild)
-        const hitSlot = place(this.n('PlaySlotHit-' + i, 375, 667, 106, 128, group), x, 840);
+        const hitSlot = place(this.n('PlaySlotHit-' + i, 375, 667, 104, 114, group), x, 838);
         if (editable) {
           hitSlot.on(Node.EventType.TOUCH_END, () => {
             this.audio.unlock(); this.audio.play('tap');
@@ -1705,7 +1710,8 @@ export class GameApp extends Component {
     ];
     for (const [val, sub, cx] of cols) {
       const vLbl = label(val, cx, 932, 200, 44, 33, C.ink, cardGroup);
-      vLbl.isBold = true;
+      if (/^[0-9:]+$/.test(val) && this.friendDigitFont) { vLbl.font = this.friendDigitFont; vLbl.lineHeight = 38; }
+      else vLbl.isBold = true;
       label(sub, cx, 972, 204, 32, 20, '#73583B', cardGroup);
     }
 
