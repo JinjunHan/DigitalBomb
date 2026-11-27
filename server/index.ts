@@ -5,6 +5,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { WebSocketServer, WebSocket } from 'ws';
 import { Service } from './service';
 import { DEFAULT_RULES } from './game';
+import { DailyLeaderboardStore } from './daily-leaderboard';
 import type { User } from './service';
 import type { Command, ShareImage } from '../assets/scripts/shared/protocol';
 
@@ -21,6 +22,7 @@ db.exec('PRAGMA journal_mode=WAL; CREATE TABLE IF NOT EXISTS users (id TEXT PRIM
 db.exec('CREATE TABLE IF NOT EXISTS wechat_users (openid TEXT PRIMARY KEY, user_id TEXT UNIQUE)');
 if (!db.prepare('PRAGMA table_info(users)').all().some(row => row.name === 'avatar_url')) db.exec('ALTER TABLE users ADD COLUMN avatar_url TEXT');
 const service = new Service();
+const dailyLeaderboard = new DailyLeaderboardStore(db);
 const byToken = db.prepare('SELECT * FROM users WHERE token = ?');
 const byOpenId = db.prepare('SELECT users.* FROM users JOIN wechat_users ON users.id = wechat_users.user_id WHERE openid = ?');
 const nextNumber = db.prepare('SELECT COALESCE(MAX(rowid), 0) + 1 AS number FROM users');
@@ -57,7 +59,18 @@ function createAccount(openid?: string) {
   }
 }
 service.saveProfile = p => { db.prepare('UPDATE users SET name=?, avatar=?, avatar_url=? WHERE id=?').run(p.name, p.avatar, p.avatarUrl ?? null, p.id); };
-service.saveResult = r => db.prepare('INSERT OR IGNORE INTO results VALUES (?, ?, ?)').run(r.id, JSON.stringify({ result: r.result, players: r.seats.map(s => ({ id: s.profile.id, bot: s.bot })), turns: r.history.length }), Date.now());
+service.saveResult = r => {
+  const guessesByPlayer: Record<string, number> = {};
+  for (const s of r.seats) {
+    if (!s.bot) guessesByPlayer[s.profile.id] = r.history.filter(h => h.playerId === s.profile.id && h.digits !== null).length;
+  }
+  const inserted = db.prepare('INSERT OR IGNORE INTO results VALUES (?, ?, ?)').run(
+    r.id,
+    JSON.stringify({ result: r.result, players: r.seats.map(s => ({ id: s.profile.id, bot: s.bot })), turns: r.history.length, digitCount: r.digitCount, guessesByPlayer }),
+    Date.now(),
+  );
+  if (inserted.changes > 0) dailyLeaderboard.recordMatch(r);
+};
 const sockets = new Map<string, WebSocket>(), fingerprints = new Map<string, string>();
 const sharingViaHttp = new WeakSet<WebSocket>();
 const send = (ws: WebSocket, data: unknown) => { if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(data)); };
@@ -93,25 +106,66 @@ const loginRates = new Map<string, { at: number; count: number }>();
 const server = createServer(async (req, res) => {
   if (!allowedOrigin(req.headers.origin)) { res.writeHead(403); res.end(); return; }
   res.setHeader('Access-Control-Allow-Origin', req.headers.origin ?? '*');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type'); res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Auth-Token'); res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
   if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
   res.setHeader('Content-Type', 'application/json');
-  if (req.method === 'GET' && req.url === '/api/wechat-sharing') {
+  const parsedUrl = new URL(req.url ?? '/', 'http://127.0.0.1');
+  const pathname = parsedUrl.pathname;
+  const readJsonBody = async () => {
+    let data = '';
+    for await (const chunk of req) { data += chunk; if (data.length > 4096) throw Error('request too large'); }
+    return JSON.parse(data || '{}');
+  };
+  const authUser = (tokenValue?: unknown) => {
+    const raw = typeof tokenValue === 'string' && tokenValue
+      ? tokenValue
+      : parsedUrl.searchParams.get('token') || (typeof req.headers['x-auth-token'] === 'string' ? req.headers['x-auth-token'] : '');
+    if (!raw) return undefined;
+    const row = byToken.get(raw);
+    return row ? account(row) : undefined;
+  };
+  if (req.method === 'GET' && pathname === '/api/wechat-sharing') {
     loadSharingConfig();
     res.setHeader('Cache-Control', 'no-store');
     res.end(JSON.stringify({enabled: service.wechatSharingEnabled, images: service.wechatShareImages}));
     return;
   }
-  if (req.url === '/health') { res.end(JSON.stringify({ ok: true, mode: preview ? 'preview' : 'local-development', wechatConfigured: Boolean(process.env.WECHAT_APP_SECRET) })); return; }
-  if (req.url !== '/api/login' || req.method !== 'POST') { res.writeHead(404); res.end('{}'); return; }
+  if (req.method === 'GET' && pathname === '/api/daily') {
+    const user = authUser();
+    if (!user) { res.writeHead(401); res.end(JSON.stringify({ error: '请先登录' })); return; }
+    res.setHeader('Cache-Control', 'no-store');
+    res.end(JSON.stringify(dailyLeaderboard.getDaily(user.profile.id)));
+    return;
+  }
+  if (req.method === 'POST' && pathname === '/api/daily/guess') {
+    try {
+      const input = await readJsonBody();
+      const user = authUser(input?.token);
+      if (!user) { res.writeHead(401); res.end(JSON.stringify({ error: '请先登录' })); return; }
+      const result = dailyLeaderboard.submitDailyGuess(user.profile.id, String(input?.digits ?? ''));
+      res.setHeader('Cache-Control', 'no-store');
+      res.end(JSON.stringify(result));
+    } catch (e) {
+      res.writeHead(400);
+      res.end(JSON.stringify({ error: e instanceof Error ? e.message : '提交失败' }));
+    }
+    return;
+  }
+  if (req.method === 'GET' && pathname === '/api/leaderboard') {
+    const user = authUser();
+    res.setHeader('Cache-Control', 'no-store');
+    res.end(JSON.stringify(dailyLeaderboard.getLeaderboard(user?.profile.id)));
+    return;
+  }
+  if (pathname === '/health') { res.end(JSON.stringify({ ok: true, mode: preview ? 'preview' : 'local-development', wechatConfigured: Boolean(process.env.WECHAT_APP_SECRET) })); return; }
+  if (pathname !== '/api/login' || req.method !== 'POST') { res.writeHead(404); res.end('{}'); return; }
   try {
     const ip = req.socket.remoteAddress ?? 'unknown';
     const now = Date.now();
     for (const [key, value] of loginRates) if (now - value.at > 60000) loginRates.delete(key);
     const rate = loginRates.get(ip) ?? { at: now, count: 0 }; loginRates.set(ip, rate);
     if (++rate.count > 120) { res.writeHead(429); res.end('{}'); return; }
-    let data = ''; for await (const chunk of req) { data += chunk; if (data.length > 4096) throw Error('request too large'); }
-    const input = JSON.parse(data || '{}');
+    const input = await readJsonBody();
     let openid: string | undefined;
     if (typeof input.code === 'string') {
       if (!process.env.WECHAT_APP_SECRET) { res.writeHead(503); res.end(JSON.stringify({ error: '微信登录尚未配置，请稍后重试' })); return; }

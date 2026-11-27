@@ -124,3 +124,26 @@ AppID：wx3f231fcad8d0170f。
 2026-11-20 已通过 baota-mcp 部署此开关，公网 HTTPS 登录及 WSS 会话实测下发 `wechatSharingEnabled=false`。旧代码备份在 `/www/backup/digital-bomb-sharing-20261120T064521Z/original/`。当时的热切换与手动口令入房在本地隔离服务验证。
 
 配置接口从同一个 JSON 的 `images` 数组加载分享图。每项包含 `approved`、`imageUrlId` 和 `imageUrl`；只有明确标记已审核、编号非空且地址为微信素材 CDN 的记录会下发。数组中第一张可用图供房间邀请使用，普通分享从可用图中随机选取。待审素材保留地址，审核后补上编号并把该项的 `approved` 改为 `true`。总开关独立控制分享入口。无可用素材时使用微信默认分享画面。首次需发布支持该配置的客户端。
+
+
+## 2026-11-27 移除公网 Web 游戏并部署每日一题与排行榜后端
+
+通过 baota-mcp 完成后端服务升级与公网 Web 静态清理，站点 `https://bomb.aiforevery.cn` 现仅作为微信小游戏后端接口与 WebSocket 服务入口（保留 `.well-known/` 证书续期目录及 `.user.ini` / `.htaccess`）。
+
+- **备份目录**：`/www/backup/digital-bomb-20261127/`（权限 `700`），含停服前 `original/service/{server,assets,data}`、`original/rewrite.conf`、`original/web-static/` 及 `staged/` 候选文件。
+- **更新的后端编译文件**（`/www/wwwroot/digital-bomb-service/`，属主 `www:www`）：
+  - `server/index.js`（SHA256 `6368f61e543717b6d79825fe9b6a5998faa08a7eef7b6265c4afb7d9c58d0acc`）：新增 `GET /api/daily`、`POST /api/daily/guess`、`GET /api/leaderboard` 接口并接入 `user_stats` 落库。
+  - `server/daily-leaderboard.js`（SHA256 `613d7aed5d6041417cc481ec2a5516be57d904113be5229f7ee755959f653908`）：服务端每日一题（答案未破译前不下发客户端，CST 0 点切换）、SQLite `daily_attempts` / `user_stats` 表及历史 `results` 自动回填。
+  - `server/game.js`（SHA256 `2fbe16114ce7804ee6ff6082fa83c99477e3a96ab09afa59ff468970f59ffe80`）：房间快照新增下发 `endedAt` 字段。
+  - `assets/scripts/shared/career-stats.js`、`deduction.js`、`wechat-flow.js`。
+- **Web 游戏移除与 Nginx 反代更新**：
+  - 备份并删除 `/www/wwwroot/bomb.aiforevery.cn/` 下全部旧 Web 构建静态文件（`index.html`、`assets/`、`src/`、`cocos-js/`、`releases/` 等）。
+  - 更新 `/www/server/panel/vhost/rewrite/bomb.aiforevery.cn.conf`，将 `location ^~ /api/`、`/health`、`/ws` 全部反代至 `127.0.0.1:8787`，根路径 `/` 返回 `404`；经 `/www/server/nginx/sbin/nginx -t` 校验并通过 `/etc/init.d/nginx reload` 生效。
+- **线上公网 HTTPS 核验**：
+  - `GET https://bomb.aiforevery.cn/` → `HTTP 404`
+  - `GET https://bomb.aiforevery.cn/health` → `HTTP 200`（`ok=true, mode=preview, wechatConfigured=true`）
+  - `GET https://bomb.aiforevery.cn/api/wechat-sharing` → `HTTP 200`（`enabled=true`，3 张已审核分享图）
+  - `GET https://bomb.aiforevery.cn/api/daily`（未带 token）→ `HTTP 401`（`请先登录`）
+  - `GET https://bomb.aiforevery.cn/api/leaderboard` → `HTTP 200`（已自动回填历史战绩并返回今日/总胜双榜）
+  - `digital-bomb.service` 状态 `active`，`NRestarts=0`。
+- **回退方式**：停服后从 `/www/backup/digital-bomb-20261127/original/service/` 恢复 `server/` 与 `assets/`（如需同时还原静态页，恢复 `original/web-static/` 与 `original/rewrite.conf` 并重载 Nginx），再启动 `digital-bomb.service`。新增 SQLite 表 `daily_attempts` / `user_stats` 兼容旧代码，无需覆盖 `data/` 玩家数据。

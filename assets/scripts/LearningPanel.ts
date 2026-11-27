@@ -2,6 +2,7 @@ import { BlockInputEvents, Color, Graphics, Label, Layers, Node, Sprite, SpriteF
 import { clueCaption, compareClues, composeQuickDraft, consistentCandidate, deduce, STANDARD_ROUNDS, STANDARD_TURN_MS, type Clue, type DigitCount } from './shared/deduction';
 import { formatMatchDuration } from './shared/battle-feedback';
 import type { DailyProgress } from './shared/daily-challenge';
+import type { LeaderboardSnapshot, ServerDailySnapshot } from './shared/leaderboard';
 import { Practice, Tutorial } from './shared/learning';
 import type { RoomView } from './shared/protocol';
 import { modeLabel, type MatchMode } from './shared/game-mode';
@@ -14,17 +15,27 @@ interface Context {
   cardDigits?: Record<'ink' | 'crimson', Map<string, SpriteFrame>>;
   room?: RoomView | null; me: string; now: number;
   dailyProgress?: DailyProgress;
+  dailyServer?: ServerDailySnapshot;
+  dailyLoading?: boolean;
+  dailySubmitting?: boolean;
   dailyStreak?: number;
-  onDailySubmit?: (digits: string) => { error?: string; solved?: boolean; hits?: number };
+  leaderboard?: LeaderboardSnapshot;
+  leaderboardLoading?: boolean;
+  onDailySubmit?: (digits: string) => Promise<{ error?: string }> | { error?: string };
   onDailyShare?: () => void;
+  onOpenLeaderboard?: () => void;
+  onRefreshLeaderboard?: () => void;
+  onOpenDaily?: () => void;
   redraw: () => void; copy: (digits: string, message?: string) => void; completed: () => void;
 }
-type Page = 'menu' | 'rules' | 'tutorial' | 'practice' | 'daily' | 'clues' | 'mode' | 'confirmation';
+type Page = 'menu' | 'rules' | 'tutorial' | 'practice' | 'daily' | 'leaderboard' | 'clues' | 'mode' | 'confirmation';
 /** Local teaching and practice never send guesses to the multiplayer service. */
 export class LearningPanel {
   visible = false;
   private page: Page = 'menu';
   private cluesSource: 'room' | 'practice' | 'daily' = 'room';
+  private leaderboardTab: 'daily' | 'career' = 'daily';
+  private leaderboardPage = 0;
   private tutorial = new Tutorial();
   private practice?: Practice;
   private draft = '';
@@ -55,10 +66,11 @@ export class LearningPanel {
     this.visible = true; this.page = 'confirmation'; this.confirmation = { kind, digits, accept, cancel };
   }
 
-  open(page: 'menu' | 'rules' | 'clues' | 'daily' = 'menu') {
+  open(page: 'menu' | 'rules' | 'clues' | 'daily' | 'leaderboard' = 'menu') {
     this.visible = true; this.page = page; this.message = '';
     if (page === 'daily') { this.draft = ''; this.slot = -1; this.cluesSource = 'daily'; }
     else if (page === 'clues') { this.cluesSource = 'room'; }
+    else if (page === 'leaderboard') { this.leaderboardPage = 0; }
     this.tab = 'positions'; this.selected = -1; this.baseline = -1; this.recordPage = -1;
   }
   close() { this.visible = false; this.timer = undefined; }
@@ -73,7 +85,8 @@ export class LearningPanel {
     if (!this.visible || !['tutorial', 'practice', 'daily'].includes(this.page)) return;
     if (this.page === 'tutorial' && this.tutorial.step >= 2) return;
     if (this.page === 'practice' && this.practice?.solved) return;
-    if (this.page === 'daily' && this.context.dailyProgress?.solved) return;
+    const activeDaily = this.context.dailyServer ?? this.context.dailyProgress;
+    if (this.page === 'daily' && (activeDaily?.solved || this.context.dailySubmitting)) return;
     const size = this.page === 'practice' ? this.practice!.size : 4;
     this.message = '';
     if (key === 'submit') {
@@ -81,9 +94,19 @@ export class LearningPanel {
         this.tutorial.submit(this.draft);
         this.message = this.tutorial.message;
       } else if (this.page === 'daily') {
-        const res = this.context.onDailySubmit?.(this.draft);
-        this.message = res?.error ?? '';
-        if (!this.message) { this.draft = ''; this.slot = -1; }
+        const pendingDigits = this.draft;
+        const ret = this.context.onDailySubmit?.(pendingDigits);
+        if (ret && typeof (ret as Promise<{ error?: string }>).then === 'function') {
+          void (ret as Promise<{ error?: string }>).then(res => {
+            this.message = res?.error ?? '';
+            if (!this.message) { this.draft = ''; this.slot = -1; }
+            if (this.visible && this.context.parent?.isValid) this.refresh();
+          });
+        } else {
+          const syncRes = ret as { error?: string } | undefined;
+          this.message = syncRes?.error ?? '';
+          if (!this.message) { this.draft = ''; this.slot = -1; }
+        }
       } else {
         this.message = this.practice!.submit(this.draft) ?? '';
         if (!this.message) { this.draft = ''; this.slot = -1; }
@@ -155,7 +178,7 @@ export class LearningPanel {
   }
   private back() {
     if (this.page === 'confirmation') this.confirmation?.cancel();
-    else if (this.page === 'mode' || this.page === 'daily') { this.close(); this.refresh(); }
+    else if (this.page === 'mode' || this.page === 'daily' || this.page === 'leaderboard') { this.close(); this.refresh(); }
     else if (this.page === 'clues' && this.cluesSource === 'daily' && !this.context.room) this.go('daily');
     else if (this.page === 'clues' && this.practice && !this.context.room) this.go('practice');
     else if (this.page !== 'menu' && !this.context.room) this.go('menu');
@@ -189,6 +212,7 @@ export class LearningPanel {
     else if (this.page === 'tutorial') this.teach();
     else if (this.page === 'practice') this.training();
     else if (this.page === 'daily') this.daily();
+    else if (this.page === 'leaderboard') this.leaderboard();
     else this.clues();
     if (context.room && ['playing','reply','preparing'].includes(context.room.phase)) {
       this.art('banner',470,1365,710,76);
@@ -306,10 +330,11 @@ export class LearningPanel {
       });
     }
   }
-  private keyboard(size: DigitCount, practice=false) {
+  private keyboard(size: DigitCount, practice=false, busy=false) {
     this.cards(this.draft,practice?374:470,practice?958:820,practice?98:110,true,size);
     for(const [i,key] of ['1','2','3','4','5','6','7','8','9','delete','0','submit'].entries()) {
-      this.fixed('key-'+key,key==='delete'?'删除':key==='submit'?'提交':key,260+(i%3)*211,(practice?1154:1020)+Math.floor(i/3)*100,205,()=>this.input(key),key==='submit'?this.draft.length===size:key==='delete'?this.draft.length>0:true);
+      const enabled = !busy && (key==='submit'?this.draft.length===size:key==='delete'?this.draft.length>0:true);
+      this.fixed('key-'+key,key==='delete'?'删除':key==='submit'?'提交':key,262+(i%3)*208,(practice?1148:1018)+Math.floor(i/3)*98,198,()=>this.input(key),enabled);
     }
   }
   private teach() {
@@ -389,49 +414,69 @@ export class LearningPanel {
     this.fixed('hint',`推理提示 · ${practice.history.length} 条记录`,716,962,188,()=>{this.cluesSource='practice';this.go('clues');});
   }
   private daily() {
-    const progress = this.context.dailyProgress;
-    if (!progress) { this.go('menu'); return; }
-    const streak = this.context.dailyStreak ?? 0;
+    const server = this.context.dailyServer;
+    const progress = server ?? this.context.dailyProgress;
+    if (!progress) {
+      this.art('banner', 470, 224, 590, 92);
+      const title = this.text('每日一题', 470, 222, 480, 76, 46, '#FFE5A9'); title.isBold = true;
+      this.trapezoidPanel(470.5, 620, 220, 22, new Color(116, 70, 26, 18), new Color(172, 128, 70, 140), 1.5);
+      this.text(this.context.dailyLoading ? '正在从服务器获取今日暗号…' : '暂未连接到服务器，请稍后重试', 470, 620, 580, 90, 30, '#5A3C1E');
+      return;
+    }
+    const streak = server?.dailyStreak ?? this.context.dailyStreak ?? 0;
+    const solverCount = server?.solverCount ?? 0;
     this.art('banner', 470, 224, 590, 92);
     const title = this.text('每日一题', 470, 222, 480, 76, 46, '#FFE5A9');
     title.isBold = true;
-    const sub = streak > 0
-      ? `${progress.dateKey} · 4 位全服同题 · 已连卡 ${streak} 天`
-      : `${progress.dateKey} · 4 位全服同题 · 不限时`;
-    this.text(sub, 470, 316, 620, 44, 25, '#68492A');
+    const subParts = [`${progress.dateKey} · 全服同题`];
+    if (solverCount > 0) subParts.push(`今日已有 ${solverCount} 人破译`);
+    else if (streak > 0) subParts.push(`已连卡 ${streak} 天`);
+    else subParts.push('服务器实时验证');
+    this.text(subParts.join(' · '), 470, 316, 620, 44, 24, '#68492A');
 
     if (progress.solved) {
-      const answer = progress.history[progress.history.length - 1]?.digits ?? '0000';
+      const answer = server?.answer ?? progress.history[progress.history.length - 1]?.digits ?? '0000';
       const dur = formatMatchDuration(progress.startedAt, progress.endedAt);
-      this.trapezoidPanel(470.5, 590, 290, 22, new Color(56, 124, 68, 22), new Color(76, 152, 92, 165), 1.8);
-      const okLbl = this.text('今日暗号已破译！', 470, 486, 560, 50, 34, '#1B6631');
+      this.trapezoidPanel(470.5, 578, 294, 22, new Color(56, 124, 68, 22), new Color(76, 152, 92, 165), 1.8);
+      const okLbl = this.text('今日暗号已破译！', 470, 468, 560, 48, 34, '#1B6631');
       okLbl.isBold = true;
-      this.cards(answer, 470, 610, 114);
-      this.text(`共 ${progress.history.length} 步${dur ? ` · 用时 ${dur}` : ''}${streak > 1 ? ` · 连续打卡 ${streak} 天` : ''}`, 470, 706, 610, 40, 26, '#3F230C');
+      this.cards(answer, 470, 586, 112);
+      const statsLine = `共 ${progress.history.length} 步${dur ? ` · 用时 ${dur}` : ''}${streak > 1 ? ` · 连卡 ${streak} 天` : ''}`;
+      this.text(statsLine, 470, 676, 610, 34, 24, '#3F230C');
+      if (server?.rank !== undefined) {
+        const rankText = server.solverCount > 1 && server.beatPercent !== undefined
+          ? `今日第 ${server.rank} 名 · 击败 ${server.beatPercent}% 破译者`
+          : `今日第 ${server.rank} 名 · 抢先登顶`;
+        const rl = this.text(rankText, 470, 708, 600, 32, 22, '#1F6B35');
+        rl.isBold = true;
+      }
 
       // Visual spoiler-free inference trail
       const shown = progress.history.slice(-6);
-      this.trapezoidPanel(470.5, 920, 270, 22, new Color(118, 72, 26, 18), new Color(176, 130, 68, 150), 1.5);
-      const trailHdr = this.text('本次破译轨迹（分享不泄露答案）', 470, 814, 580, 34, 22, '#6E4E2E');
+      this.trapezoidPanel(470.5, 902, 268, 22, new Color(118, 72, 26, 18), new Color(176, 130, 68, 150), 1.5);
+      const trailHdr = this.text('本次破译轨迹（分享不泄露答案）', 470, 798, 580, 34, 22, '#6E4E2E');
       trailHdr.isBold = true;
       shown.forEach((h, idx) => {
-        const y = 856 + idx * 34;
+        const y = 840 + idx * 34;
         const hits = Math.max(0, Math.min(4, h.hits ?? 0));
         const stepNo = progress.history.length - shown.length + idx + 1;
         this.text(`第 ${stepNo} 步   ${'■'.repeat(hits)}${'□'.repeat(4 - hits)}   ${hits}/4`, 470, y, 560, 32, 24, hits === 4 ? '#1E7037' : '#4B2E14');
       });
 
-      const shareBtn = this.boxPanel(470, 1152, 560, 96, '#C84218', '#F0BE62', 18, 2.4);
-      const shareLbl = this.text('分享今日战绩', 470, 1150, 500, 64, 34, '#FFF6DF');
-      shareLbl.isBold = true;
+      const shareBtn = this.boxPanel(318, 1140, 276, 90, '#C84218', '#F0BE62', 16, 2.2);
+      const shareLbl = this.text('分享今日战绩', 318, 1138, 250, 56, 28, '#FFF6DF'); shareLbl.isBold = true;
       this.touch(shareBtn, 'daily-share', () => this.context.onDailyShare?.());
 
-      const notesBtn = this.boxPanel(312, 1286, 262, 82, new Color(116, 70, 26, 24), new Color(172, 126, 66, 175), 14, 1.8);
-      const notesLbl = this.text('查看推理笔记', 312, 1284, 240, 54, 26, '#4A2B11'); notesLbl.isBold = true;
+      const lbBtn = this.boxPanel(622, 1140, 276, 90, '#2C7546', '#DFB362', 16, 2.2);
+      const lbLbl = this.text('查看今日排行', 622, 1138, 250, 56, 28, '#FFF6DF'); lbLbl.isBold = true;
+      this.touch(lbBtn, 'daily-leaderboard', () => { this.leaderboardTab = 'daily'; this.context.onOpenLeaderboard?.(); });
+
+      const notesBtn = this.boxPanel(318, 1266, 276, 76, new Color(116, 70, 26, 24), new Color(172, 126, 66, 175), 14, 1.8);
+      const notesLbl = this.text('查看推理笔记', 318, 1264, 240, 50, 25, '#4A2B11'); notesLbl.isBold = true;
       this.touch(notesBtn, 'daily-clues', () => { this.tab = 'history'; this.cluesSource = 'daily'; this.go('clues'); });
 
-      const homeBtn = this.boxPanel(628, 1286, 262, 82, new Color(116, 70, 26, 24), new Color(172, 126, 66, 175), 14, 1.8);
-      const homeLbl = this.text('返回大厅', 628, 1284, 240, 54, 26, '#4A2B11'); homeLbl.isBold = true;
+      const homeBtn = this.boxPanel(622, 1266, 276, 76, new Color(116, 70, 26, 24), new Color(172, 126, 66, 175), 14, 1.8);
+      const homeLbl = this.text('返回大厅', 622, 1264, 240, 50, 25, '#4A2B11'); homeLbl.isBold = true;
       this.touch(homeBtn, 'daily-home', () => { this.close(); this.refresh(); });
       return;
     }
@@ -439,7 +484,7 @@ export class LearningPanel {
     const recent = progress.history.slice(-2);
     if (!recent.length) {
       this.trapezoidPanel(470.5, 526, 200, 22, new Color(116, 70, 26, 16), new Color(172, 128, 70, 135), 1.5);
-      this.text('每天一道固定 4 位暗号，全球同题\n输入第一组数字，开启今日推理', 470, 526, 600, 140, 30, '#5A3C1E');
+      this.text('每天 0 点服务器刷新一道 4 位暗号\n答案仅存服务端 · 猜中后登上今日排行', 470, 526, 600, 140, 29, '#5A3C1E');
     }
     recent.forEach((h, i) => {
       const y = 456 + i * 138;
@@ -459,10 +504,149 @@ export class LearningPanel {
     });
     if (recent.length) this.text('点击上方记录复用 · 改一位再比较', 470, 694, 620, 32, 23, '#6E4F30');
     const caption = recent.length > 1 ? compareClues(recent[0], recent[1]) : recent.length ? clueCaption(recent[0]) : '点击卡牌可单独修改一位';
-    this.text(this.message || caption, 470, 750, 630, 82, 28, '#492B11');
-    this.keyboard(4, true);
+    const statusLine = this.context.dailySubmitting ? '正在提交服务器验证…' : (this.message || caption);
+    this.text(statusLine, 470, 750, 630, 82, 28, '#492B11');
+    this.keyboard(4, true, !!this.context.dailySubmitting);
     this.text(this.slot >= 0 ? (this.slot < this.draft.length ? `正在修改第 ${this.slot + 1} 位 · 点击键盘替换` : `接着填写第 ${this.slot + 1} 位 · 点击键盘输入`) : `已输入 ${this.draft.length}/4 位 · 点击卡牌可修改`, 470, 1046, 660, 38, 25, '#6B4D2E');
     this.fixed('hint', `推理提示 · ${progress.history.length} 条记录`, 716, 962, 188, () => { this.cluesSource = 'daily'; this.go('clues'); });
+  }
+  private leaderboard() {
+    this.art('banner', 470, 214, 576, 84);
+    const titleLbl = this.text('全服排行榜', 470, 211, 510, 66, 41, '#FFE5A9');
+    titleLbl.isBold = true;
+
+    // Twin vintage tabs: 今日排行 (Daily) vs 总胜排行 (Career)
+    const isDaily = this.leaderboardTab === 'daily';
+    const drawTab = (label: string, cx: number, active: boolean, onClick: () => void) => {
+      const btn = this.boxPanel(
+        cx, 312, 294, 66,
+        active ? '#C84218' : new Color(116, 70, 26, 22),
+        active ? '#F0BE62' : new Color(168, 126, 70, 155),
+        14, active ? 2.2 : 1.5,
+      );
+      const t = this.text(label, cx, 310, 260, 48, 29, active ? '#FFF6DF' : '#4E2E12');
+      t.isBold = true;
+      this.touch(btn, 'lb-tab-' + label, onClick);
+    };
+    drawTab('今日排行', 314, isDaily, () => { this.leaderboardTab = 'daily'; this.leaderboardPage = 0; this.refresh(); });
+    drawTab('总胜排行', 626, !isDaily, () => { this.leaderboardTab = 'career'; this.leaderboardPage = 0; this.refresh(); });
+
+    const lb = this.context.leaderboard;
+    const sumY = 394, sumW = this.paperSafeWidth(sumY, 22), sumLeft = 470.5 - sumW / 2, sumRight = 470.5 + sumW / 2;
+    this.trapezoidPanel(470.5, sumY, 64, 22, new Color(116, 70, 26, 20), new Color(172, 128, 70, 135), 1.4);
+    const sumText = !lb
+      ? (this.context.leaderboardLoading ? '正在同步最新榜单…' : '暂无榜单数据，点击刷新重试')
+      : isDaily
+        ? `${lb.dateKey} 每日一题 · 共 ${lb.dailySolverCount} 人破译`
+        : '全服对战总胜榜 · 优先胜场与最快步数';
+    const sumLbl = this.text(sumText, sumLeft + (sumW - 110) / 2, sumY - 1, sumW - 120, 40, 23, '#523214');
+    sumLbl.isBold = true;
+
+    const refreshBtn = this.boxPanel(sumRight - 56, sumY, 88, 38, new Color(44, 26, 15, 228), new Color('#D6A654'), 19, 1.4);
+    const refLbl = this.text(this.context.leaderboardLoading ? '同步中' : '刷新', sumRight - 56, sumY - 1, 78, 30, 19, '#FFE5A9');
+    refLbl.isBold = true;
+    this.touch(refreshBtn, 'lb-refresh', () => this.context.onRefreshLeaderboard?.(), !this.context.leaderboardLoading);
+
+    const entries = lb ? (isDaily ? lb.daily : lb.career) : [];
+    const pageSize = 7;
+    const totalPages = Math.max(1, Math.ceil(entries.length / pageSize));
+    this.leaderboardPage = Math.max(0, Math.min(this.leaderboardPage, totalPages - 1));
+    const slice = entries.slice(this.leaderboardPage * pageSize, (this.leaderboardPage + 1) * pageSize);
+
+    const formatDur = (ms: number) => {
+      if (!ms || ms <= 0) return '—';
+      const s = Math.max(1, Math.round(ms / 1000));
+      return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+    };
+    const short = (name: string) => Array.from(name).length > 8 ? Array.from(name).slice(0, 7).join('') + '…' : name;
+    const rankColor = (rank: number) => rank === 1 ? '#D49218' : rank === 2 ? '#7D8E9E' : rank === 3 ? '#B46432' : '#3C2312';
+
+    if (!slice.length) {
+      this.trapezoidPanel(470.5, 680, 250, 22, new Color(116, 70, 26, 16), new Color(172, 128, 70, 130), 1.4);
+      this.text(
+        this.context.leaderboardLoading
+          ? '榜单加载中，请稍候…'
+          : isDaily
+            ? '今日还没有玩家完成每日一题\n马上破译，抢占榜首！'
+            : '暂无对战上榜记录\n完成在线或好友对局即可上榜！',
+        470, 680, 580, 140, 29, '#6C4D2E',
+      );
+    } else {
+      slice.forEach((item, idx) => {
+        const y = 482 + idx * 92;
+        const rowW = this.paperSafeWidth(y, 22), rowLeft = 470.5 - rowW / 2, rowRight = 470.5 + rowW / 2;
+        const isMe = !!item.isMe;
+        this.trapezoidPanel(
+          470.5, y, 82, 22,
+          isMe ? new Color(192, 120, 30, 30) : item.rank <= 3 ? new Color(156, 100, 34, 20) : new Color(116, 70, 26, 14),
+          isMe ? new Color(200, 130, 40, 195) : item.rank <= 3 ? new Color(188, 138, 62, 165) : new Color(168, 126, 70, 115),
+          isMe ? 2.0 : 1.3,
+        );
+        // Rank badge
+        this.boxPanel(rowLeft + 46, y, 58, 44, new Color(rankColor(item.rank)), new Color('#F2CA78'), 12, 1.5);
+        const rLbl = this.text(item.rank <= 3 ? `No.${item.rank}` : `#${item.rank}`, rowLeft + 46, y - 1, 54, 34, item.rank <= 3 ? 18 : 21, '#FFF6DF');
+        rLbl.isBold = true;
+
+        // Player name + optional "我" chip
+        const nameLbl = this.text(short(item.name) + (isMe ? ' (我)' : ''), rowLeft + 216, y - 1, 256, 44, 26, isMe ? '#942812' : '#3A210C');
+        nameLbl.horizontalAlign = Label.HorizontalAlign.LEFT;
+        nameLbl.isBold = isMe || item.rank <= 3;
+
+        // Right metric pills
+        if ('steps' in item) {
+          this.boxPanel(rowRight - 144, y, 88, 42, new Color(44, 26, 15, 232), new Color('#D6A654'), 21, 1.4);
+          const sLbl = this.text(`${item.steps} 步`, rowRight - 144, y - 1, 80, 34, 22, '#FFE5A9'); sLbl.isBold = true;
+          const tLbl = this.text(formatDur(item.durationMs), rowRight - 52, y - 1, 86, 36, 22, '#5E3E1F'); tLbl.isBold = true;
+        } else {
+          this.boxPanel(rowRight - 186, y, 92, 42, new Color(44, 26, 15, 232), new Color('#D6A654'), 21, 1.4);
+          const wLbl = this.text(`${item.wins} 胜`, rowRight - 186, y - 1, 84, 34, 22, '#FFE5A9'); wLbl.isBold = true;
+          const subRight = item.bestSteps ? `${item.winRate}% · ${item.bestSteps}步` : `胜率 ${item.winRate}%`;
+          const mLbl = this.text(subRight, rowRight - 72, y - 1, 128, 36, 21, '#5E3E1F'); mLbl.isBold = true;
+        }
+      });
+    }
+
+    if (totalPages > 1) {
+      const prevBtn = this.boxPanel(274, 1134, 140, 48, new Color(116, 70, 26, 24), new Color(172, 126, 66, 165), 12, 1.4);
+      this.text('上一页', 274, 1133, 120, 36, 22, '#4A2B11');
+      this.touch(prevBtn, 'lb-prev', () => { this.leaderboardPage--; this.refresh(); }, this.leaderboardPage > 0);
+      this.text(`${this.leaderboardPage + 1} / ${totalPages}`, 470, 1133, 120, 36, 23, '#5E3E1F');
+      const nextBtn = this.boxPanel(666, 1134, 140, 48, new Color(116, 70, 26, 24), new Color(172, 126, 66, 165), 12, 1.4);
+      this.text('下一页', 666, 1133, 120, 36, 22, '#4A2B11');
+      this.touch(nextBtn, 'lb-next', () => { this.leaderboardPage++; this.refresh(); }, this.leaderboardPage + 1 < totalPages);
+    }
+
+    // Sticky bottom "我的排名" 2.5D trapezoid strip
+    const myY = 1244;
+    this.trapezoidPanel(470.5, myY, 108, 22, new Color(148, 92, 28, 26), new Color(188, 136, 62, 185), 2.0);
+    const myEntry = isDaily ? lb?.myDaily : lb?.myCareer;
+    if (myEntry) {
+      const myTitle = this.text(`我的排名：第 ${myEntry.rank} 名`, 470, myY - 22, 620, 40, 28, '#942812');
+      myTitle.isBold = true;
+      const detail = 'steps' in myEntry
+        ? `${myEntry.name}  ·  ${myEntry.steps} 步破译  ·  用时 ${formatDur(myEntry.durationMs)}`
+        : `${myEntry.name}  ·  ${myEntry.wins} 胜 / ${myEntry.totalGames} 局（${myEntry.winRate}%）${myEntry.bestSteps ? ` · 最快 ${myEntry.bestSteps} 步` : ''}`;
+      this.text(detail, 470, myY + 20, 640, 36, 23, '#4B2D12');
+    } else {
+      const unranked = this.text(isDaily ? '我的排名：今日尚未破译' : '我的排名：暂未上榜', 470, myY - 18, 600, 38, 26, '#5D3C1C');
+      unranked.isBold = true;
+      this.text(isDaily ? '点击下方「去挑战今日一题」，破译即自动上榜' : '赢下一场对局或完成每日一题即可登榜', 470, myY + 20, 620, 34, 22, '#7B5A38');
+    }
+
+    // Bottom twin actions (cleanly clear of bottom gold filigree diamond)
+    if (isDaily) {
+      const goDaily = this.boxPanel(322, 1396, 286, 84, '#C84218', '#F0BE62', 16, 2.2);
+      const goDailyLbl = this.text('挑战今日一题', 322, 1394, 250, 52, 28, '#FFF6DF'); goDailyLbl.isBold = true;
+      this.touch(goDaily, 'lb-go-daily', () => this.context.onOpenDaily?.());
+
+      const backHome = this.boxPanel(622, 1396, 264, 84, new Color(116, 70, 26, 26), new Color(172, 126, 66, 175), 16, 1.8);
+      const backHomeLbl = this.text('返回大厅', 622, 1394, 230, 52, 28, '#4A2B11'); backHomeLbl.isBold = true;
+      this.touch(backHome, 'lb-home', () => { this.close(); this.refresh(); });
+    } else {
+      const backHome = this.boxPanel(470, 1396, 420, 84, new Color(116, 70, 26, 26), new Color(172, 126, 66, 175), 16, 1.8);
+      const backHomeLbl = this.text('返回大厅', 470, 1394, 360, 52, 30, '#4A2B11'); backHomeLbl.isBold = true;
+      this.touch(backHome, 'lb-home', () => { this.close(); this.refresh(); });
+    }
   }
   private syncPicks(size: DigitCount, key: string, result: ReturnType<typeof deduce>) {
     if (this.picksKey === key && this.picks.length === size) return;
@@ -539,7 +723,7 @@ export class LearningPanel {
     const history: Clue[] = room
       ? room.history.filter(h => h.playerId === me)
       : isDaily
-        ? this.context.dailyProgress?.history ?? []
+        ? (this.context.dailyServer ?? this.context.dailyProgress)?.history ?? []
         : this.practice?.history ?? [];
     const size: DigitCount = room ? room.digitCount ?? 4 : isDaily ? 4 : this.practice?.size ?? 4;
 
@@ -709,9 +893,10 @@ export class LearningPanel {
     const compLeft = 470.5 - composerW / 2;
     const compRight = 470.5 + composerW / 2;
     const composed = composeQuickDraft(history, size, this.picks);
+    const activeDaily = this.context.dailyServer ?? this.context.dailyProgress;
     const canInput = !room
       ? isDaily
-        ? !!this.context.dailyProgress && !this.context.dailyProgress.solved
+        ? !!activeDaily && !activeDaily.solved
         : !!this.practice && !this.practice.solved
       : ['playing', 'reply'].includes(room.phase) && room.current === me && this.context.now >= room.startAt && this.context.now < room.deadline;
 
@@ -900,8 +1085,9 @@ export class LearningPanel {
     this.fixed('baseline','设为对照',285,1500,360,()=>{this.baseline=selected;this.refresh();},!!item?.digits);
     const room=this.context.room;
     const isDaily = !room && this.cluesSource === 'daily';
+    const activeDaily = this.context.dailyServer ?? this.context.dailyProgress;
     const canCopy=!room
-      ? isDaily ? !!this.context.dailyProgress && !this.context.dailyProgress.solved : !this.practice?.solved
+      ? isDaily ? !!activeDaily && !activeDaily.solved : !this.practice?.solved
       : ['playing','reply'].includes(room.phase)&&room.current===this.context.me&&this.context.now>=room.startAt&&this.context.now<room.deadline;
     const copyHint = !item?.digits ? (history.length?'超时记录没有数字，无法复制':'先提交一次猜测，再选择记录')
       : !canCopy ? (!room?(isDaily?'今日暗号已破译':'本局已破解，可返回开始新练习'):'轮到你行动时可复制记录')

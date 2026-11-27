@@ -1,4 +1,5 @@
 import type { Snapshot, ServerMessage, Command } from './shared/protocol';
+import type { LeaderboardSnapshot, ServerDailySnapshot } from './shared/leaderboard';
 import { getWechatLoginCode } from './shared/wechat-login';
 import { cachedSharingConfig, validSharingConfig, type SharingConfig } from './shared/wechat-flow';
 import { apiBase, requestJson, read, write, wechat } from './Platform';
@@ -97,6 +98,25 @@ export class Connection {
       const timeout = setTimeout(() => { this.pending.delete(id); reject(Error('确认超时，请查看同步后的状态')); }, 12000);
       this.pending.set(id, { cmd, resolve, reject, timeout }); this.send(cmd);
     });
+  }
+  async fetchDaily(): Promise<ServerDailySnapshot> {
+    const base = apiBase();
+    const token = this.token || read('token');
+    if (!base || !token) throw Error('尚未登录');
+    return requestJson(`${base}/api/daily?token=${encodeURIComponent(token)}`, 'GET');
+  }
+  async submitDaily(digits: string): Promise<{ snapshot: ServerDailySnapshot; hits: number }> {
+    const base = apiBase();
+    const token = this.token || read('token');
+    if (!base || !token) throw Error('尚未登录');
+    return requestJson(`${base}/api/daily/guess`, 'POST', { token, digits });
+  }
+  async fetchLeaderboard(): Promise<LeaderboardSnapshot> {
+    const base = apiBase();
+    const token = this.token || read('token');
+    if (!base) throw Error('服务地址未配置');
+    const qs = token ? `?token=${encodeURIComponent(token)}` : '';
+    return requestJson(`${base}/api/leaderboard${qs}`, 'GET');
   }
   stop() { this.stopped = true; clearTimeout(this.retry); clearInterval(this.heartbeat); this.ws?.close(); for (const p of this.pending.values()) { clearTimeout(p.timeout); p.reject(Error('连接已关闭')); } this.pending.clear(); }
 }

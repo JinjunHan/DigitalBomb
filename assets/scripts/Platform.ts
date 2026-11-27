@@ -13,9 +13,26 @@ export function apiBase() {
 }
 export function requestJson(url: string, method: 'GET' | 'POST', data?: unknown): Promise<any> {
   return new Promise((resolve, reject) => {
-    if (wechat()) { wechat().request({ url, method, data, timeout: method === 'GET' ? 3000 : 8000, success: (r: any) => r.statusCode === 200 ? resolve(r.data) : reject(Error('服务连接失败')), fail: () => reject(Error('网络不可用')) }); return; }
-    const xhr = new XMLHttpRequest(); xhr.open(method, url); if (method === 'POST') xhr.setRequestHeader('Content-Type', 'application/json'); xhr.timeout = method === 'GET' ? 3000 : 8000;
-    xhr.onload = () => { try { if (xhr.status !== 200) throw Error(); resolve(JSON.parse(xhr.responseText)); } catch { reject(Error('服务连接失败')); } };
+    if (wechat()) {
+      wechat().request({
+        url, method, data, timeout: method === 'GET' ? 4000 : 8000,
+        success: (r: any) => {
+          if (r.statusCode === 200) { resolve(r.data); return; }
+          const msg = typeof r.data?.error === 'string' && r.data.error ? r.data.error : '服务连接失败';
+          reject(Error(msg));
+        },
+        fail: () => reject(Error('网络不可用')),
+      });
+      return;
+    }
+    const xhr = new XMLHttpRequest(); xhr.open(method, url); if (method === 'POST') xhr.setRequestHeader('Content-Type', 'application/json'); xhr.timeout = method === 'GET' ? 4000 : 8000;
+    xhr.onload = () => {
+      try {
+        const parsed = JSON.parse(xhr.responseText || '{}');
+        if (xhr.status !== 200) { reject(Error(typeof parsed?.error === 'string' && parsed.error ? parsed.error : '服务连接失败')); return; }
+        resolve(parsed);
+      } catch { reject(Error('服务连接失败')); }
+    };
     xhr.onerror = xhr.ontimeout = () => reject(Error('无法连接本地服务，请先运行 npm run server'));
     xhr.send(JSON.stringify(data));
   });

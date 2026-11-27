@@ -14,6 +14,7 @@ import { hitBadgePalette, guessInsight, opponentProgress } from './shared/battle
 import { toastSpec } from './shared/toast-style';
 import { buildBattleShareText, parseCareerStats, recordDailySolved, recordMatchOutcome, serializeCareerStats, type CareerStats } from './shared/career-stats';
 import { buildDailyShareText, dailyDateKey, loadDailyProgress, submitDailyGuess, type DailyProgress } from './shared/daily-challenge';
+import type { LeaderboardSnapshot, ServerDailySnapshot, ServerUserStats } from './shared/leaderboard';
 import { dismissNoticeNode, renderNoticeToast, renderReconnectBanner } from './views/OverlayHud';
 import { renderResultView } from './views/ResultView';
 import { renderProfileSheet } from './views/ProfileView';
@@ -116,6 +117,12 @@ export class GameApp extends Component {
   private playGuessPanel?: SpriteEffects;
   private prepCards: { card: Node; x: number; baseY: number; digitH: number; digitNode?: Node; char: string }[] = [];
   private prepLockButton?: Node;
+  private serverDaily?: ServerDailySnapshot;
+  private dailyLoading = false;
+  private dailySubmitting = false;
+  private leaderboardData?: LeaderboardSnapshot;
+  private leaderboardLoading = false;
+  private syncedMetaUser = '';
   private opponentPulseRing?: UIOpacity;
   private opponentBacksNode?: Node;
   private replyAura?: UIOpacity;
@@ -352,6 +359,11 @@ export class GameApp extends Component {
     if (r && this.lastPhase === 'preparing' && r.phase === 'playing') { this.draft = ''; this.selected = -1; }
     if (r && ['finished','cancelled'].includes(r.phase) && oldPhase !== r.phase) this.learning.close();
     if (r && r.phase === 'finished') this.recordFinishedMatch(r, s.me.id);
+    if (this.net.online && s.me.id && this.syncedMetaUser !== s.me.id) {
+      this.syncedMetaUser = s.me.id;
+      void this.syncDailyFromServer();
+      void this.syncLeaderboardFromServer();
+    }
     const shouldCrackFinale = event?.kind === 'end' && !!r && r.phase === 'finished'
       && (oldPhase === 'playing' || oldPhase === 'reply')
       && ['cracked', 'same_round', 'reply_missed'].includes(r.result?.reason ?? '')
@@ -412,7 +424,84 @@ export class GameApp extends Component {
     const now = this.net.state ? this.net.now() : Date.now();
     return loadDailyProgress(read(this.dailyStorageKey()), dailyDateKey(now), now);
   }
-  private handleDailySubmit(digits: string): { error?: string; solved?: boolean; hits?: number } {
+  private mergeServerStats(server: ServerUserStats) {
+    const local = this.loadCareerStats();
+    const mergedBest = { ...local.bestStepsByMode };
+    for (const size of [2, 3, 4] as const) {
+      const sv = server.bestStepsByMode[size];
+      if (typeof sv === 'number' && sv > 0) mergedBest[size] = mergedBest[size] ? Math.min(mergedBest[size]!, sv) : sv;
+    }
+    this.saveCareerStats({
+      ...local,
+      totalGames: Math.max(local.totalGames, server.totalGames),
+      wins: Math.max(local.wins, server.wins),
+      losses: Math.max(local.losses, server.losses),
+      draws: Math.max(local.draws, server.draws),
+      currentStreak: server.totalGames >= local.totalGames ? server.currentStreak : local.currentStreak,
+      bestStreak: Math.max(local.bestStreak, server.bestStreak),
+      bestStepsByMode: mergedBest,
+      dailySolvedCount: Math.max(local.dailySolvedCount, server.dailySolvedCount),
+      dailyStreak: Math.max(local.dailyStreak, server.dailyStreak),
+      lastDailyDate: server.lastDailyDate || local.lastDailyDate,
+    });
+  }
+  private async syncDailyFromServer() {
+    if (!this.net.online || this.dailyLoading) return;
+    this.dailyLoading = true;
+    try {
+      const snap = await this.net.fetchDaily();
+      if (!this.isValid) return;
+      this.serverDaily = snap;
+      if (snap.solved) {
+        const updated = recordDailySolved(this.loadCareerStats(), snap.dateKey);
+        if (updated.changed) this.saveCareerStats(updated.stats);
+      }
+    } catch { /* Offline or legacy server falls back cleanly to local state. */ }
+    finally {
+      this.dailyLoading = false;
+      if (this.isValid) this.render();
+    }
+  }
+  private async syncLeaderboardFromServer() {
+    if (!this.net.online || this.leaderboardLoading) return;
+    this.leaderboardLoading = true;
+    try {
+      const snap = await this.net.fetchLeaderboard();
+      if (!this.isValid) return;
+      this.leaderboardData = snap;
+      if (snap.myStats) this.mergeServerStats(snap.myStats);
+    } catch { /* Keep previous leaderboard snapshot if transiently offline. */ }
+    finally {
+      this.leaderboardLoading = false;
+      if (this.isValid) this.render();
+    }
+  }
+  private async handleDailySubmit(digits: string): Promise<{ error?: string }> {
+    if (this.dailySubmitting) return {};
+    if (this.net.online) {
+      this.dailySubmitting = true;
+      this.render();
+      try {
+        const res = await this.net.submitDaily(digits);
+        if (!this.isValid) return {};
+        this.serverDaily = res.snapshot;
+        if (res.snapshot.solved) {
+          const updated = recordDailySolved(this.loadCareerStats(), res.snapshot.dateKey);
+          if (updated.changed) this.saveCareerStats(updated.stats);
+          this.audio.play('win'); vibrate('heavy');
+          void this.syncLeaderboardFromServer();
+        } else {
+          this.audio.play('hit' + Math.min(4, res.hits)); vibrate('light');
+        }
+        return {};
+      } catch (e) {
+        this.audio.play('error');
+        return { error: e instanceof Error ? e.message : '提交失败，请重试' };
+      } finally {
+        this.dailySubmitting = false;
+        if (this.isValid) this.render();
+      }
+    }
     const now = this.net.state ? this.net.now() : Date.now();
     const current = this.loadDaily();
     const res = submitDailyGuess(current, digits, now);
@@ -425,7 +514,7 @@ export class GameApp extends Component {
     } else {
       this.audio.play('hit' + Math.min(4, res.hits ?? 0)); vibrate('light');
     }
-    return { solved: res.progress.solved, hits: res.hits };
+    return {};
   }
   private async shareRecap(text: string, wxTitle: string) {
     if (this.wxFlow.shareCustom(wxTitle)) return;
@@ -805,16 +894,25 @@ export class GameApp extends Component {
         cardDigits: this.cardDigitFrames.ink.size === 11 ? this.cardDigitFrames : undefined,
         room: s?.room, me: s?.me.id ?? '', now: this.net.now(),
         dailyProgress: daily,
-        dailyStreak: stats.dailyStreak,
+        dailyServer: this.serverDaily,
+        dailyLoading: this.dailyLoading,
+        dailySubmitting: this.dailySubmitting,
+        dailyStreak: this.serverDaily?.dailyStreak ?? stats.dailyStreak,
+        leaderboard: this.leaderboardData,
+        leaderboardLoading: this.leaderboardLoading,
         onDailySubmit: digits => this.handleDailySubmit(digits),
         onDailyShare: () => {
-          const latest = this.loadDaily();
+          const latest = this.serverDaily ?? this.loadDaily();
           const st = this.loadCareerStats();
+          const streak = this.serverDaily?.dailyStreak ?? st.dailyStreak;
           void this.shareRecap(
-            buildDailyShareText(latest, st.dailyStreak),
+            buildDailyShareText(latest, streak),
             `我用 ${latest.history.length} 步破译了今日《猜数字暗号》每日一题，来试试！`,
           );
         },
+        onOpenLeaderboard: () => this.openLearning('leaderboard'),
+        onRefreshLeaderboard: () => { void this.syncLeaderboardFromServer(); },
+        onOpenDaily: () => this.openLearning('daily'),
         redraw: () => this.render(),
         copy: (digits, message) => this.copyGuess(digits, message), completed: () => write('learning-complete-v1-'+s!.me.id,'1'),
       });
@@ -940,29 +1038,31 @@ export class GameApp extends Component {
     } else this.cards('0123', 695, 88);
     this.lobbyButton('match-full', '在线匹配  ›', 375, 898, 610 * fit, 168 * fit, () => this.selectMode('public'), !this.busy);
     this.lobbyButton('friend-full', '好友对战  ›', 375, 1054, 610 * fit, 162 * fit, () => { this.page = 'join'; this.code = ''; this.render(); });
-    // Daily Cipher entry pill tucked cleanly between Friend Match and the bottom wooden rim.
-    const daily = this.loadDaily();
-    const dailyStats = this.loadCareerStats();
-    const dailyW = Math.round(476 * fit), dailyH = Math.round(58 * fit);
-    const dailyBtn = this.n('LobbyDailyChallenge', 375, 1164, dailyW, dailyH);
-    const dg = dailyBtn.addComponent(Graphics);
-    const dr = Math.round(dailyH / 2);
-    dg.fillColor = new Color(25, 19, 13, 218); dg.roundRect(-dailyW / 2, -dailyH / 2, dailyW, dailyH, dr); dg.fill();
-    dg.strokeColor = new Color(daily.solved ? '#5EB87A' : '#D9AA58'); dg.lineWidth = 2;
-    dg.roundRect(-dailyW / 2 + 1, -dailyH / 2 + 1, dailyW - 2, dailyH - 2, dr - 1); dg.stroke();
-    const dotX = -dailyW / 2 + 28 * fit;
-    dg.fillColor = new Color(daily.solved ? '#2D9B60' : '#D96A32');
-    dg.circle(dotX, 0, 8 * fit); dg.fill();
+    // Symmetrical twin pills tucked cleanly between Friend Match and the bottom wooden rim: [每日一题] + [排行榜]
+    const daily = this.serverDaily ?? this.loadDaily();
+    const pillH = Math.round(56 * fit), pillR = Math.round(pillH / 2);
+    const drawLobbyPill = (name: string, cx: number, w: number, dotColor: string, borderColor: string, text: string, textColor: string, onClick: () => void) => {
+      const btn = this.n(name, cx, 1164, w, pillH);
+      const pg = btn.addComponent(Graphics);
+      pg.fillColor = new Color(25, 19, 13, 220); pg.roundRect(-w / 2, -pillH / 2, w, pillH, pillR); pg.fill();
+      pg.strokeColor = new Color(borderColor); pg.lineWidth = 2;
+      pg.roundRect(-w / 2 + 1, -pillH / 2 + 1, w - 2, pillH - 2, pillR - 1); pg.stroke();
+      pg.fillColor = new Color(dotColor); pg.circle(-w / 2 + 24 * fit, 0, 7 * fit); pg.fill();
+      const lbl = this.text(text, 375, 667, Math.round(22 * fit), textColor, w - 52 * fit, pillH - 8, btn);
+      lbl.node.setPosition(10 * fit, 1); lbl.isBold = true; lbl.enableWrapText = false;
+      btn.on(Node.EventType.TOUCH_START, () => { if (read('motion', '1') === '1') btn.setScale(0.97, 0.97, 1); });
+      btn.on(Node.EventType.TOUCH_CANCEL, () => btn.setScale(1, 1, 1));
+      btn.on(Node.EventType.TOUCH_END, () => { btn.setScale(1, 1, 1); this.audio.unlock(); this.audio.play('tap'); onClick(); });
+    };
     const dailyCopy = daily.solved
-      ? `每日一题 · 今日 ${daily.history.length} 步已破${dailyStats.dailyStreak > 1 ? ` · 连卡 ${dailyStats.dailyStreak} 天` : ''} ›`
+      ? `每日一题 · ${daily.history.length}步已破 ›`
       : daily.history.length > 0
-        ? `每日一题 · 进行中（已猜 ${daily.history.length} 步） ›`
-        : '每日一题 · 今日 4 位暗号待挑战 ›';
-    const dLbl = this.text(dailyCopy, 375, 667, Math.round(23 * fit), daily.solved ? '#CBEFD5' : '#FFE7B5', dailyW - 64 * fit, dailyH - 8, dailyBtn);
-    dLbl.node.setPosition(12 * fit, 1); dLbl.isBold = true; dLbl.enableWrapText = false;
-    dailyBtn.on(Node.EventType.TOUCH_START, () => { if (read('motion', '1') === '1') dailyBtn.setScale(0.97, 0.97, 1); });
-    dailyBtn.on(Node.EventType.TOUCH_CANCEL, () => dailyBtn.setScale(1, 1, 1));
-    dailyBtn.on(Node.EventType.TOUCH_END, () => { dailyBtn.setScale(1, 1, 1); this.audio.unlock(); this.audio.play('tap'); this.openLearning('daily'); });
+        ? `每日一题 · 已猜${daily.history.length}步 ›`
+        : '每日一题 · 待挑战 ›';
+    drawLobbyPill('LobbyDailyChallenge', 226, Math.round(290 * fit), daily.solved ? '#2D9B60' : '#D96A32', daily.solved ? '#5EB87A' : '#D9AA58', dailyCopy, daily.solved ? '#CBEFD5' : '#FFE7B5', () => this.openLearning('daily'));
+    const lbRank = this.leaderboardData?.myDaily?.rank;
+    const lbCopy = lbRank ? `排行榜 · 今日#${lbRank} ›` : '排行榜 · 今日/总榜 ›';
+    drawLobbyPill('LobbyLeaderboard', 524, Math.round(274 * fit), '#E5B44B', '#D9AA58', lbCopy, '#FFE7B5', () => this.openLearning('leaderboard'));
     this.lobbyButton('settings-full', '设置', 115, 1250, 76 * fit, 76 * fit, () => { this.overlay = 'settings'; this.render(); });
     this.lobbyButton('help-full', '怎么玩', 375, 1250, 285 * fit, 121 * fit, () => this.openLearning('menu'));
     const muted = read('music', '1') === '0' && read('sound', '1') === '0';
@@ -2019,6 +2119,7 @@ export class GameApp extends Component {
   private async copyRoomCode(code: string) {try{await copy(code);this.toast('口令已复制：'+code);}catch(e){this.toast((e as Error).message);}}
   private openProfile() {
     const me = this.net.state?.me; if (!me || this.profileMotion) return;
+    void this.syncLeaderboardFromServer();
     this.pendingProfileAvatar = undefined;
     this.nickname = me.name; this.avatar = ((me.avatar % 4) + 4) % 4; this.draftAvatarUrl=me.avatarUrl??''; this.page = 'profile'; this.profileMotionFrom = undefined; this.profileMotionTo = undefined;
     this.profileMotion = read('motion', '1') === '1' ? 'in' : '';
@@ -2280,8 +2381,11 @@ export class GameApp extends Component {
     });
     this.render();
   }
-  private openLearning(page: 'menu' | 'rules' | 'clues' | 'daily') {
-    this.overlay = ''; this.learning.open(page); this.render();
+  private openLearning(page: 'menu' | 'rules' | 'clues' | 'daily' | 'leaderboard') {
+    this.overlay = ''; this.learning.open(page);
+    if (page === 'daily') void this.syncDailyFromServer();
+    else if (page === 'leaderboard') void this.syncLeaderboardFromServer();
+    this.render();
   }
   private copyGuess(digits: string, message?: string) {
     const state = this.net.state, room = state?.room;
