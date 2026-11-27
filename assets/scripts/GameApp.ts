@@ -97,6 +97,7 @@ export class GameApp extends Component {
   private matchingIncoming?: Node;
   private lobbyShuffle = new LobbyShuffle();
   private lobbyDigitFrames: SpriteFrame[] = [];
+  private cardDigitFrames: Record<'ink' | 'crimson', Map<string, SpriteFrame>> = { ink: new Map(), crimson: new Map() };
   private lobbyReels: { current: Sprite; next: Sprite; height: number }[] = [];
   private joinDigits: Label[] = [];
   private joinGlows: UIOpacity[] = [];
@@ -222,6 +223,24 @@ export class GameApp extends Component {
       this.lobbyDigitFrames = Array.from({length:10},(_,i)=>{const f=new SpriteFrame();f.texture=texture;f.rect=new Rect(i*64,0,64,80);return f;});
       this.render();
     });
+    resources.load('art/battle/card-digits/texture', Texture2D, (err, texture) => {
+      if (err || !this.isValid) return;
+      const glyphs = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '?'];
+      const cellW = 144, cellH = 180;
+      for (const map of [this.cardDigitFrames.ink, this.cardDigitFrames.crimson]) {
+        for (const frame of map.values()) frame.destroy();
+        map.clear();
+      }
+      glyphs.forEach((glyph, i) => {
+        (['ink', 'crimson'] as const).forEach((tone, row) => {
+          const frame = new SpriteFrame();
+          frame.texture = texture;
+          frame.rect = new Rect(i * cellW, row * cellH, cellW, cellH);
+          this.cardDigitFrames[tone].set(glyph, frame);
+        });
+      });
+      this.render();
+    });
     const matchingNames = ['opponent', 'heading', 'base', 'hourglass-sheet', 'portrait-rim', 'nameplate', 'cancel'];
     for (const name of matchingNames) {
       resources.load('art/matching/' + name + '/texture', Texture2D, (err, texture) => {
@@ -248,7 +267,7 @@ export class GameApp extends Component {
     this.wxFlow.start();
     this.resizeLayout(); this.connect(); this.schedule(this.updateTimer, 0.2);
   }
-  onDestroy() { this.finishMatchingMotion(); clearTimeout(this.pendingFinishTimer); this.opponentCard?.destroy(); clearTimeout(this.loginDeadline); this.releaseStartup(); this.wxFlow?.destroy(); if (this.feedbackArt) this.feedbackArt.disposed = true; this.friendReturn?.destroy(); this.modals?.destroy(); this.stopJoinMotion(); this.stopPlayMotion(); this.scenery?.destroy(); view.off('canvas-resize', this.resizeLayout, this); this.audio.dispose(); if (this.profilePanel) Tween.stopAllByTarget(this.profilePanel); this.clearEffects(); this.net.stop(); input.off(Input.EventType.KEY_DOWN, this.onKey, this); game.off(Game.EVENT_SHOW, this.onShow, this); game.off(Game.EVENT_HIDE, this.onHide, this); }
+  onDestroy() { this.finishMatchingMotion(); clearTimeout(this.pendingFinishTimer); this.opponentCard?.destroy(); for (const map of [this.cardDigitFrames.ink, this.cardDigitFrames.crimson]) { for (const f of map.values()) f.destroy(); map.clear(); } clearTimeout(this.loginDeadline); this.releaseStartup(); this.wxFlow?.destroy(); if (this.feedbackArt) this.feedbackArt.disposed = true; this.friendReturn?.destroy(); this.modals?.destroy(); this.stopJoinMotion(); this.stopPlayMotion(); this.scenery?.destroy(); view.off('canvas-resize', this.resizeLayout, this); this.audio.dispose(); if (this.profilePanel) Tween.stopAllByTarget(this.profilePanel); this.clearEffects(); this.net.stop(); input.off(Input.EventType.KEY_DOWN, this.onKey, this); game.off(Game.EVENT_SHOW, this.onShow, this); game.off(Game.EVENT_HIDE, this.onHide, this); }
   private onHide() { this.wxFlow?.clearButton();this.audio.background(true); }
   private onShow() { this.audio.background(false); if (this.net.online) { void this.net.refreshSharing(); this.net.command('sync').catch(() => {}); } }
   private loadStartupTexture(path: string, loaded: (texture: Texture2D) => void) {
@@ -386,6 +405,29 @@ export class GameApp extends Component {
     const n = this.n(value.slice(0, 30), x, y, width, height, parent), l = n.addComponent(Label); l.string = value; l.fontSize = size; l.lineHeight = size * 1.35;
     l.color = new Color(color); l.horizontalAlign = Label.HorizontalAlign.CENTER; l.verticalAlign = Label.VerticalAlign.CENTER; l.overflow = Label.Overflow.SHRINK; l.fontFamily = UI_FONT; return l;
   }
+  /** Render bespoke 0-9/? gilded card-face artwork; falls back cleanly to Label if unavailable or placeholder. */
+  private addCardDigit(parent: Node, char: string, x: number, y: number, height: number, tone: 'ink' | 'crimson' = 'ink', angle = 0): Node {
+    const frame = this.cardDigitFrames[tone].get(char);
+    if (frame) {
+      const node = new Node('CardDigit-' + char);
+      node.layer = Layers.Enum.UI_2D;
+      parent.addChild(node);
+      node.setPosition(x, y, 0);
+      node.angle = angle;
+      const sprite = node.addComponent(Sprite);
+      sprite.spriteFrame = frame;
+      sprite.sizeMode = Sprite.SizeMode.CUSTOM;
+      node.getComponent(UITransform)!.setContentSize(Math.round(height * (144 / 180)), height);
+      return node;
+    }
+    const l = this.text(char, 375, 667, Math.round(height * 0.72), tone === 'crimson' ? '#8E2414' : C.ink, Math.round(height * 0.92), height, parent);
+    l.node.setPosition(x, y, 0);
+    l.node.angle = angle;
+    l.enableWrapText = false;
+    if (this.friendDigitFont && /^[0-9—]+$/.test(char)) { l.font = this.friendDigitFont; l.lineHeight = Math.round(height * 0.8); }
+    else l.isBold = true;
+    return l.node;
+  }
   /** Bind only enabled controls; material allocation is deferred until first press. */
   private bindPressEffect(node: Node, enabled: () => boolean = () => true) {
     const sprite = node.getComponent(Sprite); if (!sprite) return;
@@ -451,13 +493,12 @@ export class GameApp extends Component {
         const sp = card.addComponent(Sprite);
         sp.spriteFrame = paper; sp.sizeMode = Sprite.SizeMode.CUSTOM;
         card.getComponent(UITransform)!.setContentSize(82, 110);
-        const digit = this.feedbackArt.label(card, secret[i] ?? '—', 0, 0, 74, 96, 62, win ? '#8E2414' : C.ink);
-        digit.font = this.friendDigitFont ?? null;
-        digit.node.active = false;
+        const digitNode = this.addCardDigit(card, secret[i] ?? '—', 0, 0, 73, win ? 'crimson' : 'ink');
+        digitNode.active = false;
         sp.color = new Color('#294963');
         flipRevealCard(card, () => {
           sp.color = new Color('#FFF7DF');
-          digit.node.active = true;
+          digitNode.active = true;
           this.audio.play('tap');
         }, 0.06 + i * 0.08);
       }
@@ -693,6 +734,7 @@ export class GameApp extends Component {
     if (!starting && this.learning.visible) this.learning.render({
       parent: this.root, height: this.screenHeight, top: this.layoutTop, bottom: bottomSafeInset(),
       paper: this.profileArt.get('paper'), button: this.modalArt.get('tab-off'), card: this.battleArt.get('card-paper'),
+      cardDigits: this.cardDigitFrames.ink.size === 11 ? this.cardDigitFrames : undefined,
       room: s?.room, me: s?.me.id ?? '', now: this.net.now(), redraw: () => this.render(),
       copy: digits => this.copyGuess(digits), completed: () => write('learning-complete-v1-'+s!.me.id,'1'),
     });
@@ -1334,8 +1376,9 @@ export class GameApp extends Component {
         const cardGroup=this.n('SecretCard-'+i,375,667,202,202*ratio,group);cardGroup.setPosition(0,0);
         if(active){const edge=art('card-selected',[x-102,y-102*ratio,x+102,y+102*ratio],undefined,cardGroup);edge.angle=count===4?[14,5,-5,-14][i]:((count-1)/2-i)*10;}
         const card=art('card-paper',[x-96,y-96*ratio,x+96,y+96*ratio],paper,cardGroup);card.angle=count===4?[14,5,-5,-14][i]:((count-1)/2-i)*10;
-        const digit=number(value[i]??'',x,y,132,155,172,cardGroup);digit.node.angle=card.angle;
-        if(editable){touch(card,()=>{this.selected=i;this.render();});touch(digit.node,()=>{this.selected=i;this.render();});}
+        const ch = value[i] ?? '';
+        if (ch) this.addCardDigit(card, ch, 0, 0, Math.round(192 * ratio * 0.65), 'ink');
+        if(editable){touch(card,()=>{this.selected=i;this.render();});}
       }
       this.battleHands(group, count, true, scale, selected);
       const lock=art('lock');touch(lock,()=>this.lockSecret(),editable&&this.draft.length===count);
@@ -1454,8 +1497,9 @@ export class GameApp extends Component {
       for(let i=0;i<count;i++) {
         const x=463.5+(i-(count-1)/2)*105,y=1022+(i===0||i===count-1?14:0);
         const card=art('card-paper',[x-69,y-95,x+69,y+95]);card.angle=count===4?[16,6,-6,-16][i]:((count-1)/2-i)*12;
-        const digit=number(this.hideSecret?'?':r.ownSecret?.[i] ?? '',x,y,83,100,115);digit.node.angle=card.angle;
-        touch(card,()=>{this.hideSecret=!this.hideSecret;this.render();});touch(digit.node,()=>{this.hideSecret=!this.hideSecret;this.render();});
+        const ch = this.hideSecret ? '?' : (r.ownSecret?.[i] ?? '');
+        if (ch) this.addCardDigit(card, ch, 0, 0, 124, 'ink');
+        touch(card,()=>{this.hideSecret=!this.hideSecret;this.render();});
       }
       this.battleHands(group, count, false, scale);
       // Positioned neatly in the lower-left pocket, clearing the left hand & sleeve cleanly.
@@ -1659,14 +1703,13 @@ export class GameApp extends Component {
       const sp = card.addComponent(Sprite);
       sp.spriteFrame = cardPaper; sp.sizeMode = Sprite.SizeMode.CUSTOM;
       card.getComponent(UITransform)!.setContentSize(cardW, cardH);
-      const digit = label(oppSecret[i] ?? '—', 0, 0, cardW - 10, cardH - 12, digitCount === 2 ? 78 : 68, win ? '#8E2414' : C.ink, card);
-      digit.font = this.friendDigitFont ?? null;
+      const digitNode = this.addCardDigit(card, oppSecret[i] ?? '—', 0, 0, Math.round(cardH * 0.66), win ? 'crimson' : 'ink');
       if (shouldAnimate) {
         sp.color = new Color('#2A4A64');
-        digit.node.active = false;
+        digitNode.active = false;
         flipRevealCard(card, () => {
           sp.color = Color.WHITE;
-          digit.node.active = true;
+          digitNode.active = true;
           this.audio.play('tap');
         }, 0.22 + i * 0.085);
       }
@@ -1687,8 +1730,7 @@ export class GameApp extends Component {
       const sp = card.addComponent(Sprite);
       sp.spriteFrame = cardPaper; sp.sizeMode = Sprite.SizeMode.CUSTOM;
       card.getComponent(UITransform)!.setContentSize(ownW, ownH);
-      const digit = label(mySecret[i] ?? '—', 0, 0, ownW - 10, ownH - 10, digitCount === 2 ? 72 : 64, C.ink, card);
-      digit.font = this.friendDigitFont ?? null;
+      this.addCardDigit(card, mySecret[i] ?? '—', 0, 0, Math.round(ownH * 0.66), 'ink');
     }
 
     // Row 3: Compact 3-column horizontal stats strip (replaces two sparse full-width rows)
@@ -2261,8 +2303,7 @@ export class GameApp extends Component {
       if (key === 'lock' || key === 'repeat') {
         const xs = key === 'lock' ? [214, 385, 557, 729] : [225, 389, 553, 717];
         xs.forEach((x, i) => {
-          const digit = label(this.confirmation?.digits[i] ?? '—', x, key === 'lock' ? 822 : 794, 116, 126, 150, '#211005');
-          digit.font = this.friendDigitFont ?? null; digit.lineHeight = 125; digit.enableWrapText = false;
+          this.addCardDigit(group, this.confirmation?.digits[i] ?? '—', x - 470.5, -(key === 'lock' ? 822 : 794), 132, 'ink');
         });
       }
     } else if (key === 'live' || key === 'result') {

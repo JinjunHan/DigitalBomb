@@ -9,6 +9,7 @@ const LEARNING_ART = ["paper", "back", "title-online", "title-friend", "title-hu
 interface Context {
   parent: Node; height: number; top: number; bottom: number;
   paper?: SpriteFrame; button?: SpriteFrame; card?: SpriteFrame;
+  cardDigits?: Record<'ink' | 'crimson', Map<string, SpriteFrame>>;
   room?: RoomView | null; me: string; now: number;
   redraw: () => void; copy: (digits: string) => void; completed: () => void;
 }
@@ -238,8 +239,18 @@ export class LearningPanel {
       const cx=x+(i-(size-1)/2)*(width+12), selected=editable&&this.slot===i;
       const node=this.art('card',cx,y-(selected?12:0),width);
       if(selected) node.getComponent(Sprite)!.color=new Color('#FFE39A');
-      const digit = this.text(digits[i]??'—',cx,y-(selected?12:0),width-8,width*1.2,width*.75,selected?'#A8401B':'#321502');
-      digit.node.setParent(node); digit.node.setPosition(0,0);
+      const ch = digits[i] ?? '—';
+      const artFrame = this.context.cardDigits?.[selected ? 'crimson' : 'ink'].get(ch);
+      if (artFrame) {
+        const h = Math.round(node.getComponent(UITransform)!.height * 0.68);
+        const dn = new Node('LearningCardDigit-' + ch);
+        dn.layer = Layers.Enum.UI_2D; node.addChild(dn); dn.setPosition(0, 0);
+        const sp = dn.addComponent(Sprite); sp.spriteFrame = artFrame; sp.sizeMode = Sprite.SizeMode.CUSTOM;
+        dn.getComponent(UITransform)!.setContentSize(Math.round(h * (144 / 180)), h);
+      } else {
+        const digit = this.text(ch,cx,y-(selected?12:0),width-8,width*1.2,width*.75,selected?'#A8401B':'#321502');
+        digit.node.setParent(node); digit.node.setPosition(0,0);
+      }
       if(editable) this.touch(node,'digit-'+i,()=>{
         const target = Math.min(i, this.draft.length);
         this.slot = this.slot === target ? -1 : target; this.message = ''; this.refresh();

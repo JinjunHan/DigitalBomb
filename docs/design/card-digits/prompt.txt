@@ -1,0 +1,17 @@
+Asset: Custom 0-9 + '?' artistic playing-card numeral set (reconstructed / generated asset)
+Generator: image-generator -> docs/design/card-digits/source-master.jpg
+Build script: scripts/build-card-digits.py -> assets/resources/art/battle/card-digits.png
+
+Prompt:
+Generate a high-resolution, crisp, flat 2D typographic specimen sheet of a bespoke artistic numeral set for vintage luxury tabletop playing cards, containing the exact 11 characters arranged neatly in 2 clean rows on a 100% pure solid flat #FFFFFF white background:
+Row 1 (6 glyphs, evenly spaced left to right): 0 1 2 3 4 5
+Row 2 (5 glyphs, evenly spaced left to right): 6 7 8 9 ?
+Visual style: vintage European storybook / antique brass-compass mystery tabletop playing-card serif numerals with uniform cap height, refined teardrop finials on 2/3/5/6/9/?, deep espresso-umber carved ink body (#2A1508 to #3D200E) with crisp dark outer contour, accented inside thick strokes with delicate antique brass-gold engraved inline filigree (#D5A148 to #F2CF78) and tiny compass diamond glints.
+Layout constraints: 100% flat orthographic front view, zero perspective tilt, zero cast shadows, pure #FFFFFF white background, generous separation between every glyph.
+
+Post-processing (scripts/build-card-digits.py):
+- Flood-filled pure-white exterior & interior counter matting + 4px un-premultiplied de-fringing (zero white halo on dark teal or cream parchment).
+- Optical cap-height (148px flat / 152px round) and horizontal center-of-mass normalization into 144x180 cells.
+- Row 0: Espresso-Umber & Antique Brass-Gold (normal playing-card faces).
+- Row 1: HSV-selective Royal Lacquer Crimson & Antique Brass-Gold (victory opponent reveal / selected tutorial cards), preserving all antique gold filigree lines.
+- pngquant quality 90-100 compression -> 126.7 KB shipping PNG.
